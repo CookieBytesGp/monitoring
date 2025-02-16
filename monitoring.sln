@@ -25,7 +25,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "APIGateway", "APIGateway\AP
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SettingsManger", "SettingsManger\SettingsManger.csproj", "{641FF6DA-2877-4DA7-9DD0-D523F9E3C677}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PageBuilder", "PageBuilder\PageBuilder.csproj", "{0426500A-6D94-494C-B202-243087084F2B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PageBuilder", "PageBuilder\PageBuilder.csproj", "{0426500A-6D94-494C-B202-243087084F2B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resources", "Resources\Resources.csproj", "{0C445753-1EC1-4EDA-B1E0-9B2420120710}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -61,6 +63,10 @@ Global
 		{0426500A-6D94-494C-B202-243087084F2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0426500A-6D94-494C-B202-243087084F2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0426500A-6D94-494C-B202-243087084F2B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C445753-1EC1-4EDA-B1E0-9B2420120710}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C445753-1EC1-4EDA-B1E0-9B2420120710}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C445753-1EC1-4EDA-B1E0-9B2420120710}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C445753-1EC1-4EDA-B1E0-9B2420120710}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -73,6 +79,7 @@ Global
 		{F77A88AE-B477-4FE0-8D7C-0037BBE12749} = {248D3983-C2F1-4500-99E5-71CC19E8A558}
 		{641FF6DA-2877-4DA7-9DD0-D523F9E3C677} = {B3B74F7F-62E5-4802-BC9A-53C654F40EF2}
 		{0426500A-6D94-494C-B202-243087084F2B} = {B3B74F7F-62E5-4802-BC9A-53C654F40EF2}
+		{0C445753-1EC1-4EDA-B1E0-9B2420120710} = {0CCA87DA-0CA1-4678-A134-E17C51DAA79B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4677CF6D-2406-46BD-B5FC-133852A5531F}

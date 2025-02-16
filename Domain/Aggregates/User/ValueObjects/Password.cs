@@ -1,11 +1,11 @@
 ﻿using FluentResults;
 using Resource.Messages;
 using Resource;
-using UserManagment.API.Domain.SeedWork;
+using Domain.SeedWork;
 
 namespace Domain.Aggregates.User.ValueObjects
 {
-    public class Password : ValueObject
+    public class Password
     {
         #region Properties
 

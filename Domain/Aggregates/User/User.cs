@@ -1,7 +1,6 @@
 ﻿using Domain.SeedWork;
 using FluentResults;
-using UserManagment.API.Domain.Aggregates.Profile.ValueObjects;
-using UserManagment.API.Domain.Aggregates.User.ValueObjects;
+using Domain.Aggregates.User.ValueObjects;
 
 namespace Domain.Aggregates.User
 {
@@ -20,16 +19,14 @@ namespace Domain.Aggregates.User
         private User(
             FirstName firstName,
             LastName lastName,
-            Gender gender,
-            NationalCode nationalCode,
-            Role role
+            UserName userName,
+            Password password
             ) : this ()
         {
             FirstName = firstName;
             LastName = lastName;
-            Gender = gender;
-            NationalCode = nationalCode;
-            Role = role;
+            UserName = userName;
+            Password = password;
         }
 
         #endregion
@@ -38,9 +35,8 @@ namespace Domain.Aggregates.User
 
         public FirstName FirstName { get; private set; }
         public LastName LastName { get; private set; }
-        public Gender Gender { get; private set; }
-        public NationalCode NationalCode { get; private set; }
-        public Role Role { get; private set; }
+        public UserName UserName { get; private set; }
+        public Password Password { get; private set; }
 
 
 
@@ -51,9 +47,8 @@ namespace Domain.Aggregates.User
         public static Result<User> Create(
     string firstName,
     string lastName,
-    int gender,
-    string nationalCode,
-    int role)
+    string userName,
+    string password)
         {
             var result = new Result<User>();
 
@@ -69,24 +64,19 @@ namespace Domain.Aggregates.User
                 result.WithErrors(lastNameResult.Errors);
             }
 
-            var genderResult = Gender.GetByValue(gender);
-            if (genderResult.IsFailed)
+            var userNameResult = UserName.Create(userName);
+            if (userNameResult.IsFailed)
             {
-                result.WithErrors(genderResult.Errors);
+                result.WithErrors(userNameResult.Errors);
             }
 
-            var nationalCodeResult = NationalCode.Create(nationalCode);
-            if (nationalCodeResult.IsFailed)
+            var passwordResult = Password.Create(password);
+            if (passwordResult.IsFailed)
             {
-                result.WithErrors(nationalCodeResult.Errors);
+                result.WithErrors(passwordResult.Errors);
             }
 
-
-            var roleResult = Role.GetByValue(role);
-            if (roleResult.IsFailed)
-            {
-                result.WithErrors(roleResult.Errors);
-            }
+  
 
             if (result.IsFailed)
             {
@@ -96,9 +86,8 @@ namespace Domain.Aggregates.User
             var user = new User(
                 firstNameResult.Value,
                 lastNameResult.Value,
-                genderResult.Value,
-                nationalCodeResult.Value,
-                roleResult.Value);
+                userNameResult.Value,
+                passwordResult.Value);
 
             result.WithValue(user);
             return result;

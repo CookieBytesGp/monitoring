@@ -1,11 +1,11 @@
 ﻿using FluentResults;
-using UserManagment.API.Domain.SeedWork;
+using Domain.SeedWork;
 using Resource;
 using Resource.Messages;
 
 namespace Domain.Aggregates.User.ValueObjects
 {
-    public class LastName : ValueObject
+    public class LastName
     {
 
         #region Properties

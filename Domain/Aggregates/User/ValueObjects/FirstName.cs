@@ -1,11 +1,11 @@
-﻿using FluentResults;
+﻿using Domain.SeedWork;
+using FluentResults;
 using Resource.Messages;
 using Resource;
-using Domain.SeedWork;
 
 namespace Domain.Aggregates.User.ValueObjects
 {
-    public class FirstName : ValueObject
+    public class FirstName
     {
 
         #region Properties
@@ -26,6 +26,7 @@ namespace Domain.Aggregates.User.ValueObjects
         {
 
         }
+
 
         private FirstName(string value) : this()
         {
@@ -73,5 +74,7 @@ namespace Domain.Aggregates.User.ValueObjects
         }
 
         #endregion
+
+
     }
 }
