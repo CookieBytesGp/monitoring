@@ -5,7 +5,7 @@ using Domain.SeedWork;
 
 namespace Domain.Aggregates.User.ValueObjects
 {
-    public class UserName 
+    public class UserName :ValueObject
     {
         #region Properties
 
@@ -64,6 +64,12 @@ namespace Domain.Aggregates.User.ValueObjects
             result.WithValue(returnValue);
             return result;
         }
+
+        protected override System.Collections.Generic.IEnumerable<object> GetEqualityComponents()
+        {
+            yield return Value;
+        }
+
 
         #endregion
     }

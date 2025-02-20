@@ -1,6 +1,7 @@
-﻿using MediatR;
+﻿
+using MediatR;
 
-namespace Domain.SeedWork
+namespace Application.Interfaces
 {
     public interface IDomainEvent : INotification
     {
