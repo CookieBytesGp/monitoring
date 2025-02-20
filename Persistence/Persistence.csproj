@@ -7,17 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="SharedKernel\" />
+    <ProjectReference Include="..\Domain\Domain.csproj" />
+    <ProjectReference Include="..\DTOs\DTOs.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentResults" Version="3.16.0" />
-    <PackageReference Include="MediatR" Version="12.4.1" />
+    <Folder Include="User\Configurations\" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Application\Application.csproj" />
-    <ProjectReference Include="..\Resources\Resources.csproj" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.2" />
   </ItemGroup>
 
 </Project>

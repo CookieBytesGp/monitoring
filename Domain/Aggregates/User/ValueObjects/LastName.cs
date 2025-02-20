@@ -5,7 +5,7 @@ using Resource.Messages;
 
 namespace Domain.Aggregates.User.ValueObjects
 {
-    public class LastName
+    public class LastName : ValueObject
     {
 
         #region Properties
@@ -70,6 +70,10 @@ namespace Domain.Aggregates.User.ValueObjects
             return returnValue;
 
 
+        }
+        protected override System.Collections.Generic.IEnumerable<object> GetEqualityComponents()
+        {
+            yield return Value;
         }
 
         #endregion

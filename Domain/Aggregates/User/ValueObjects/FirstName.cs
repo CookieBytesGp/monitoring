@@ -5,7 +5,7 @@ using Resource;
 
 namespace Domain.Aggregates.User.ValueObjects
 {
-    public class FirstName
+    public class FirstName : ValueObject
     {
 
         #region Properties
@@ -72,6 +72,12 @@ namespace Domain.Aggregates.User.ValueObjects
 
 
         }
+
+        protected override System.Collections.Generic.IEnumerable<object> GetEqualityComponents()
+        {
+            yield return Value;
+        }
+
 
         #endregion
 

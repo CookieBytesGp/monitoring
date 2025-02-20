@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using System.Threading.Tasks;
 using UserSerivce.Services;
+using DTOs.User;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -21,7 +22,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("create")]
-    public IActionResult CreateUser([FromBody] CreateUserRequest request)
+    public IActionResult CreateUser([FromBody] Request request)
     {
         var result = _userService.AddUser(request.FirstName, request.LastName, request.UserName, request.Password);
         if (result.IsSuccess)
@@ -56,7 +57,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterModel model)
+    public async Task<IActionResult> Register([FromBody] Register model)
     {
         var user = new IdentityUser { UserName = model.UserName, Email = model.Email };
         var result = await _userManager.CreateAsync(user, model.Password);
@@ -70,7 +71,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginModel model)
+    public async Task<IActionResult> Login([FromBody] Login model)
     {
         var result = await _signInManager.PasswordSignInAsync(model.UserName, model.Password, model.RememberMe, false);
 
@@ -83,24 +84,3 @@ public class UserController : ControllerBase
     }
 }
 
-public class CreateUserRequest
-{
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
-    public string UserName { get; set; }
-    public string Password { get; set; }
-}
-
-public class RegisterModel
-{
-    public string UserName { get; set; }
-    public string Email { get; set; }
-    public string Password { get; set; }
-}
-
-public class LoginModel
-{
-    public string UserName { get; set; }
-    public string Password { get; set; }
-    public bool RememberMe { get; set; }
-}

@@ -1,5 +1,7 @@
 ﻿
 
+using Application.Interfaces;
+
 namespace Domain.SeedWork
 {
 	public abstract class AggregateRoot : Entity

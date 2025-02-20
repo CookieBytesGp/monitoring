@@ -7,17 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="SharedKernel\" />
+    <Folder Include="Repositores\" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentResults" Version="3.16.0" />
     <PackageReference Include="MediatR" Version="12.4.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Application\Application.csproj" />
-    <ProjectReference Include="..\Resources\Resources.csproj" />
   </ItemGroup>
 
 </Project>
