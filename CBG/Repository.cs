@@ -1,4 +1,5 @@
 ﻿using Application.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace CBG
 {
