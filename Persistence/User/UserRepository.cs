@@ -13,20 +13,20 @@ namespace Persistence.User
     {
     }
 
-    public async Task<UserVeiwModel> GetByUserNameAsync(UserName username, CancellationToken cancellationToken)
-    {
-        var result =
-            await
-            DbSet
-            .Where(current => current.Username == username)
-            .Select(current => new UserVeiwModel
-            {
-                Id = current.Id,
-                UserName = current.UserName,
-                FisrtName = current.FisrtName,
-                LastName = current.LastName,
-                Password = current.Password
-            })
-            .FirstOrDefaultAsync(cancellationToken: cancellationToken);
-    }
+    //public async Task<UserVeiwModel> GetByUserNameAsync(UserName username, CancellationToken cancellationToken)
+    //{
+    //    var result =
+    //        await
+    //        DbSet
+    //        .Where(current => current.Username == username)
+    //        .Select(current => new UserVeiwModel
+    //        {
+    //            Id = current.Id,
+    //            UserName = current.UserName,
+    //            FisrtName = current.FisrtName,
+    //            LastName = current.LastName,
+    //            Password = current.Password
+    //        })
+    //        .FirstOrDefaultAsync(cancellationToken: cancellationToken);
+    //}
 }
