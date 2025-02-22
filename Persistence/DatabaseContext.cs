@@ -25,4 +25,8 @@ namespace Persistence
         }
     }
 
+    public DbSet<Domain.Aggregates.User.User> Users { get; set; }
+
+    }
+
 }
