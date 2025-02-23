@@ -1,5 +1,4 @@
-﻿using Domain.Aggregates.User.ValueObjects;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,16 +6,8 @@ using System.Threading.Tasks;
 
 namespace DTOs.User
 {
-    public class UserVeiwModel
+    public class UserVeiwModel : Request
     {
-        public Guid Id { get; set; }
 
-        public FirstName FirstName { get; set; }
-
-        public LastName LastName { get; set; }
-
-        public UserName UserName { get; set; }
-
-        public Password Password { get; set; }
     }
 }

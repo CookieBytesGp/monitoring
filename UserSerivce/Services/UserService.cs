@@ -1,43 +1,70 @@
 ﻿using Domain.Aggregates.User;
+using Domain.Aggregates.User.ValueObjects;
+using DTOs.User;
 using FluentResults;
+using System;
+using System.Threading.Tasks;
+using UserSerivce.Services;
 
-namespace UserSerivce.Services
+namespace Application.Services
 {
     public class UserService : IUserService
     {
-        private readonly List<User> _users = new List<User>();
+        private readonly Persistence.IUnitOfWork _unitOfWork;
 
-        public Result<User> AddUser(string firstName, string lastName, string userName, string password)
+        public UserService(Persistence.IUnitOfWork unitOfWork)
         {
-            var result = User.Create(firstName, lastName, userName, password);
-            if (result.IsSuccess)
-            {
-                _users.Add(result.Value);
-            }
-            return result;
+            _unitOfWork = unitOfWork;
         }
 
-        public Result<User> GetUserByUserName(string userName)
+        public async Task<Result<UserVeiwModel>> CreateUserAsync(FirstName firstName, LastName lastName, UserName userName, Password password)
         {
-            var user = _users.FirstOrDefault(u => u.UserName.Value == userName);
+            var userResult = User.Create(firstName.Value, lastName.Value, userName.Value, password.Value);
+            if (userResult.IsFailed)
+            {
+                return Result.Fail<UserVeiwModel>(userResult.Errors);
+            }
+
+            await _unitOfWork.UserRepository.AddAsync(entity: userResult.Value);
+            await _unitOfWork.SaveAsync();
+
+            var userViewModel = new UserVeiwModel
+            {
+                Id = userResult.Value.Id,
+                FirstName = userResult.Value.FirstName,
+                LastName = userResult.Value.LastName,
+                UserName = userResult.Value.UserName,
+                Password = userResult.Value.Password
+            };
+
+            return Result.Ok(userViewModel);
+        }
+
+        public async Task<UserVeiwModel> GetUserAsync(Guid userId)
+        {
+            var user = await GetUserFromDatabaseAsync(userId);
             if (user == null)
             {
-                return Result.Fail<User>("User not found");
+                return null;
             }
-            return Result.Ok(user);
-        }
 
-        public Result RemoveUser(string userName)
-        {
-            var user = _users.FirstOrDefault(u => u.UserName.Value == userName);
-            if (user == null)
+            var userViewModel = new UserVeiwModel
             {
-                return Result.Fail("User not found");
-            }
-            _users.Remove(user);
-            return Result.Ok();
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                UserName = user.UserName,
+                Password = user.Password
+            };
+
+            return userViewModel;
         }
 
+        private async Task<User> GetUserFromDatabaseAsync(Guid userId)
+        {
+            // پیاده‌سازی عملیات جستجو در دیتابیس برای یافتن کاربر
+            // اینجا باید با دیتابیس واقعی خود ارتباط برقرار کنید و کاربر مورد نظر را پیدا کنید
+            return await Task.FromResult<User>(null);
+        }
     }
-
 }

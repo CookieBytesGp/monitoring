@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Application.Interfaces;
 
 namespace Persistence.User
 {
-    public interface IUserRepository
+    public interface IUserRepository : IRepository<Domain.Aggregates.User.User>
     {
     }
 }
