@@ -1,5 +1,6 @@
 ﻿using Domain.SeedWork;
 using Domain.SharedKernel;
+using Domain.SharedKernel.Domain.SharedKernel;
 using FluentResults;
 using System;
 using System.Collections.Generic;

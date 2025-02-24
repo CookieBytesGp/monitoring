@@ -8,99 +8,69 @@ using System.Threading.Tasks;
 
 namespace Domain.SharedKernel
 {
-    public class Asset : ValueObject
+    namespace Domain.SharedKernel
     {
-        #region Properties
-
-        public string Url { get; private set; }
-        public string Type { get; private set; }
-        public string AltText { get; private set; }
-        public string Content { get; private set; } // Element content as a string
-        public Dictionary<string, string> Metadata { get; private set; }
-
-        #endregion
-
-        #region Constructor
-
-        private Asset()
+        public class Asset : ValueObject
         {
-            // Required by EF Core
-        }
+            public string Url { get; private set; }
+            public string Type { get; private set; }
+            public string AltText { get; private set; }
+            public string Content { get; private set; }
+            public Dictionary<string, string> Metadata { get; private set; }
 
-        private Asset(
-            string url,
-            string type,
-            string content,
-            string altText = null,
-            Dictionary<string, string> metadata = null)
-        {
-            Url = url;
-            Type = type;
-            Content = content;
-            AltText = altText;
-            Metadata = metadata ?? new Dictionary<string, string>();
-        }
+            private Asset() { }
 
-        #endregion
-
-        #region Methods
-
-        public static Result<Asset> Create(
-            string url,
-            string type,
-            string content,
-            string altText = null,
-            Dictionary<string, string> metadata = null)
-        {
-            var result = new Result<Asset>();
-
-            // Validate URL or Content based on Type
-            if (type == "text" && string.IsNullOrWhiteSpace(content))
+            private Asset(string url, string type, string content, string altText = null, Dictionary<string, string> metadata = null)
             {
-                result.WithError("Content is required for text assets.");
-            }
-            else if (type != "text" && string.IsNullOrWhiteSpace(url))
-            {
-                result.WithError("URL is required for non-text assets.");
+                Url = url;
+                Type = type;
+                Content = content;
+                AltText = altText;
+                Metadata = metadata ?? new Dictionary<string, string>();
             }
 
-            if (string.IsNullOrWhiteSpace(type))
+            public static Result<Asset> Create(string url, string type, string content, string altText = null, Dictionary<string, string> metadata = null)
             {
-                result.WithError("Type is required.");
-            }
+                var result = new Result<Asset>();
 
-            if (result.IsFailed)
-            {
+                if (string.IsNullOrWhiteSpace(type))
+                {
+                    result.WithError("Type is required.");
+                }
+
+                if (type == "text" && string.IsNullOrWhiteSpace(content))
+                {
+                    result.WithError("Content is required for text assets.");
+                }
+                else if (type != "text" && string.IsNullOrWhiteSpace(url))
+                {
+                    result.WithError("URL is required for non-text assets.");
+                }
+
+                if (result.IsFailed)
+                {
+                    return result;
+                }
+
+                var asset = new Asset(url, type, content, altText, metadata);
+                result.WithValue(asset);
+
                 return result;
             }
 
-            var asset = new Asset(
-                url: url,
-                type: type,
-                content: content,
-                altText: altText,
-                metadata: metadata);
-
-            result.WithValue(asset);
-
-            return result;
-        }
-
-        protected override IEnumerable<object> GetEqualityComponents()
-        {
-            yield return Url;
-            yield return Type;
-            yield return Content;
-            yield return AltText;
-            foreach (var meta in Metadata)
+            protected override IEnumerable<object> GetEqualityComponents()
             {
-                yield return meta.Key;
-                yield return meta.Value;
+                yield return Url;
+                yield return Type;
+                yield return Content;
+                yield return AltText;
+                foreach (var meta in Metadata)
+                {
+                    yield return meta.Key;
+                    yield return meta.Value;
+                }
             }
         }
-
-        #endregion
     }
-
 
 }

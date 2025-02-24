@@ -1,11 +1,7 @@
 ﻿using Domain.SeedWork;
-using Domain.SharedKernel;
 using FluentResults;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Domain.Aggregates.Tools.ValueObjects
 {
@@ -14,21 +10,19 @@ namespace Domain.Aggregates.Tools.ValueObjects
         #region Properties
 
         public string HtmlStructure { get; private set; }
-        public Dictionary<string, string> DefaultCssClasses { get; private set; } // Key: Default Class, Value: Additional Classes
+        public Dictionary<string, string> DefaultCssClasses { get; private set; }
         public string DefaultCss { get; private set; }
 
         #endregion
 
         #region Constructor
 
-        private Template()
-        {
-        }
+        private Template() { }
 
         private Template(string htmlStructure, Dictionary<string, string> defaultCssClasses, string defaultCss)
         {
             HtmlStructure = htmlStructure;
-            DefaultCssClasses = defaultCssClasses;
+            DefaultCssClasses = defaultCssClasses ?? new Dictionary<string, string>();
             DefaultCss = defaultCss;
         }
 
@@ -40,29 +34,29 @@ namespace Domain.Aggregates.Tools.ValueObjects
         {
             var result = new Result<Template>();
 
-            // Validate inputs
             if (string.IsNullOrWhiteSpace(htmlStructure))
             {
                 result.WithError("HTML structure is required.");
-                return result;
             }
 
             if (defaultCssClasses == null || defaultCssClasses.Count == 0)
             {
                 result.WithError("Default CSS classes are required.");
-                return result;
             }
 
             if (string.IsNullOrWhiteSpace(defaultCss))
             {
                 result.WithError("Default CSS is required.");
+            }
+
+            if (result.IsFailed)
+            {
                 return result;
             }
 
-            // Create the Template instance
             var template = new Template(htmlStructure, defaultCssClasses, defaultCss);
-
             result.WithValue(template);
+
             return result;
         }
 
@@ -79,6 +73,4 @@ namespace Domain.Aggregates.Tools.ValueObjects
 
         #endregion
     }
-
-
 }

@@ -1,6 +1,7 @@
 ﻿using Domain.Aggregates.Tools.ValueObjects;
 using Domain.SeedWork;
 using Domain.SharedKernel;
+using Domain.SharedKernel.Domain.SharedKernel;
 using FluentResults;
 using System;
 using System.Collections.Generic;
@@ -12,51 +13,27 @@ namespace Domain.Aggregates.Tools
 {
     public class Tool : AggregateRoot
     {
-        #region Properties
-
         public string Name { get; private set; }
         public string DefaultJs { get; private set; }
         public string ElementType { get; private set; }
         public List<Template> Templates { get; private set; }
         public List<Asset> DefaultAssets { get; private set; }
 
-        #endregion
+        private Tool() { }
 
-        #region Constructor
-
-        private Tool()
-        {
-            // Required by EF Core
-        }
-
-        private Tool(
-            string name,
-            string defaultJs,
-            string elementType,
-            List<Template> templates,
-            List<Asset> defaultAssets = null)
+        private Tool(string name, string defaultJs, string elementType, List<Template> templates, List<Asset> defaultAssets)
         {
             Name = name;
             DefaultJs = defaultJs;
             ElementType = elementType;
             Templates = templates;
-            DefaultAssets = defaultAssets ?? new List<Asset>();
+            DefaultAssets = defaultAssets;
         }
 
-        #endregion
-
-        #region Methods
-
-        public static Result<Tool> Create(
-            string name,
-            string defaultJs,
-            string elementType,
-            List<Template> templates,
-            List<Asset> defaultAssets = null)
+        public static Result<Tool> Create(string name, string defaultJs, string elementType, List<Template> templates, List<Asset> defaultAssets)
         {
             var result = new Result<Tool>();
 
-            // Validate inputs
             if (string.IsNullOrWhiteSpace(name))
             {
                 result.WithError("Name is required.");
@@ -78,12 +55,10 @@ namespace Domain.Aggregates.Tools
             }
 
             var tool = new Tool(name, defaultJs, elementType, templates, defaultAssets);
-
             result.WithValue(tool);
+
             return result;
         }
-
-        #endregion
     }
-
 }
+
