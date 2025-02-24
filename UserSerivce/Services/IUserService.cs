@@ -1,13 +1,14 @@
 ﻿using Domain.Aggregates.User;
+using Domain.Aggregates.User.ValueObjects;
+using DTOs.User;
 using FluentResults;
 
 namespace UserSerivce.Services
 {
     public interface IUserService
     {
-        Result<User> AddUser(string firstName, string lastName, string userName, string password);
-        Result<User> GetUserByUserName(string userName);
-        Result RemoveUser(string userName);
+        Task<Result<UserVeiwModel>> CreateUserAsync(FirstName firstName, LastName lastName, UserName userName, Password password);
+        Task<UserVeiwModel> GetUserAsync(Guid userId); // متد نمونه برای دریافت اطلاعات کاربر
     }
 
 }

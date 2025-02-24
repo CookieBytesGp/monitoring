@@ -1,86 +1,75 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using FluentResults;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+﻿using DTOs.User;
+using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Threading.Tasks;
+using FluentResults;
 using UserSerivce.Services;
-using DTOs.User;
+using Persistence;
 
-[ApiController]
-[Route("api/[controller]")]
-public class UserController : ControllerBase
+namespace Api.Controllers
 {
-    private readonly IUserService _userService;
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly SignInManager<IdentityUser> _signInManager;
-
-    public UserController(IUserService userService, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class UserController : ControllerBase
     {
-        _userService = userService;
-        _userManager = userManager;
-        _signInManager = signInManager;
-    }
+        private readonly IUserService _userService;
+        private readonly ILogger<UserController> _logger;
 
-    [HttpPost("create")]
-    public IActionResult CreateUser([FromBody] Request request)
-    {
-        var result = _userService.AddUser(request.FirstName, request.LastName, request.UserName, request.Password);
-        if (result.IsSuccess)
+        public UserController(IUserService userService, ILogger<UserController> logger, IUnitOfWork unitOfWork) 
         {
-            return Ok(result.Value);
-        }
-        return BadRequest(result.Errors);
-    }
-
-    [Authorize]
-    [HttpGet("{userName}")]
-    public IActionResult GetUser(string userName)
-    {
-        var result = _userService.GetUserByUserName(userName);
-        if (result.IsSuccess)
-        {
-            return Ok(result.Value);
-        }
-        return NotFound(result.Errors);
-    }
-
-    [Authorize]
-    [HttpDelete("{userName}")]
-    public IActionResult DeleteUser(string userName)
-    {
-        var result = _userService.RemoveUser(userName);
-        if (result.IsSuccess)
-        {
-            return Ok("User removed successfully.");
-        }
-        return NotFound(result.Errors);
-    }
-
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] Register model)
-    {
-        var user = new IdentityUser { UserName = model.UserName, Email = model.Email };
-        var result = await _userManager.CreateAsync(user, model.Password);
-
-        if (result.Succeeded)
-        {
-            return Ok("User registered successfully.");
+            _userService = userService;
+            _logger = logger;
         }
 
-        return BadRequest(result.Errors);
-    }
-
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] Login model)
-    {
-        var result = await _signInManager.PasswordSignInAsync(model.UserName, model.Password, model.RememberMe, false);
-
-        if (result.Succeeded)
+        [HttpPost("create")]
+        [ProducesResponseType(typeof(Result<UserVeiwModel>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CreateUser([FromBody] Request viewModel)
         {
-            return Ok("User logged in successfully.");
+            try
+            {
+                var result = await _userService.CreateUserAsync(
+                    viewModel.FirstName,
+                    viewModel.LastName,
+                    viewModel.UserName,
+                    viewModel.Password);
+
+                if (result.IsFailed)
+                {
+                    return BadRequest(result.Errors);
+                }
+
+
+
+                // در اینجا می‌توانید عملیات اضافه را انجام دهید، مانند ذخیره در دیتابیس
+                return Ok(result.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while creating user");
+                return StatusCode(500, "Unexpected error while creating user");
+            }
         }
 
-        return Unauthorized("Invalid login attempt.");
+        [HttpGet("{id}")]
+        [ProducesResponseType(typeof(UserVeiwModel), StatusCodes.Status200OK)]
+        public IActionResult GetUser(Guid id)
+        {
+            try
+            {
+                var user = _userService.GetUserAsync(id);
+                if (user == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while getting user");
+                return StatusCode(500, "Unexpected error while getting user");
+            }
+        }
     }
+
 }
-
