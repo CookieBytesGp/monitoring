@@ -4,9 +4,9 @@ using Persistence.User;
 namespace Persistence
 {
 	public class UnitOfWork :
-		UnitOfWork<DataBaseContext>, IUnitOfWork
+		UnitOfWork<DatabaseContext>, IUnitOfWork
 	{
-		public UnitOfWork(DataBaseContext databaseContext) : base(databaseContext: databaseContext)
+		public UnitOfWork(DatabaseContext databaseContext) : base(databaseContext: databaseContext)
 		{
 		}
 
