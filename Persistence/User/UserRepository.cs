@@ -13,7 +13,7 @@ namespace Persistence.User
 {
     public class UserRepository : Repository<Domain.Aggregates.User.User>, IUserRepository
     {
-        public UserRepository(DataBaseContext databaseContext) : base(databaseContext: databaseContext)
+        public UserRepository(DatabaseContext databaseContext) : base(databaseContext: databaseContext)
         {
 
         }

@@ -13,7 +13,7 @@
 		/// 
 		/// </summary>
 		/// <param name="databaseContext"></param>
-		public ControllerBaseTemp(Persistence.DataBaseContext databaseContext)
+		public ControllerBaseTemp(Persistence.DatabaseContext databaseContext)
 		{
 			DatabaseContext = databaseContext;
 		}
@@ -21,6 +21,6 @@
 		/// <summary>
 		/// 
 		/// </summary>
-		protected Persistence.DataBaseContext DatabaseContext { get; }
+		protected Persistence.DatabaseContext DatabaseContext { get; }
 	}
 }

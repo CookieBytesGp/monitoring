@@ -1,11 +1,11 @@
-﻿using Domain.Aggregates.Page.ValueObjects;
-using Domain.Aggregates.Page;
+﻿using Domain.Aggregates.Page;
+using Domain.Aggregates.Page.ValueObjects;
 using Domain.Aggregates.Tools;
-using Domain.Aggregates.User;
 using Microsoft.EntityFrameworkCore;
-using Persistence.Tools;
-using Persistence.BaseElemnt;
 using Persistence.Page;
+using Persistence.Page.Configurations;
+using Persistence.Tools;
+using Persistence.Tools.Configuration;
 
 namespace Persistence
 {
@@ -16,28 +16,21 @@ namespace Persistence
         {
         }
 
-        public DbSet<Domain.Aggregates.Tools.Tool> Tools { get; set; }
+        public DbSet<Tool> Tools { get; set; }
         public DbSet<Domain.Aggregates.Page.Page> Pages { get; set; }
-        public DbSet<BaseElement> BaseElements { get; set; }
-        public DbSet<Domain.Aggregates.User.User> Users { get; set; }
 
-        //protected override void OnModelCreating(ModelBuilder modelBuilder)
-        //{
-        //    // Configure entity mappings and relationships
-        //    modelBuilder.ApplyConfigurationsFromAssembly(typeof(DatabaseContext).Assembly);
-        //    base.OnModelCreating(modelBuilder);
-        //}
+        // Ensure this line is commented out or removed
+        // public DbSet<BaseElement> BaseElements { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(DatabaseContext).Assembly);
-            modelBuilder.ApplyConfiguration(new Persistence.Page.Configuration.PageConfiguration());
-            modelBuilder.ApplyConfiguration(new BaseElementConfiguration());
-            modelBuilder.ApplyConfiguration(new Persistence.Tools.Configuration.ToolConfiguration());
+            modelBuilder.Ignore<BaseElement>(); // Ensure BaseElement is ignored as a non-owned entity
+
+            //modelBuilder.ApplyConfigurationsFromAssembly(typeof(DatabaseContext).Assembly);
+            modelBuilder.ApplyConfiguration(new PageConfiguration());
+            modelBuilder.ApplyConfiguration(new ToolConfiguration());
 
             base.OnModelCreating(modelBuilder);
         }
-
-
-
     }
 }
