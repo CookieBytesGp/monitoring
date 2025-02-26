@@ -6,7 +6,7 @@ using System;
 using System.Threading.Tasks;
 using UserSerivce.Services;
 
-namespace Application.Services
+namespace UserSerivce.Services
 {
     public class UserService : IUserService
     {
@@ -30,6 +30,7 @@ namespace Application.Services
 
             var userViewModel = new UserVeiwModel
             {
+
                 Id = userResult.Value.Id,
                 FirstName = userResult.Value.FirstName,
                 LastName = userResult.Value.LastName,

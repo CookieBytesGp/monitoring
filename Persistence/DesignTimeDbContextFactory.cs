@@ -12,7 +12,7 @@ namespace Persistence
                 var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
 
                 // Use your desired connection string for migrations
-                optionsBuilder.UseSqlite("Data Source = test.db");
+                optionsBuilder.UseSqlite("Data Source=monitorDB;");
 
                 return new DatabaseContext(optionsBuilder.Options);
             }

@@ -2,6 +2,8 @@
 using FluentResults;
 using Resource.Messages;
 using Resource;
+using System.Runtime.InteropServices.JavaScript;
+using System.Text.Json.Serialization;
 
 namespace Domain.Aggregates.User.ValueObjects
 {
@@ -10,7 +12,7 @@ namespace Domain.Aggregates.User.ValueObjects
 
         #region Properties
 
-        public string Value { get; set; }
+        public string Value { get;  }
 
         #endregion
 
@@ -27,7 +29,7 @@ namespace Domain.Aggregates.User.ValueObjects
 
         }
 
-
+        [JsonConstructor]
         private FirstName(string value) : this()
         {
 

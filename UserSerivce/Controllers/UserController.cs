@@ -15,7 +15,7 @@ namespace Api.Controllers
         private readonly IUserService _userService;
         private readonly ILogger<UserController> _logger;
 
-        public UserController(IUserService userService, ILogger<UserController> logger, IUnitOfWork unitOfWork) 
+        public UserController(IUserService userService, ILogger<UserController> logger) 
         {
             _userService = userService;
             _logger = logger;
@@ -46,7 +46,7 @@ namespace Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error while creating user");
-                return StatusCode(500, "Unexpected error while creating user");
+                return StatusCode(500, "ریدی");
             }
         }
 

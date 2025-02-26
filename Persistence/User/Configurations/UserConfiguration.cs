@@ -42,6 +42,8 @@ namespace Persistence.User.Configurations
                 .Property(p => p.Password)
                 .IsRequired(required: true)
                 .HasMaxLength(Password.MaxLength)
+                .UsePropertyAccessMode(propertyAccessMode: PropertyAccessMode.Field)
+                .HasColumnName("Password")
                 .HasConversion(p => p.Value,
                 p => Password.Create(p).Value)
                 ;
