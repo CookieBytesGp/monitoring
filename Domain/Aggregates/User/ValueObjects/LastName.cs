@@ -2,6 +2,7 @@
 using Domain.SeedWork;
 using Resource;
 using Resource.Messages;
+using System.Text.Json.Serialization;
 
 namespace Domain.Aggregates.User.ValueObjects
 {
@@ -10,7 +11,7 @@ namespace Domain.Aggregates.User.ValueObjects
 
         #region Properties
 
-        public string Value { get; set; }
+        public string Value { get; }
 
         #endregion
 
@@ -26,7 +27,7 @@ namespace Domain.Aggregates.User.ValueObjects
         {
             
         }
-
+        [JsonConstructor]
         private LastName(string value) : this()
         {
 

@@ -2,6 +2,7 @@
 using Resource.Messages;
 using Resource;
 using Domain.SeedWork;
+using System.Text.Json.Serialization;
 
 namespace Domain.Aggregates.User.ValueObjects
 {
@@ -9,7 +10,7 @@ namespace Domain.Aggregates.User.ValueObjects
     {
         #region Properties
 
-        public string Value { get; private set; }
+        public string Value { get;  }
 
         #endregion
 
@@ -23,7 +24,7 @@ namespace Domain.Aggregates.User.ValueObjects
         #region Ctor
 
         private Password() : base() { }
-
+        [JsonConstructor]
         private Password(string value) : this() { Value = value; }
 
         #endregion

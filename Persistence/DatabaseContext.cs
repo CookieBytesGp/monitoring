@@ -1,11 +1,8 @@
-﻿using Domain.Aggregates.Page;
-using Domain.Aggregates.Page.ValueObjects;
-using Domain.Aggregates.Tools;
+﻿using Domain.Aggregates.Tools;
 using Microsoft.EntityFrameworkCore;
-using Persistence.Page;
 using Persistence.Page.Configurations;
-using Persistence.Tools;
 using Persistence.Tools.Configuration;
+using Domain.Aggregates.Page.ValueObjects;
 using Persistence.User.Configurations;
 
 namespace Persistence
@@ -19,7 +16,7 @@ namespace Persistence
 
         public DbSet<Tool> Tools { get; set; }
         public DbSet<Domain.Aggregates.Page.Page> Pages { get; set; }
-        public DbSet<Domain.Aggregates.User.User> Users { get; set; }
+
         // Ensure this line is commented out or removed
         // public DbSet<BaseElement> BaseElements { get; set; }
 

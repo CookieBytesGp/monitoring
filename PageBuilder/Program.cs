@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using PageBuilder.Services.ToolService;
 using Persistence.Repositories;
 using Persistence.Tools;
