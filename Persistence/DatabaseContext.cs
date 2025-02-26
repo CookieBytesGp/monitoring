@@ -4,6 +4,7 @@ using Persistence.Page.Configurations;
 using Persistence.Tools.Configuration;
 using Domain.Aggregates.Page.ValueObjects;
 using Persistence.User.Configurations;
+using Domain.Aggregates.User;
 
 namespace Persistence
 {
@@ -14,6 +15,8 @@ namespace Persistence
         {
         }
 
+
+        public DbSet<Domain.Aggregates.User.User> Users { get; set; }
         public DbSet<Tool> Tools { get; set; }
         public DbSet<Domain.Aggregates.Page.Page> Pages { get; set; }
 

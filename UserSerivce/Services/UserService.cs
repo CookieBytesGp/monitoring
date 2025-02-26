@@ -2,6 +2,7 @@
 using Domain.Aggregates.User.ValueObjects;
 using DTOs.User;
 using FluentResults;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading.Tasks;
 using UserSerivce.Services;
@@ -63,9 +64,10 @@ namespace UserSerivce.Services
 
         private async Task<User> GetUserFromDatabaseAsync(Guid userId)
         {
-            // پیاده‌سازی عملیات جستجو در دیتابیس برای یافتن کاربر
-            // اینجا باید با دیتابیس واقعی خود ارتباط برقرار کنید و کاربر مورد نظر را پیدا کنید
-            return await Task.FromResult<User>(null);
+           var user = await _unitOfWork.UserRepository.FindAsync(userId);
+            return user;
         }
+
+
     }
 }

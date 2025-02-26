@@ -56,15 +56,23 @@ namespace CBG
 			IsDisposed = true;
 		}
 
-		public async Task<int> SaveAsync()
-		{
-			int result =
-				await DatabaseContext.SaveChangesAsync();		
+        public async Task<int> SaveAsync()
+        {
+            try
+            {
+                int result = await DatabaseContext.SaveChangesAsync();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                // Handle the exception as needed
+                Console.WriteLine($"Error: {ex.Message}");
+                throw;
+            }
+        }
 
-			return result;
-		}
 
-		~UnitOfWork()
+        ~UnitOfWork()
 		{
 			Dispose(false);
 		}

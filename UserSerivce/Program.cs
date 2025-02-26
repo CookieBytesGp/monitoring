@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Persistence;
 using Persistence.User;
 using UserSerivce.Services;
@@ -6,15 +7,16 @@ using UserSerivce.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-var offlineDbPath = Path.Combine(Directory.GetCurrentDirectory(), "monitorDB.db");
+//var offlineDbPath = Path.Combine(Directory.GetCurrentDirectory(), "monitorDB.db");
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DatabaseContext>(options =>
-    options.UseSqlite($"Data Source={offlineDbPath}",
-        b => b.MigrationsAssembly("Persistence")), ServiceLifetime.Transient);
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")),
+    ServiceLifetime.Transient);
+
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
