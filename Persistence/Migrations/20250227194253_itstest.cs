@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class itsdb : Migration
+    public partial class itstest : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -89,15 +89,16 @@ namespace Persistence.Migrations
                 name: "Template",
                 columns: table => new
                 {
-                    ToolId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Id = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     HtmlStructure = table.Column<string>(type: "TEXT", nullable: false),
                     DefaultCssClasses = table.Column<string>(type: "TEXT", nullable: false),
-                    DefaultCss = table.Column<string>(type: "TEXT", nullable: false)
+                    DefaultCss = table.Column<string>(type: "TEXT", nullable: false),
+                    ToolId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Template", x => new { x.ToolId, x.Id });
+                    table.PrimaryKey("PK_Template", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Template_Tools_ToolId",
                         column: x => x.ToolId,
@@ -110,6 +111,11 @@ namespace Persistence.Migrations
                 name: "IX_BaseElement_PageId",
                 table: "BaseElement",
                 column: "PageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Template_ToolId",
+                table: "Template",
+                column: "ToolId");
         }
 
         /// <inheritdoc />

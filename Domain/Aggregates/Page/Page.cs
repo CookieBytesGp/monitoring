@@ -83,6 +83,23 @@ namespace Domain.Aggregates.Page
             Title = title;
             UpdatedAt = DateTime.UtcNow;
         }
+        public void Update(string title, List<BaseElement> elements)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                throw new ArgumentException("Title cannot be empty.", nameof(title));
+            }
+
+            Title = title;
+            UpdatedAt = DateTime.UtcNow; // Update the timestamp
+
+            // Update elements if provided
+            if (elements != null && elements.Count > 0)
+            {
+                _elements.Clear();
+                _elements.AddRange(elements);
+            }
+        }
 
         #endregion
     }

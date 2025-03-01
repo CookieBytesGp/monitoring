@@ -1,11 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Domain.Aggregates.Tools;
+using Domain.Aggregates.Tools.ValueObjects;
+using Domain.SharedKernel.Domain.SharedKernel;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Newtonsoft.Json;
-using Domain.Aggregates.Tools;
-using Domain.Aggregates.Tools.ValueObjects;
-using Domain.SharedKernel;
-using Domain.SharedKernel.Domain.SharedKernel;
 
 namespace Persistence.Tools.Configuration
 {
@@ -33,12 +32,15 @@ namespace Persistence.Tools.Configuration
             );
 
             builder.Property(t => t.DefaultAssets)
-                .HasConversion(defaultAssetsConverter)
-                ;
+                .HasConversion(defaultAssetsConverter);
 
             // Configure Templates as an owned collection without Id
             builder.OwnsMany(t => t.Templates, templatesBuilder =>
             {
+                templatesBuilder.WithOwner().HasForeignKey("ToolId");
+                templatesBuilder.Property<int>("Id"); // Shadow property for EF Core tracking
+                templatesBuilder.HasKey("Id");
+
                 templatesBuilder.Property(t => t.HtmlStructure)
                     .IsRequired();
 

@@ -18,12 +18,16 @@ namespace Persistence.Repositories
 
         public async Task<Tool> GetByIdAsync(Guid id)
         {
-            return await _context.Tools.FindAsync(id);
+            return await _context.Tools
+                .Include(t => t.Templates)
+                .FirstOrDefaultAsync(t => t.Id == id);
         }
 
         public async Task<IEnumerable<Tool>> GetAllAsync()
         {
-            return await _context.Tools.ToListAsync();
+            return await _context.Tools
+                .Include(t => t.Templates)
+                .ToListAsync();
         }
 
         public async Task AddAsync(Tool tool)

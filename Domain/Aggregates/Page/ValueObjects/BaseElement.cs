@@ -1,12 +1,8 @@
-﻿using Domain.SeedWork;
-using Domain.SharedKernel;
-using Domain.SharedKernel.Domain.SharedKernel;
+﻿#region using 
 using FluentResults;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Domain.SeedWork;
+using Domain.SharedKernel.Domain.SharedKernel;
+#endregion
 
 namespace Domain.Aggregates.Page.ValueObjects
 {

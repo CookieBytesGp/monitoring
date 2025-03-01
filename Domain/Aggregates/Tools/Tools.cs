@@ -59,6 +59,16 @@ namespace Domain.Aggregates.Tools
 
             return result;
         }
+        public void Update(string name, string defaultJs, string elementType, List<Template> templates, List<Asset> defaultAssets)
+        {
+            Name = name;
+            DefaultJs = defaultJs;
+            ElementType = elementType;
+            Templates = templates;
+            DefaultAssets = defaultAssets;
+
+        }
+
     }
 }
 

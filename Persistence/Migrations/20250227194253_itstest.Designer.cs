@@ -11,8 +11,8 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20250226131852_itsdbreal")]
-    partial class itsdbreal
+    [Migration("20250227194253_itstest")]
+    partial class itstest
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -209,9 +209,6 @@ namespace Persistence.Migrations
                 {
                     b.OwnsMany("Domain.Aggregates.Tools.ValueObjects.Template", "Templates", b1 =>
                         {
-                            b1.Property<Guid>("ToolId")
-                                .HasColumnType("TEXT");
-
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("INTEGER");
@@ -228,7 +225,12 @@ namespace Persistence.Migrations
                                 .IsRequired()
                                 .HasColumnType("TEXT");
 
-                            b1.HasKey("ToolId", "Id");
+                            b1.Property<Guid>("ToolId")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("ToolId");
 
                             b1.ToTable("Template");
 

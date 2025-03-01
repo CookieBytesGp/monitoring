@@ -1,11 +1,9 @@
-﻿using Domain.Aggregates.Tools;
+﻿using FluentResults;
+using Persistence.Tools;
+using Domain.Aggregates.Tools;
 using Domain.Aggregates.Tools.ValueObjects;
 using Domain.SharedKernel.Domain.SharedKernel;
-using FluentResults;
-using Persistence.Tools;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+
 
 namespace PageBuilder.Services.ToolService
 {
@@ -28,44 +26,41 @@ namespace PageBuilder.Services.ToolService
             return Result.Ok(tool);
         }
 
-        public async Task<Result<IEnumerable<Tool>>> GetAllAsync()
+        public async Task<Result<List<Tool>>> GetAllAsync()
         {
             var tools = await _toolRepository.GetAllAsync();
-            return Result.Ok(tools);
+            return Result.Ok(tools.ToList());
         }
 
-        public async Task<Result> CreateAsync(string name, string defaultJs, string elementType, List<Template> templates, List<Asset> defaultAssets)
+        public async Task<Result<Tool>> CreateAsync(string name, string defaultJs, string elementType, List<Template> templates, List<Asset> defaultAssets)
         {
             var toolResult = Tool.Create(name, defaultJs, elementType, templates, defaultAssets);
 
             if (toolResult.IsFailed)
             {
-                return Result.Fail(toolResult.Errors);
+                return Result.Fail<Tool>(toolResult.Errors);
             }
 
             await _toolRepository.AddAsync(toolResult.Value);
-            return Result.Ok();
+            return Result.Ok(toolResult.Value);
         }
 
         public async Task<Result> UpdateAsync(Guid id, string name, string defaultJs, string elementType, List<Template> templates, List<Asset> defaultAssets)
         {
-            var existingTool = await _toolRepository.GetByIdAsync(id);
+            var tool = await _toolRepository.GetByIdAsync(id);
 
-            if (existingTool == null)
+            if (tool == null)
             {
                 return Result.Fail("Tool not found.");
             }
 
-            var updatedToolResult = Tool.Create(name, defaultJs, elementType, templates, defaultAssets);
+            tool.Update(name, defaultJs, elementType, templates, defaultAssets); // Ensure Update method handles properties
 
-            if (updatedToolResult.IsFailed)
-            {
-                return Result.Fail(updatedToolResult.Errors);
-            }
+            await _toolRepository.UpdateAsync(tool);
 
-            _toolRepository.UpdateAsync(updatedToolResult.Value);
             return Result.Ok();
         }
+
 
         public async Task<Result> DeleteAsync(Guid id)
         {
@@ -77,7 +72,19 @@ namespace PageBuilder.Services.ToolService
             }
 
             await _toolRepository.DeleteAsync(tool.Id);
+
             return Result.Ok();
+        }
+
+
+        public async Task<Result<Template>> CreateTemplateAsync(string htmlTemplate, Dictionary<string, string> defaultCssClasses, string customCss)
+        {
+            return Template.Create(htmlTemplate, defaultCssClasses, customCss);
+        }
+
+        public async Task<Result<Asset>> CreateAssetAsync(string url, string type, string content, string altText, Dictionary<string, string> metadata)
+        {
+            return Asset.Create(url, type, content, altText, metadata);
         }
     }
 }
