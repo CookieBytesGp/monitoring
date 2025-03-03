@@ -17,6 +17,58 @@ html {
   min-height: 100%;
 }
 
-body {
+/*body {
   margin-bottom: 60px;
+}*/
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
+
+.BigD {
+  display: grid;
+  min-width: 100vw;
+  height: 100vh; /* Ensure grid container fills the viewport height */
+  grid-template-areas:
+    "topMenu topMenu topMenu topMenu topMenu topMenu"
+    "sideBar editorMain editorMain editorMain editorMain editorMain";
+  grid-gap: 10px;
+}
+
+.top-menu {
+  width: 100%;
+  background-color: cadetblue;
+  grid-area: topMenu;
+  height: 50px; /* Specific height for the top menu */
+}
+
+.sidebar {
+  grid-area: sideBar;
+  background-color: lightgreen;
+  overflow-y: hidden; /* Hide overflow initially */
+  height: calc(100vh - 60px); /* Adjust height to fill the remaining viewport */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.editor-main {
+    grid-area: editorMain;
+    background-color: lightcoral;
+    overflow-y: auto; /* Enable vertical scrolling */
+    height: calc(100vh - 60px); /* Adjust height to fill the remaining viewport */
+}
+.sidebar-section {
+  flex-grow: 1;
+  overflow-y: auto; /* Enable vertical scrolling if content overflows */
+}
+
+.sidebar-buttons {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+

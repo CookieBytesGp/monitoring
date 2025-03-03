@@ -15,7 +15,8 @@ namespace App.Controllers
 
         public IActionResult Index()
         {
-            return View();
+            // Redirect to PageController's Index action
+            return RedirectToAction("Index", "Page");
         }
 
         public IActionResult Privacy()

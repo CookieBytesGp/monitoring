@@ -1,20 +1,21 @@
-﻿using System.Net.Http;
-using System.Net.Http.Headers;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using DTOs.Pagebuilder;
 using App.Models;
+using App.Services;
+using DTOs.Pagebuilder;
 
 namespace App.Controllers
 {
     public class PageController : Controller
     {
-        private readonly HttpClient _httpClient;
+        private readonly PageService _pageService;
 
-        public PageController(HttpClient httpClient)
+        public PageController(PageService pageService)
         {
-            _httpClient = httpClient;
+            _pageService = pageService;
         }
 
         // GET: Page
@@ -22,39 +23,37 @@ namespace App.Controllers
         {
             try
             {
-                // Replace with the actual API Gateway URL
-                var response = await _httpClient.GetAsync("http://localhost:5000/pagebuilder");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var pages = await response.Content.ReadAsAsync<List<PageDTO>>();
-                    return View(pages);
-                }
-                else
-                {
-                    // Log the status code and reason phrase
-                    var statusCode = response.StatusCode;
-                    var reasonPhrase = response.ReasonPhrase;
-                    // Pass ErrorViewModel to the view
-                    var errorViewModel = new ErrorViewModel
-                    {
-                        ErrorMessage = $"Error: {statusCode} - {reasonPhrase}"
-                    };
-                    return View("Error", errorViewModel);
-                }
+                var pages = await _pageService.GetPagesAsync();
+                return View(pages);
             }
             catch (HttpRequestException ex)
             {
-                // Log the exception message
-                var errorMessage = ex.Message;
-                // Pass ErrorViewModel to the view
                 var errorViewModel = new ErrorViewModel
                 {
-                    ErrorMessage = $"Request error: {errorMessage}"
+                    ErrorMessage = $"Request error: {ex.Message}"
                 };
                 return View("Error", errorViewModel);
             }
         }
-    }
 
+        // GET: Page/Edit/5
+        public async Task<IActionResult> Edit(Guid id)
+        {
+            var page = await _pageService.GetPageByIdAsync(id);
+            if (page == null)
+            {
+                return NotFound();
+            }
+            return View(page);
+        }
+
+        // POST: Page/Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            await _pageService.DeletePageAsync(id);
+            return RedirectToAction(nameof(Index));
+        }
+    }
 }
