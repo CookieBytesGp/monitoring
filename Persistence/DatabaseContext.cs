@@ -17,7 +17,7 @@ namespace Persistence
 
 
         public DbSet<Domain.Aggregates.User.User> Users { get; set; }
-        public DbSet<Tool> Tools { get; set; }
+        public DbSet<Domain.Aggregates.Tools.Tool> Tools { get; set; }
         public DbSet<Domain.Aggregates.Page.Page> Pages { get; set; }
 
         // Ensure this line is commented out or removed

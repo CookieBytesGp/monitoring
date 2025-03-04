@@ -1,107 +1,297 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using FluentResults;
-using Domain.Aggregates.Page;
+﻿using Domain.Aggregates.Page;
 using Domain.Aggregates.Page.ValueObjects;
-using Persistence.Page;
+using Domain.SharedKernel.Domain.SharedKernel;
+using DTOs.Pagebuilder;
+using FluentResults;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Persistence;
 
 namespace PageBuilder.Services.PageService
 {
     public class PageService : IPageService
     {
-        private readonly IPageRepository _pageRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public PageService(IPageRepository pageRepository)
+        public PageService(IUnitOfWork unitOfWork)
         {
-            _pageRepository = pageRepository;
+            _unitOfWork = unitOfWork;
         }
 
-        public async Task<Result<Page>> GetByIdAsync(Guid id)
-        {
-            var page = await _pageRepository.GetByIdAsync(id);
-            if (page == null)
-            {
-                return Result.Fail<Page>("Page not found.");
-            }
-            return Result.Ok(page);
-        }
-
-        public async Task<Result<IEnumerable<Page>>> GetAllAsync()
-        {
-            var pages = await _pageRepository.GetAllAsync();
-            return Result.Ok(pages);
-        }
-
-        public async Task<Result<Page>> CreateAsync(string title) // Update return type to Result<Page>
+        public async Task<Result<PageDTO>> CreatePageAsync(string title, List<BaseElementDTO> elements)
         {
             var pageResult = Page.Create(title);
-
             if (pageResult.IsFailed)
             {
-                return Result.Fail(pageResult.Errors);
+                return Result.Fail<PageDTO>(pageResult.Errors);
             }
 
-            await _pageRepository.AddAsync(pageResult.Value);
-            return Result.Ok(pageResult.Value); // Ensure to return the created Page
-        }
+            var page = pageResult.Value;
 
-        public async Task<Result> UpdateAsync(Guid id, string title)
-        {
-            var existingPage = await _pageRepository.GetByIdAsync(id);
-
-            if (existingPage == null)
+            // Add elements if provided.
+            if (elements != null && elements.Any())
             {
-                return Result.Fail("Page not found.");
+                var elementConversion = ConvertToDomainElements(elements);
+                if (elementConversion.IsFailed)
+                {
+                    return Result.Fail<PageDTO>(elementConversion.Errors);
+                }
+                page.Update(title, elementConversion.Value);
             }
 
-            existingPage.UpdateTitle(title);
-            await _pageRepository.UpdateAsync(existingPage);
+            await _unitOfWork.PageRepository.AddAsync(page);
+            await _unitOfWork.SaveAsync();
 
-            return Result.Ok();
+            var pageDTO = ConvertToDTO(page);
+            return Result.Ok(pageDTO);
         }
 
-        public async Task<Result> DeleteAsync(Guid id)
+        public async Task<PageDTO> GetPageAsync(Guid id)
         {
-            var page = await _pageRepository.GetByIdAsync(id);
+            var page = await _unitOfWork.PageRepository.FindAsync(id);
+            return page != null ? ConvertToDTO(page) : null;
+        }
 
+        public async Task<Result<IEnumerable<PageDTO>>> GetAllAsync()
+        {
+            var pages = await _unitOfWork.PageRepository.GetAllAsync();
+            var pageDTOs = pages.Select(ConvertToDTO).ToList();
+            return Result.Ok((IEnumerable<PageDTO>)pageDTOs);
+        }
+
+        public async Task<Result> UpdatePageAsync(Guid id, string title, List<BaseElementDTO> elements)
+        {
+            var page = await _unitOfWork.PageRepository.FindAsync(id);
             if (page == null)
             {
                 return Result.Fail("Page not found.");
             }
 
-            await _pageRepository.DeleteAsync(page.Id);
+            // Convert DTO elements to domain objects
+            var elementConversion = ConvertToDomainElements(elements);
+            if (elementConversion.IsFailed)
+            {
+                return Result.Fail(elementConversion.Errors);
+            }
+
+            page.Update(title, elementConversion.Value);
+            await _unitOfWork.PageRepository.UpdateAsync(page);
+            await _unitOfWork.SaveAsync();
+
             return Result.Ok();
         }
 
-        public async Task<Result> AddElementAsync(Guid pageId, BaseElement element)
+        public async Task<Result> DeletePageAsync(Guid id)
         {
-            var page = await _pageRepository.GetByIdAsync(pageId);
+            var success = await _unitOfWork.PageRepository.RemoveByIdAsync(id);
+            if (!success)
+            {
+                return Result.Fail("Page not found.");
+            }
+            await _unitOfWork.SaveAsync();
+            return Result.Ok();
+        }
 
+        public async Task<Result> AddElementAsync(Guid pageId, BaseElementDTO elementDTO)
+        {
+            var page = await _unitOfWork.PageRepository.FindAsync(pageId);
             if (page == null)
             {
                 return Result.Fail("Page not found.");
             }
 
-            page.AddElement(element);
-            await _pageRepository.UpdateAsync(page);
+            var elementResult = CreateBaseElementFromDTO(elementDTO);
+            if (elementResult.IsFailed)
+            {
+                return Result.Fail(elementResult.Errors);
+            }
+
+            page.AddElement(elementResult.Value);
+            await _unitOfWork.PageRepository.UpdateAsync(page);
+            await _unitOfWork.SaveAsync();
 
             return Result.Ok();
         }
 
-        public async Task<Result> RemoveElementAsync(Guid pageId, BaseElement element)
+        public async Task<Result> RemoveElementAsync(Guid pageId, Guid elementId)
         {
-            var page = await _pageRepository.GetByIdAsync(pageId);
-
+            var page = await _unitOfWork.PageRepository.FindAsync(pageId);
             if (page == null)
             {
                 return Result.Fail("Page not found.");
+            }
+
+            var element = page.Elements.FirstOrDefault(e => e.Id == elementId);
+            if (element == null)
+            {
+                return Result.Fail("Element not found.");
             }
 
             page.RemoveElement(element);
-            await _pageRepository.UpdateAsync(page);
+            await _unitOfWork.PageRepository.UpdateAsync(page);
+            await _unitOfWork.SaveAsync();
 
             return Result.Ok();
         }
+
+        public async Task<Result> UpdateElementAsync(Guid pageId, Guid elementId, BaseElementDTO elementDTO)
+        {
+            var page = await _unitOfWork.PageRepository.FindAsync(pageId);
+            if (page == null)
+            {
+                return Result.Fail("Page not found.");
+            }
+
+            var element = page.Elements.FirstOrDefault(e => e.Id == elementId);
+            if (element == null)
+            {
+                return Result.Fail("Element not found.");
+            }
+
+            var templateBodyResult = TemplateBody.Create(
+                elementDTO.TemplateBody.HtmlTemplate,
+                elementDTO.TemplateBody.DefaultCssClasses,
+                elementDTO.TemplateBody.CustomCss,
+                elementDTO.TemplateBody.CustomJs,
+                elementDTO.TemplateBody.IsFloating);
+            if (templateBodyResult.IsFailed)
+            {
+                return Result.Fail(templateBodyResult.Errors);
+            }
+
+            var assetResult = Asset.Create(
+                elementDTO.Asset.Url,
+                elementDTO.Asset.Type,
+                elementDTO.Asset.Content,
+                elementDTO.Asset.AltText,
+                elementDTO.Asset.Metadata);
+            if (assetResult.IsFailed)
+            {
+                return Result.Fail(assetResult.Errors);
+            }
+
+            element.UpdateTemplateBody(templateBodyResult.Value);
+            element.UpdateAsset(assetResult.Value);
+            element.UpdateOrder(elementDTO.Order);
+
+            await _unitOfWork.PageRepository.UpdateAsync(page);
+            await _unitOfWork.SaveAsync();
+
+            return Result.Ok();
+        }
+
+        #region Helper Methods
+
+        private Result<List<BaseElement>> ConvertToDomainElements(List<BaseElementDTO> elementDTOs)
+        {
+            var elementResults = elementDTOs.Select(dto =>
+            {
+                var templateBodyResult = TemplateBody.Create(
+                    dto.TemplateBody.HtmlTemplate,
+                    dto.TemplateBody.DefaultCssClasses,
+                    dto.TemplateBody.CustomCss,
+                    dto.TemplateBody.CustomJs,
+                    dto.TemplateBody.IsFloating);
+                var assetResult = Asset.Create(
+                    dto.Asset.Url,
+                    dto.Asset.Type,
+                    dto.Asset.Content,
+                    dto.Asset.AltText,
+                    dto.Asset.Metadata);
+                if (templateBodyResult.IsFailed || assetResult.IsFailed)
+                {
+                    return Result.Fail<BaseElement>(templateBodyResult.Errors.Concat(assetResult.Errors).ToList());
+                }
+                return BaseElement.Create(
+                    dto.ToolId,
+                    dto.Order,
+                    templateBodyResult.Value,
+                    assetResult.Value);
+            }).ToList();
+
+            var failedResults = elementResults.Where(r => r.IsFailed).SelectMany(r => r.Errors).ToList();
+            if (failedResults.Any())
+            {
+                return Result.Fail<List<BaseElement>>(failedResults);
+            }
+
+            var elements = elementResults.Select(r => r.Value).ToList();
+            return Result.Ok(elements);
+        }
+
+        private BaseElementDTO ConvertToBaseElementDTO(BaseElement element)
+        {
+            return new BaseElementDTO
+            {
+                Id = element.Id,
+                ToolId = element.ToolId,
+                Order = element.Order,
+                TemplateBody = new TemplateBodyDTO
+                {
+                    HtmlTemplate = element.TemplateBody.HtmlTemplate,
+                    DefaultCssClasses = element.TemplateBody.DefaultCssClasses,
+                    CustomCss = element.TemplateBody.CustomCss,
+                    CustomJs = element.TemplateBody.CustomJs,
+                    IsFloating = element.TemplateBody.IsFloating
+                },
+                Asset = new AssetDTO
+                {
+                    Url = element.Asset.Url,
+                    Type = element.Asset.Type,
+                    Content = element.Asset.Content,
+                    AltText = element.Asset.AltText,
+                    Metadata = element.Asset.Metadata
+                }
+            };
+        }
+
+        private PageDTO ConvertToDTO(Page page)
+        {
+            return new PageDTO
+            {
+                Id = page.Id,
+                Title = page.Title,
+                CreatedAt = page.CreatedAt,
+                UpdatedAt = page.UpdatedAt,
+                Elements = page.Elements.Select(ConvertToBaseElementDTO).ToList()
+            };
+        }
+
+        private Result<BaseElement> CreateBaseElementFromDTO(BaseElementDTO dto)
+        {
+            var templateBodyResult = TemplateBody.Create(
+                dto.TemplateBody.HtmlTemplate,
+                dto.TemplateBody.DefaultCssClasses,
+                dto.TemplateBody.CustomCss,
+                dto.TemplateBody.CustomJs,
+                dto.TemplateBody.IsFloating);
+
+            if (templateBodyResult.IsFailed)
+            {
+                return Result.Fail<BaseElement>(templateBodyResult.Errors);
+            }
+
+            var assetResult = Asset.Create(
+                dto.Asset.Url,
+                dto.Asset.Type,
+                dto.Asset.Content,
+                dto.Asset.AltText,
+                dto.Asset.Metadata);
+
+            if (assetResult.IsFailed)
+            {
+                return Result.Fail<BaseElement>(assetResult.Errors);
+            }
+
+            return BaseElement.Create(
+                dto.ToolId,
+                dto.Order,
+                templateBodyResult.Value,
+                assetResult.Value);
+        }
+
+        #endregion
     }
 }

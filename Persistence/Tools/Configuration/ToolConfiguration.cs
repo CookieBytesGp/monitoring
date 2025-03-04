@@ -8,9 +8,9 @@ using Newtonsoft.Json;
 
 namespace Persistence.Tools.Configuration
 {
-    internal class ToolConfiguration : IEntityTypeConfiguration<Tool>
+    internal class ToolConfiguration : IEntityTypeConfiguration<Domain.Aggregates.Tools.Tool>
     {
-        public void Configure(EntityTypeBuilder<Tool> builder)
+        public void Configure(EntityTypeBuilder<Domain.Aggregates.Tools.Tool> builder)
         {
             // Configure properties
             builder.Property(t => t.Name)

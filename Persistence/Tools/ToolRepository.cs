@@ -1,55 +1,51 @@
-﻿using Domain.Aggregates.Tools;
+﻿using CBG;
+using Domain.Aggregates.Tools;
+using Domain.Aggregates.Tools.ValueObjects;
+using DTOs.Pagebuilder;
 using Microsoft.EntityFrameworkCore;
-using Persistence.Tools;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
-namespace Persistence.Repositories
+namespace Persistence.Tool
 {
-    public class ToolRepository : IToolRepository
+    public class ToolRepository : Repository<Domain.Aggregates.Tools.Tool>, IToolRepository
     {
-        private readonly DatabaseContext _context;
-
-        public ToolRepository(DatabaseContext context)
+        public ToolRepository(DatabaseContext databaseContext) : base(databaseContext: databaseContext)
         {
-            _context = context;
         }
 
-        public async Task<Tool> GetByIdAsync(Guid id)
+        public async Task<ToolDTO> GetByNameAsync(string name, CancellationToken cancellationToken)
         {
-            return await _context.Tools
-                .Include(t => t.Templates)
-                .FirstOrDefaultAsync(t => t.Id == id);
-        }
+            var result =
+                await
+                DbSet
+                .Where(current => current.Name == name)
+                .Select(current => new ToolDTO
+                {
+                    Id = current.Id,
+                    Name = current.Name,
+                    DefaultJs = current.DefaultJs,
+                    ElementType = current.ElementType,
+                    Templates = current.Templates.Select(t => new TemplateDTO
+                    {
+                        HtmlTemplate = t.HtmlStructure,
+                        DefaultCssClasses = t.DefaultCssClasses,
+                        CustomCss = t.DefaultCss
+                    }).ToList(),
+                    DefaultAssets = current.DefaultAssets.Select(a => new AssetDTO
+                    {
+                        Url = a.Url,
+                        Type = a.Type,
+                        AltText = a.AltText,
+                        Content = a.Content,
+                        Metadata = a.Metadata
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
-        public async Task<IEnumerable<Tool>> GetAllAsync()
-        {
-            return await _context.Tools
-                .Include(t => t.Templates)
-                .ToListAsync();
-        }
-
-        public async Task AddAsync(Tool tool)
-        {
-            await _context.Tools.AddAsync(tool);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(Tool tool)
-        {
-            _context.Tools.Update(tool);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteAsync(Guid id)
-        {
-            var tool = await _context.Tools.FindAsync(id);
-            if (tool != null)
-            {
-                _context.Tools.Remove(tool);
-                await _context.SaveChangesAsync();
-            }
+            return result;
         }
     }
 }

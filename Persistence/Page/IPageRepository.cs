@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using Domain.Aggregates.Page;
+using Application.Interfaces;
 
 namespace Persistence.Page
 {
-    public interface IPageRepository
+    public interface IPageRepository : IRepository<Domain.Aggregates.Page.Page>
     {
-        Task<Domain.Aggregates.Page.Page> GetByIdAsync(Guid id);
-        Task<IEnumerable<Domain.Aggregates.Page.Page>> GetAllAsync();
-        Task AddAsync(Domain.Aggregates.Page.Page page);
-        Task UpdateAsync(Domain.Aggregates.Page.Page page);
-        Task DeleteAsync(Guid id);
+        // Add any additional methods specific to PageRepository if needed
     }
 }

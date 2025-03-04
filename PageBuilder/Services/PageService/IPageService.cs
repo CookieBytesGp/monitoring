@@ -1,20 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Domain.Aggregates.Page.ValueObjects;
 using FluentResults;
+using DTOs.Pagebuilder;
 
 namespace PageBuilder.Services.PageService
 {
     public interface IPageService
     {
-        Task<Result<Domain.Aggregates.Page.Page>> GetByIdAsync(Guid id);
-        Task<Result<IEnumerable<Domain.Aggregates.Page.Page>>> GetAllAsync();
-        Task<Result<Domain.Aggregates.Page.Page>> CreateAsync(string title);
-        Task<Result> UpdateAsync(Guid id, string title);
-        Task<Result> DeleteAsync(Guid id);
-        Task<Result> AddElementAsync(Guid pageId, BaseElement element);
-        Task<Result> RemoveElementAsync(Guid pageId, BaseElement element);
+        Task<Result<PageDTO>> CreatePageAsync(string title, List<BaseElementDTO> elements);
+        Task<PageDTO> GetPageAsync(Guid id);
+        Task<Result<IEnumerable<PageDTO>>> GetAllAsync();
+        Task<Result> UpdatePageAsync(Guid id, string title, List<BaseElementDTO> elements);
+        Task<Result> DeletePageAsync(Guid id);
 
+        // Element operations
+        Task<Result> AddElementAsync(Guid pageId, BaseElementDTO elementDTO);
+        Task<Result> RemoveElementAsync(Guid pageId, Guid elementId);
+        Task<Result> UpdateElementAsync(Guid pageId, Guid elementId, BaseElementDTO elementDTO);
     }
 }

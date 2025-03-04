@@ -1,50 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using CBG;
+using Domain.Aggregates.Page;
+using DTOs.Pagebuilder;
 using Microsoft.EntityFrameworkCore;
-
+using System.Threading.Tasks;
+using System.Linq;
+using System.Threading;
 
 namespace Persistence.Page
 {
-    public class PageRepository : IPageRepository
+    public class PageRepository : Repository<Domain.Aggregates.Page.Page>, IPageRepository
     {
-        private readonly DatabaseContext _context;
-
-        public PageRepository(DatabaseContext context)
+        public PageRepository(DatabaseContext databaseContext) : base(databaseContext)
         {
-            _context = context;
         }
 
-        public async Task<Domain.Aggregates.Page.Page> GetByIdAsync(Guid id)
+        public async Task<PageDTO> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
         {
-            return await _context.Pages.FindAsync(id);
-        }
+            var result = await DbSet
+                .Where(page => page.Title == title)
+                .Select(page => new PageDTO
+                {
+                    Id = page.Id,
+                    Title = page.Title,
+                    CreatedAt = page.CreatedAt,
+                    UpdatedAt = page.UpdatedAt,
+                    Elements = page.Elements.Select(element => new BaseElementDTO
+                    {
+                        ToolId = element.ToolId,
+                        Order = element.Order,
+                        TemplateBody = new TemplateBodyDTO
+                        {
+                            HtmlTemplate = element.TemplateBody.HtmlTemplate,
+                            DefaultCssClasses = element.TemplateBody.DefaultCssClasses,
+                            CustomCss = element.TemplateBody.CustomCss,
+                            CustomJs = element.TemplateBody.CustomJs,
+                            IsFloating = element.TemplateBody.IsFloating
+                        },
+                        Asset = new AssetDTO
+                        {
+                            Url = element.Asset.Url,
+                            Type = element.Asset.Type,
+                            Content = element.Asset.Content,
+                            AltText = element.Asset.AltText,
+                            Metadata = element.Asset.Metadata
+                        }
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync(cancellationToken);
 
-        public async Task<IEnumerable<Domain.Aggregates.Page.Page>> GetAllAsync()
-        {
-            return await _context.Pages.ToListAsync();
-        }
-
-        public async Task AddAsync(Domain.Aggregates.Page.Page page)
-        {
-            await _context.Pages.AddAsync(page);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(Domain.Aggregates.Page.Page page)
-        {
-            _context.Pages.Update(page);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteAsync(Guid id)
-        {
-            var page = await GetByIdAsync(id);
-            if (page != null)
-            {
-                _context.Pages.Remove(page);
-                await _context.SaveChangesAsync();
-            }
+            return result;
         }
     }
 }
