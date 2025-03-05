@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using App.Models;
 using App.Services;
 using DTOs.Pagebuilder;
+using App.Models.PageEditor;
 
 namespace App.Controllers
 {
@@ -12,6 +13,9 @@ namespace App.Controllers
         private readonly PageService _pageService;
         private readonly ToolService _toolService;
         private static List<BaseElementDTO> _elements = new();
+        // Store the current page’s ID (and title if desired) for final saving.
+        private static Guid _currentPageId = Guid.Empty;
+        private static string _currentPageTitle = "";
 
         public PageEditorController(PageService pageService, ToolService toolService)
         {
@@ -69,48 +73,63 @@ namespace App.Controllers
             return RedirectToAction("Edit", new { id });
         }
 
-        // POST: RemoveElement
+        // POST: RemoveElement—updates _elements when an element is removed
         [HttpPost]
-        public IActionResult RemoveElement([FromBody] Guid elementId)
+        public IActionResult RemoveElement(Guid pageId, Guid elementId)
         {
-            var element = _elements.Find(e => e.Id == elementId);
+            var element = _elements.FirstOrDefault(e => e.Id == elementId);
             if (element == null)
             {
                 return NotFound("Element not found");
             }
 
-            _elements.Remove(element); // Remove element from the static list
+            _elements.Remove(element);
+
+            //// Optionally, update database immediately:
+            //var result = await _pageService.RemoveElementAsync(pageId, elementId);
+            //if (result.IsFailed)
+            //{
+            //    return BadRequest("Failed to remove element: " + string.Join(", ", result.Errors));
+            //}
 
             return Ok();
         }
-        // GET: PageEditor/EditElements
+        // GET: PageEditor/EditElements/5
         [HttpGet]
         public async Task<IActionResult> EditElements(Guid id)
         {
-            var pageDTO = await _pageService.GetPageByIdAsync(id);
-            if (pageDTO == null)
+            if (_currentPageId != id || !_elements.Any()) // Only fetch from the database if memory is empty or page ID changes
             {
-                return NotFound();
+                var pageDTO = await _pageService.GetPageByIdAsync(id);
+                if (pageDTO == null)
+                {
+                    return NotFound();
+                }
+
+                _currentPageId = pageDTO.Id;
+                _currentPageTitle = pageDTO.Title;
+                _elements = pageDTO.Elements ?? new List<BaseElementDTO>();
             }
 
             // Load tools separately
-            var tools = await _toolService.GetToolsAsync(); // Fetch the available tools
+            var tools = await _toolService.GetToolsAsync();
 
-            // Pass the page and tools in a ViewModel
             var viewModel = new EditElementsViewModel
             {
                 PageId = id,
                 Tools = tools,
-                Elements = _elements // Use the static list for current elements
+                Elements = _elements
             };
 
             return View(viewModel);
         }
-        // POST: AddToolToEditor
+
+
+        // POST: AddToolToEditor—updates _elements when a tool is selected
         [HttpPost]
-        public IActionResult AddToolToEditor([FromBody] ToolDTO tool)
+        public async Task<IActionResult> AddToolToEditor([FromBody] AddToolRequest request)
         {
-            if (tool == null)
+            if (request == null || request.Tool == null)
             {
                 return BadRequest("Tool cannot be null");
             }
@@ -119,11 +138,11 @@ namespace App.Controllers
             var baseElement = new BaseElementDTO
             {
                 Id = Guid.NewGuid(),
-                ToolId = tool.Id,
-                Order = _elements.Count + 1, // Default order is incremental
+                ToolId = request.Tool.Id,
+                Order = _elements.Count + 1, // Default incremental order
                 TemplateBody = new TemplateBodyDTO
                 {
-                    HtmlTemplate = $"<div>{tool.Name} Template</div>"
+                    HtmlTemplate = $"<div>{request.Tool.Name} Template</div>"
                 },
                 Asset = new AssetDTO
                 {
@@ -134,40 +153,68 @@ namespace App.Controllers
                 }
             };
 
-            _elements.Add(baseElement); // Add the element to the static list
+            _elements.Add(baseElement);
+            Console.WriteLine("Current elements list:");
+            foreach (var element in _elements)
+            {
+                Console.WriteLine($"Element ID: {element.Id}, ToolId: {element.ToolId}, Order: {element.Order}");
+            }
 
-            return Ok();
+            return Ok(baseElement);
         }
 
+
         [HttpPost]
-        public async Task<IActionResult> SaveElements([FromBody] SaveElementsRequest request)
+        public IActionResult SaveElements([FromBody] SaveElementsRequest request)
         {
-            if (request == null)
+            if (request == null || request.Elements == null || !request.Elements.Any())
             {
-                Console.WriteLine("Request is null");
-                return BadRequest("No data received");
+                return BadRequest("Elements list is invalid or empty");
             }
-            if (request.PageId == Guid.Empty)
+
+            // Replace the current in-memory elements with the updated ones
+            _elements = request.Elements;
+
+            return Ok("Elements updated in the editor");
+        }
+
+        // POST: FinalSave—updates the database with the current _elements list
+        [HttpPost]
+        public async Task<IActionResult> FinalSave()
+        {
+            if (_currentPageId == Guid.Empty)
             {
-                Console.WriteLine("PageId is missing");
                 return BadRequest("PageId is missing");
             }
-            if (request.Elements == null || !request.Elements.Any())
+            if (_elements == null || !_elements.Any())
             {
-                Console.WriteLine("Elements list is empty");
                 return BadRequest("Elements list is empty");
             }
 
-            var result = await _pageService.UpdateElementsAsync(request.PageId, request.Elements);
-            if (result.IsFailed)
+            try
             {
-                Console.WriteLine("Failed to update elements: " + string.Join(", ", result.Errors));
-                return BadRequest(result.Errors);
+                // Get the current title from the database (or from a stored value) if needed.
+                var pageDTO = await _pageService.GetPageByIdAsync(_currentPageId);
+                if (pageDTO == null)
+                {
+                    return NotFound("Page not found");
+                }
+
+                var result = await _pageService.UpdatePageAsync(_currentPageId, _currentPageTitle, _elements);
+                if (result.IsFailed)
+                {
+                    return BadRequest("Failed to save page: " + string.Join(", ", result.Errors));
+                }
+
+                // Clear the in-memory list after successful save.
+                _elements.Clear();
+                return Ok("Page saved successfully");
             }
-
-            return Ok();
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An internal server error occurred: " + ex.Message);
+            }
         }
-
 
 
     }

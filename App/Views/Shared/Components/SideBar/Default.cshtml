@@ -1,5 +1,8 @@
 ﻿@model List<DTOs.Pagebuilder.ToolDTO>
-
+@{
+    // Retrieve the current page ID from ViewData
+    var pageId = ViewData["PageId"]?.ToString() ?? "";
+}
 <div class="sidebar">
     <h1>Side Bar</h1>
 
@@ -36,7 +39,10 @@
 </div>
 
 <script>
-    // Function to toggle between tools and settings sections
+    // Set the current page ID from the ViewData; ensure this value is set in the parent view.
+    var currentPageId = '@pageId';
+
+    // Function to toggle the visibility between the tools and settings sections.
     function showSection(section) {
         const toolsSection = document.getElementById('toolsSection');
         const settingsSection = document.getElementById('settingsSection');
@@ -50,21 +56,34 @@
         }
     }
 
-    // Function to send a tool to the server for transformation
+    // Function to send a tool to the server for transformation,
+    // sending a composite payload that includes the current page ID and the tool details.
     function addTool(toolId, toolName) {
+        const payload = {
+            pageId: currentPageId,
+            tool: {
+                id: toolId,
+                name: toolName
+            }
+        };
+
         fetch('/PageEditor/AddToolToEditor', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ id: toolId, name: toolName })
+            body: JSON.stringify(payload)
         })
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to add tool to editor');
                 }
-                location.reload(); // Reload the page to reflect changes in the EditorMain
+                return response.json();
             })
-            .catch(error => console.error('Error:', error));
+            .then(data => {
+                console.log("Tool added successfully:", data);
+                location.reload(); // Reload the page to update the EditorMain component
+            })
+            .catch(error => console.error("Error:", error));
     }
 </script>

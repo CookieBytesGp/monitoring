@@ -1,4 +1,7 @@
 ﻿@model App.Controllers.EditElementsViewModel
+@{
+    ViewData["PageId"] = Model.PageId;
+}
 
 @await Component.InvokeAsync("TopMenu", new
     {
@@ -8,33 +11,5 @@
     })
 @await Component.InvokeAsync("SideBar", Model.Tools)
 @await Component.InvokeAsync("EditorMain", Model.Elements)
-<script>
-    // Send a request to add a tool as a new base element
-    function addTool(toolId, toolName) {
-        fetch('/PageEditor/AddToolToEditor', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: toolId, name: toolName })
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to add tool');
-                location.reload(); // Refresh to see changes
-            })
-            .catch(error => console.error('Error:', error));
-    }
 
-    // Send a request to remove an element by ID
-    function removeElement(elementId) {
-        fetch('/PageEditor/RemoveElement', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(elementId)
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to remove element');
-                location.reload(); // Refresh to see changes
-            })
-            .catch(error => console.error('Error:', error));
-    }
-</script>
 

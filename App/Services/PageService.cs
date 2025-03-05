@@ -37,26 +37,76 @@ namespace App.Services
 
         public async Task<Result> UpdatePageAsync(Guid id, string title, List<BaseElementDTO> elements)
         {
-            var pageDTO = new PageDTO
-            {
-                Id = id,
-                Title = title,
-                Elements = elements
-            };
-
             try
             {
-                var response = await _httpClient.PutAsJsonAsync($"http://localhost:5000/pagebuilder/page/{id}", pageDTO);
-                if (!response.IsSuccessStatusCode)
+                // Fetch the existing page to retain immutable fields (e.g., CreatedAt).
+                var existingPage = await GetPageByIdAsync(id);
+                if (existingPage == null)
                 {
-                    return Result.Fail($"Failed to update the page. Server returned status code: {response.StatusCode}");
+                    return Result.Fail("Page not found");
                 }
 
-                return Result.Ok();
+                // Build a new PageDTO with non-null properties.
+                var updatedPage = new PageDTO
+                {
+                    Id = id,
+                    Title = title,
+                    CreatedAt = existingPage.CreatedAt, // Preserve the original creation time.
+                    UpdatedAt = DateTime.UtcNow,        // Update the timestamp for the modification.
+                    Elements = elements.Select(e => new BaseElementDTO
+                    {
+                        Id = e.Id,
+                        ToolId = e.ToolId,
+                        Order = e.Order,
+                        TemplateBody = new TemplateBodyDTO
+                        {
+                            HtmlTemplate = e.TemplateBody.HtmlTemplate ?? "<div>Default Template</div>",
+                            DefaultCssClasses = e.TemplateBody.DefaultCssClasses ?? new Dictionary<string, string>
+                    {
+                        { "additionalProp1", "default" },
+                        { "additionalProp2", "default" }
+                    },
+                            CustomCss = e.TemplateBody.CustomCss ?? "",
+                            CustomJs = e.TemplateBody.CustomJs ?? "",
+                            IsFloating = e.TemplateBody.IsFloating
+                        },
+                        Asset = new AssetDTO
+                        {
+                            Url = e.Asset.Url ?? "default-url",
+                            Type = e.Asset.Type ?? "default-type",
+                            AltText = e.Asset.AltText ?? "default-alt",
+                            Content = e.Asset.Content ?? "default-content",
+                            Metadata = e.Asset.Metadata ?? new Dictionary<string, string>
+                    {
+                        { "additionalProp1", "default" },
+                        { "additionalProp2", "default" }
+                    }
+                        }
+                    }).ToList()
+                };
+
+                // Send the updated page to the API using an HTTP PUT request.
+                var content = JsonContent.Create(updatedPage);
+                var response = await _httpClient.PutAsync($"http://localhost:5000/pagebuilder/page/{id}", content);
+
+                // Check if the response indicates a failure.
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    return Result.Fail($"Failed to update the page. Server returned status code: {response.StatusCode}. Error: {errorMessage}");
+                }
+
+                return Result.Ok(); // Return success if the operation was successful.
             }
             catch (HttpRequestException ex)
             {
-                return Result.Fail($"An error occurred while updating the page: {ex.Message}");
+                // Handle network-related exceptions.
+                return Result.Fail($"An HTTP request error occurred: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                // Handle any other unexpected exceptions.
+                return Result.Fail($"An unexpected error occurred while updating the page: {ex.Message}");
             }
         }
 
