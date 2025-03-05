@@ -3,16 +3,22 @@
 <div class="sidebar">
     <h1>Side Bar</h1>
 
+    <!-- Tools Section -->
     <div id="toolsSection" class="sidebar-section">
         <h2>Tools</h2>
         <ul>
             @foreach (var tool in Model)
             {
-                <li>@tool.Name</li>
+                <li>
+                    <button class="tool-button" onclick="addTool('@tool.Id', '@tool.Name')">
+                        @tool.Name
+                    </button>
+                </li>
             }
         </ul>
     </div>
 
+    <!-- Settings Section -->
     <div id="settingsSection" class="sidebar-section" style="display: none;">
         <h2>Settings</h2>
         <ul>
@@ -22,14 +28,15 @@
         </ul>
     </div>
 
+    <!-- Toggle Buttons -->
     <div class="sidebar-buttons">
         <button onclick="showSection('tools')">Show Tools</button>
         <button onclick="showSection('settings')">Show Settings</button>
     </div>
 </div>
 
-
 <script>
+    // Function to toggle between tools and settings sections
     function showSection(section) {
         const toolsSection = document.getElementById('toolsSection');
         const settingsSection = document.getElementById('settingsSection');
@@ -41,5 +48,23 @@
             toolsSection.style.display = 'none';
             settingsSection.style.display = 'block';
         }
+    }
+
+    // Function to send a tool to the server for transformation
+    function addTool(toolId, toolName) {
+        fetch('/PageEditor/AddToolToEditor', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: toolId, name: toolName })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to add tool to editor');
+                }
+                location.reload(); // Reload the page to reflect changes in the EditorMain
+            })
+            .catch(error => console.error('Error:', error));
     }
 </script>

@@ -4,10 +4,21 @@ namespace App.ViewComponents
 {
     public class TopMenuViewComponent : ViewComponent
     {
-        public IViewComponentResult Invoke()
+        public IViewComponentResult Invoke(Guid pageId, string saveUrl, string finalSaveUrl)
         {
-            // You can pass any model or data here
-            return View();
+            var model = new TopMenuViewModel
+            {
+                PageId = pageId,
+                SaveUrl = saveUrl,
+                FinalSaveUrl = finalSaveUrl
+            };
+            return View(model);
         }
+    }
+    public class TopMenuViewModel
+    {
+        public Guid PageId { get; set; }
+        public string SaveUrl { get; set; }
+        public string FinalSaveUrl { get; set; }
     }
 }

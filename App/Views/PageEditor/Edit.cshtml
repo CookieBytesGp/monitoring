@@ -1,0 +1,32 @@
+﻿@model DTOs.Pagebuilder.PageDTO
+
+<h2>Edit Page</h2>
+
+<!-- Form for updating the page title only -->
+<form asp-action="Edit" method="post">
+    <div class="form-group">
+        <label asp-for="Title" class="control-label">Page Title</label>
+        <input asp-for="Title" class="form-control" id="Title" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <!-- Display the last updated date in a read-only field -->
+    <div class="form-group">
+        <label>Last Updated:</label>
+        <input type="text" value="@Model.UpdatedAt.ToLocalTime().ToString("G")" class="form-control" readonly />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+</form>
+
+<hr />
+
+<!-- Navigation button to go to the PageEditor for editing elements only -->
+<a asp-action="EditElements" asp-controller="PageEditor" asp-route-id="@Model.Id" class="btn btn-info">
+    Edit Page Elements
+</a>
+
+<hr />
+
+<!-- Navigation link to go back to the pages list -->
+<a asp-action="Index" asp-controller="Page" class="btn btn-secondary">Back to Pages</a>

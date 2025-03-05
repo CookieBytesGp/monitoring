@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using DTOs.Pagebuilder;
 
 namespace App.ViewComponents
 {
     public class EditorMainViewComponent : ViewComponent
     {
-        public IViewComponentResult Invoke()
+        public IViewComponentResult Invoke(IEnumerable<BaseElementDTO> model)
         {
-            // You can pass any model or data here
-            return View();
+            return View(model);
         }
     }
 }

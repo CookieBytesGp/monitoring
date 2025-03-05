@@ -37,15 +37,12 @@ namespace App.Controllers
         }
 
         // GET: Page/Edit/5
-        public async Task<IActionResult> Edit(Guid id)
+        public IActionResult Edit(Guid id)
         {
-            var page = await _pageService.GetPageByIdAsync(id);
-            if (page == null)
-            {
-                return NotFound();
-            }
-            return View(page);
+            // Redirect to the PageEditorController's Edit action
+            return RedirectToAction("Edit", "PageEditor", new { id });
         }
+
 
         // POST: Page/Delete/5
         [HttpPost]

@@ -8,7 +8,15 @@ builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddOcelot();
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost44157", policy =>
+    {
+        policy.WithOrigins("http://localhost:44157")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 // Add logging
 builder.Logging.AddConsole();
 // Load Ocelot configuration file
@@ -19,6 +27,7 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
 }
 app.UseStaticFiles();
+app.UseCors("AllowLocalhost44157");
 
 app.UseRouting();
 

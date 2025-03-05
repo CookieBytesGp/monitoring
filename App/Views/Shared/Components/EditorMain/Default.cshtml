@@ -1,4 +1,54 @@
-﻿<div class="editor-main">
-    <h1>Editor Main</h1>
-    <!-- Add your editor main content here -->
+﻿@model IEnumerable<DTOs.Pagebuilder.BaseElementDTO>
+
+<div class="editor-main">
+    <h2>Page Elements</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Order</th>
+                <th>Template</th>
+                <th>Asset</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var element in Model)
+            {
+                <tr class="element-row" data-id="@element.Id" data-tool-id="@element.ToolId">
+                    <td>
+                        <input type="number" class="form-control order" value="@element.Order" />
+                    </td>
+                    <td>
+                        <input type="text" class="form-control html-template" value="@element.TemplateBody.HtmlTemplate" />
+                    </td>
+                    <td>
+                        <input type="text" class="form-control asset-url" value="@element.Asset.Url" />
+                    </td>
+                    <td>
+                        <button class="btn btn-danger" onclick="removeElement('@element.Id')">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>
+
+<script>
+    function removeElement(elementId) {
+        fetch('/PageEditor/RemoveElement', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(elementId)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to remove element');
+                }
+                location.reload(); // Reload the page to reflect changes
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+</script>

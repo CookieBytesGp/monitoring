@@ -1,4 +1,76 @@
-﻿<div class="top-menu">
-    <h1>Top Menu</h1>
-    <!-- Add your top menu content here -->
+﻿@model App.ViewComponents.TopMenuViewModel
+
+<div class="top-menu">
+    <h1>Page Editor</h1>
+    <button id="finalSaveButton" class="btn btn-success" onclick="finalSaveElements()">Final Save</button>
 </div>
+
+<script type="text/javascript">
+    function finalSaveElements() {
+        var elementsData = [];
+        document.querySelectorAll('.element-row').forEach(function (row) {
+            var id = row.dataset.id;
+            var toolId = row.dataset.toolId || ""; // Get from data attribute
+            var orderElem = row.querySelector('.order');
+            var order = orderElem ? parseInt(orderElem.value) : 0;
+            var htmlTemplateElem = row.querySelector('.html-template');
+            var assetUrlElem = row.querySelector('.asset-url');
+            var htmlTemplate = htmlTemplateElem ? htmlTemplateElem.value : "<div>Default Template</div>";
+            var assetUrl = assetUrlElem ? assetUrlElem.value : "default-asset-url";
+
+            elementsData.push({
+                id: id,
+                toolId: toolId,
+                order: order,
+                templateBody: {
+                    htmlTemplate: htmlTemplate,
+                    defaultCssClasses: {
+                        additionalProp1: "default",
+                        additionalProp2: "default",
+                        additionalProp3: "default"
+                    },
+                    customCss: "",
+                    customJs: "",
+                    isFloating: false
+                },
+                asset: {
+                    url: assetUrl,
+                    type: "string",
+                    altText: "string",
+                    content: "string",
+                    metadata: {
+                        additionalProp1: "default",
+                        additionalProp2: "default",
+                        additionalProp3: "default"
+                    }
+                }
+            });
+        });
+
+        var titleElem = document.getElementById("pageTitle");
+        var title = titleElem ? titleElem.value : "";
+        var pageId = '@Model.PageId';
+        var payload = {
+            id: pageId,
+            title: title,
+            elements: elementsData
+        };
+
+        fetch(`http://localhost:5000/pagebuilder/page/${pageId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                alert("Final save successful. Data persisted to database.");
+            })
+            .catch(function (error) {
+                alert("Error during final save: " + error.message);
+            });
+    }
+</script>
+
+

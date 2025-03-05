@@ -42,6 +42,8 @@ html, body {
   width: 100%;
   background-color: cadetblue;
   grid-area: topMenu;
+  display: flex;
+  justify-content: space-between;
   height: 50px; /* Specific height for the top menu */
 }
 

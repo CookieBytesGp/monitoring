@@ -3,11 +3,11 @@ using Domain.Aggregates.Page.ValueObjects;
 using Domain.SharedKernel.Domain.SharedKernel;
 using DTOs.Pagebuilder;
 using FluentResults;
+using Persistence;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Persistence;
 
 namespace PageBuilder.Services.PageService
 {
@@ -30,7 +30,7 @@ namespace PageBuilder.Services.PageService
 
             var page = pageResult.Value;
 
-            // Add elements if provided.
+            // Convert and add elements if provided.
             if (elements != null && elements.Any())
             {
                 var elementConversion = ConvertToDomainElements(elements);
@@ -38,6 +38,7 @@ namespace PageBuilder.Services.PageService
                 {
                     return Result.Fail<PageDTO>(elementConversion.Errors);
                 }
+                // Update the page title and add elements
                 page.Update(title, elementConversion.Value);
             }
 
@@ -69,7 +70,7 @@ namespace PageBuilder.Services.PageService
                 return Result.Fail("Page not found.");
             }
 
-            // Convert DTO elements to domain objects
+            // Convert the DTO list to domain elements
             var elementConversion = ConvertToDomainElements(elements);
             if (elementConversion.IsFailed)
             {
@@ -255,9 +256,32 @@ namespace PageBuilder.Services.PageService
                 Title = page.Title,
                 CreatedAt = page.CreatedAt,
                 UpdatedAt = page.UpdatedAt,
-                Elements = page.Elements.Select(ConvertToBaseElementDTO).ToList()
+                Elements = (page.Elements ?? new List<BaseElement>())
+                            .Select(element => new BaseElementDTO
+                            {
+                                Id = element.Id,
+                                ToolId = element.ToolId,
+                                Order = element.Order,
+                                TemplateBody = new TemplateBodyDTO
+                                {
+                                    HtmlTemplate = element.TemplateBody.HtmlTemplate,
+                                    DefaultCssClasses = element.TemplateBody.DefaultCssClasses,
+                                    CustomCss = element.TemplateBody.CustomCss,
+                                    CustomJs = element.TemplateBody.CustomJs,
+                                    IsFloating = element.TemplateBody.IsFloating
+                                },
+                                Asset = new AssetDTO
+                                {
+                                    Url = element.Asset.Url,
+                                    Type = element.Asset.Type,
+                                    Content = element.Asset.Content,
+                                    AltText = element.Asset.AltText,
+                                    Metadata = element.Asset.Metadata
+                                }
+                            }).ToList()
             };
         }
+
 
         private Result<BaseElement> CreateBaseElementFromDTO(BaseElementDTO dto)
         {
