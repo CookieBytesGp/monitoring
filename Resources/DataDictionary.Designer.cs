@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Resource {
+namespace Resources {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace Resource {
         public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Resource.DataDictionary", typeof(DataDictionary).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Resources.DataDictionary", typeof(DataDictionary).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -66,6 +66,15 @@ namespace Resource {
         public static string ActivationCode {
             get {
                 return ResourceManager.GetString("ActivationCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to نشانی.
+        /// </summary>
+        public static string Address {
+            get {
+                return ResourceManager.GetString("Address", resourceCulture);
             }
         }
         
@@ -111,6 +120,15 @@ namespace Resource {
         public static string Critical {
             get {
                 return ResourceManager.GetString("Critical", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to تاریخ تولد.
+        /// </summary>
+        public static string DateOfBirth {
+            get {
+                return ResourceManager.GetString("DateOfBirth", resourceCulture);
             }
         }
         
@@ -430,6 +448,15 @@ namespace Resource {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to عکس پروفایل.
+        /// </summary>
+        public static string ProfilePicture {
+            get {
+                return ResourceManager.GetString("ProfilePicture", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to نقش.
         /// </summary>
         public static string Role {
@@ -522,9 +549,9 @@ namespace Resource {
         /// <summary>
         ///   Looks up a localized string similar to نام کاربری.
         /// </summary>
-        public static string Username {
+        public static string UserName {
             get {
-                return ResourceManager.GetString("Username", resourceCulture);
+                return ResourceManager.GetString("UserName", resourceCulture);
             }
         }
         
@@ -552,30 +579,6 @@ namespace Resource {
         public static string ZipCode {
             get {
                 return ResourceManager.GetString("ZipCode", resourceCulture);
-            }
-        }
-
-        public static string Address
-        {
-            get
-            {
-                return ResourceManager.GetString("Address", resourceCulture);
-            }
-        }
-
-        public static string DateOfBirth
-        {
-            get
-            {
-                return ResourceManager.GetString("DateOfBirth", resourceCulture);
-            }
-        }
-
-        public static string ProfilePicture
-        {
-            get
-            {
-                return ResourceManager.GetString("ProfilePicture", resourceCulture);
             }
         }
     }

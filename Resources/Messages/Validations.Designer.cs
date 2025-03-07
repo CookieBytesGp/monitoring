@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Resource.Messages {
+namespace Resources.Messages {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace Resource.Messages {
         public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Resource.Messages.Validations", typeof(Validations).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Resources.Messages.Validations", typeof(Validations).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -57,6 +57,24 @@ namespace Resource.Messages {
             }
             set {
                 resourceCulture = value;
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to قلصقی.
+        /// </summary>
+        public static string DateInFuture {
+            get {
+                return ResourceManager.GetString("DateInFuture", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to لللثشسس.
+        /// </summary>
+        public static string DateTooOld {
+            get {
+                return ResourceManager.GetString("DateTooOld", resourceCulture);
             }
         }
         
@@ -212,23 +230,5 @@ namespace Resource.Messages {
                 return ResourceManager.GetString("Required", resourceCulture);
             }
         }
-
-        public static string DateInFuture
-        {
-            get
-            {
-                return ResourceManager.GetString("DateInFuture", resourceCulture);
-            }
-        }
-        
-        public static string DateTooOld
-        {
-            get
-            {
-                return ResourceManager.GetString("DateTooOld", resourceCulture);
-            }
-        }
-
-
     }
 }

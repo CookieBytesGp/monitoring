@@ -1,7 +1,7 @@
 ﻿using FluentResults;
 using Domain.SeedWork;
-using Resource;
-using Resource.Messages;
+using Resources;
+using Resources.Messages;
 using System.Text.Json.Serialization;
 
 namespace Domain.Aggregates.User.ValueObjects
@@ -44,7 +44,7 @@ namespace Domain.Aggregates.User.ValueObjects
 
             var result = new Result<LastName>();
 
-            if(value == null)
+            if(string.IsNullOrEmpty(value))
             {
                 string errorMessage = string.Format(Validations.Required, DataDictionary.LastName);
 

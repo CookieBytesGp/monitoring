@@ -1,6 +1,6 @@
 ﻿using FluentResults;
-using Resource.Messages;
-using Resource;
+using Resources.Messages;
+using Resources;
 using Domain.SeedWork;
 using System.Text.Json.Serialization;
 
