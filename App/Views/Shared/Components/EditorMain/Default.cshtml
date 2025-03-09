@@ -1,54 +1,129 @@
-﻿@model IEnumerable<DTOs.Pagebuilder.BaseElementDTO>
+﻿@model App.Models.PageEditor.EditorMainViewModel
+<style>
+    /* The container for each element */
+    .ElemntBox {
+        position: absolute; /* Change to absolute positioning */
+        width: fit-content;
+        cursor: move; /* Add move cursor */
+        user-select: none; /* Prevent text selection while dragging */
+        touch-action: none; /* Prevent scrolling on touch devices */
+    }
 
+
+    /* The delete button styled as desired */
+    .delete-button {
+        position: absolute;
+        top: -10px; /* Adjust as needed to sit on the border */
+        left: 50%; /* Center horizontally */
+        transform: translateX(-50%);
+        background-color: #dc3545; /* Bootstrap danger color, or change as needed */
+        border: none;
+        color: #fff;
+        font-weight: bold;
+        border-radius: 50%;
+        width: 25px;
+        height: 25px;
+        line-height: 21px;
+        text-align: center;
+        cursor: pointer;
+    }
+
+</style>
 <div class="editor-main">
     <h2>Page Elements</h2>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Order</th>
-                <th>Template</th>
-                <th>Asset</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var element in Model)
-            {
-                <tr class="element-row" data-id="@element.Id" data-tool-id="@element.ToolId">
-                    <td>
-                        <input type="number" class="form-control order" value="@element.Order" />
-                    </td>
-                    <td>
-                        <input type="text" class="form-control html-template" value="@element.TemplateBody.HtmlTemplate" />
-                    </td>
-                    <td>
-                        <input type="text" class="form-control asset-url" value="@element.Asset.Url" />
-                    </td>
-                    <td>
-                        <button class="btn btn-danger" onclick="removeElement('@element.Id')">Delete</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+
+    @foreach (var element in Model.Elements)
+    {
+        <div class="ElemntBox" data-id="@element.Id" data-tool-id="@element.ToolId">
+            @await Component.InvokeAsync("EditingElement", element)
+            <button class="delete-button" onclick="removeElement('@Model.PageId', '@element.Id')">X</button>
+        </div>
+    }
+
 </div>
+<script>
+    // Attach the draggable events once the document loads.
+    document.addEventListener("DOMContentLoaded", () => {
+        const elemBoxes = document.querySelectorAll('.ElemntBox');
+        elemBoxes.forEach(box => {
+            box.addEventListener('mousedown', onDragStart);
+        });
+    });
+
+   function onDragStart(e) {
+        e.preventDefault();
+        const box = e.currentTarget;
+        
+        // Ensure the element has absolute positioning
+        if (getComputedStyle(box).position !== 'absolute') {
+            const rect = box.getBoundingClientRect();
+            box.style.position = 'absolute';
+            box.style.left = rect.left + 'px';
+            box.style.top = rect.top + 'px';
+        }
+
+        // Get the initial position from the existing transform or current position
+        const startLeft = parseInt(box.style.left) || 0;
+        const startTop = parseInt(box.style.top) || 0;
+        
+        // Get initial mouse position
+        const startX = e.clientX;
+        const startY = e.clientY;
+
+        function onMouseMove(e) {
+            // Calculate the distance moved
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            
+            // Apply the new position
+            box.style.left = (startLeft + deltaX) + 'px';
+            box.style.top = (startTop + deltaY) + 'px';
+        }
+
+        function onMouseUp() {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        }
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    }
+</script>
 
 <script>
-    function removeElement(elementId) {
+    function removeElement(pageId, elementId) {
+        const payload = JSON.stringify({
+            pageId: pageId,
+            elementId: elementId
+        });
+
         fetch('/PageEditor/RemoveElement', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(elementId)
+            body: payload
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Failed to remove element');
+                    return response.text().then(error => {
+                        throw new Error(error || 'Failed to remove element');
+                    });
                 }
-                location.reload(); // Reload the page to reflect changes
+                return response.text();
             })
-            .catch(error => console.error('Error:', error));
+            .then(() => {
+                // Remove the corresponding row from the DOM
+                const row = document.querySelector(`tr[data-id="${elementId}"]`);
+                if (row) {
+                    row.remove();
+                };
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error.message);
+                alert(`Error removing element: ${error.message}`);
+            });
     }
-
 </script>
+

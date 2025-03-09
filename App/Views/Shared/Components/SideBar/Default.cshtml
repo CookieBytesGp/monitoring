@@ -1,11 +1,11 @@
 ﻿@model List<DTOs.Pagebuilder.ToolDTO>
 @{
-    // Retrieve the current page ID from ViewData
+    // Retrieve the current page ID from ViewData (set by the parent view)
     var pageId = ViewData["PageId"]?.ToString() ?? "";
 }
 <div class="sidebar">
     <h1>Side Bar</h1>
-
+    
     <!-- Tools Section -->
     <div id="toolsSection" class="sidebar-section">
         <h2>Tools</h2>
@@ -20,7 +20,7 @@
             }
         </ul>
     </div>
-
+    
     <!-- Settings Section -->
     <div id="settingsSection" class="sidebar-section" style="display: none;">
         <h2>Settings</h2>
@@ -30,34 +30,72 @@
             <li>Setting 3</li>
         </ul>
     </div>
-
-    <!-- Toggle Buttons -->
+    
+    <!-- Selected Element Section with Inner Tabs -->
+    <div id="selectedElementSection" style="display: none; border:1px solid #ccc; padding:10px; margin-top:10px;">
+        <h2>Selected Element</h2>
+        <!-- Inner Tab Toggle Buttons -->
+        <div class="inner-tabs">
+            <button onclick="showInnerTab('asset')">Asset</button>
+            <button onclick="showInnerTab('style')">Style</button>
+        </div>
+        <!-- Inner Tab Content -->
+        <div id="assetTab" class="inner-tab-content">
+            <strong>Asset:</strong> <span id="selectedAsset"></span>
+        </div>
+        <div id="styleTab" class="inner-tab-content" style="display: none;">
+            <strong>Custom CSS:</strong> <span id="selectedCSS"></span>
+        </div>
+    </div>
+    
+    <!-- Main Toggle Buttons for the Sidebar -->
     <div class="sidebar-buttons">
         <button onclick="showSection('tools')">Show Tools</button>
         <button onclick="showSection('settings')">Show Settings</button>
+        <button onclick="showSection('selectedElement')">Show Selected Element</button>
     </div>
 </div>
 
 <script>
-    // Set the current page ID from the ViewData; ensure this value is set in the parent view.
+    // Set the current page ID from the ViewData
     var currentPageId = '@pageId';
 
-    // Function to toggle the visibility between the tools and settings sections.
+    // Function to toggle among main sidebar sections: Tools, Settings, and Selected Element.
     function showSection(section) {
         const toolsSection = document.getElementById('toolsSection');
         const settingsSection = document.getElementById('settingsSection');
-
+        const selectedElementSection = document.getElementById('selectedElementSection');
+        
         if (section === 'tools') {
             toolsSection.style.display = 'block';
             settingsSection.style.display = 'none';
+            selectedElementSection.style.display = 'none';
         } else if (section === 'settings') {
             toolsSection.style.display = 'none';
             settingsSection.style.display = 'block';
+            selectedElementSection.style.display = 'none';
+        } else if (section === 'selectedElement') {
+            toolsSection.style.display = 'none';
+            settingsSection.style.display = 'none';
+            selectedElementSection.style.display = 'block';
+        }
+    }
+    
+    // Function to toggle between inner tabs in the Selected Element Section (Asset and Style)
+    function showInnerTab(tab) {
+        const assetTab = document.getElementById('assetTab');
+        const styleTab = document.getElementById('styleTab');
+
+        if (tab === 'asset') {
+            assetTab.style.display = 'block';
+            styleTab.style.display = 'none';
+        } else if (tab === 'style') {
+            assetTab.style.display = 'none';
+            styleTab.style.display = 'block';
         }
     }
 
-    // Function to send a tool to the server for transformation,
-    // sending a composite payload that includes the current page ID and the tool details.
+    // Function to send a tool to the server for transformation - remains unchanged.
     function addTool(toolId, toolName) {
         const payload = {
             pageId: currentPageId,
@@ -74,16 +112,17 @@
             },
             body: JSON.stringify(payload)
         })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to add tool to editor');
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("Tool added successfully:", data);
-                location.reload(); // Reload the page to update the EditorMain component
-            })
-            .catch(error => console.error("Error:", error));
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to add tool to editor');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Tool added successfully:", data);
+            // Optionally, you might update the UI dynamically instead of reloading:
+            location.reload(); // Reload the page to update the EditorMain component
+        })
+        .catch(error => console.error("Error:", error));
     }
 </script>

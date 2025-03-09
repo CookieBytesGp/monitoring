@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using App.Models.PageEditor;
+using Microsoft.AspNetCore.Mvc;
 
 namespace App.ViewComponents
 {
@@ -15,10 +16,5 @@ namespace App.ViewComponents
             return View(model);
         }
     }
-    public class TopMenuViewModel
-    {
-        public Guid PageId { get; set; }
-        public string SaveUrl { get; set; }
-        public string FinalSaveUrl { get; set; }
-    }
+    
 }

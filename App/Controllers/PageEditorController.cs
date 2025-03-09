@@ -75,9 +75,14 @@ namespace App.Controllers
 
         // POST: RemoveElement—updates _elements when an element is removed
         [HttpPost]
-        public IActionResult RemoveElement(Guid pageId, Guid elementId)
+        public IActionResult RemoveElement([FromBody] RemoveElementRequest request)
         {
-            var element = _elements.FirstOrDefault(e => e.Id == elementId);
+            if (request == null)
+            {
+                return BadRequest("Invalid request");
+            }
+
+            var element = _elements.FirstOrDefault(e => e.Id == request.ElementId);
             if (element == null)
             {
                 return NotFound("Element not found");
@@ -85,15 +90,15 @@ namespace App.Controllers
 
             _elements.Remove(element);
 
-            //// Optionally, update database immediately:
-            //var result = await _pageService.RemoveElementAsync(pageId, elementId);
-            //if (result.IsFailed)
-            //{
-            //    return BadRequest("Failed to remove element: " + string.Join(", ", result.Errors));
-            //}
+            // Optionally, update database immediately:
+            // var result = await _pageService.RemoveElementAsync(request.PageId, request.ElementId);
+            // if (result.IsFailed)
+            //      return BadRequest("Failed to remove element: " + string.Join(", ", result.Errors));
 
             return Ok();
         }
+
+
         // GET: PageEditor/EditElements/5
         [HttpGet]
         public async Task<IActionResult> EditElements(Guid id)
@@ -134,26 +139,55 @@ namespace App.Controllers
                 return BadRequest("Tool cannot be null");
             }
 
-            // Transform ToolDTO into BaseElementDTO
+            // Retrieve the full tool information from the database
+            var tool = await _toolService.GetToolByIdAsync(request.Tool.Id);
+            if (tool == null)
+            {
+                return NotFound("Tool not found");
+            }
+
+            // Use the first available template from the tool's Templates list
+            var firstTemplate = tool.Templates?.FirstOrDefault();
+            if (firstTemplate == null)
+            {
+                return BadRequest("No template defined for the specified tool.");
+            }
+
+            // Construct the BaseElementDTO using real data from the tool
             var baseElement = new BaseElementDTO
             {
                 Id = Guid.NewGuid(),
-                ToolId = request.Tool.Id,
+                ToolId = tool.Id,
                 Order = _elements.Count + 1, // Default incremental order
                 TemplateBody = new TemplateBodyDTO
                 {
-                    HtmlTemplate = $"<div>{request.Tool.Name} Template</div>"
+                    // Use the first template's values
+                    HtmlTemplate = firstTemplate.HtmlTemplate,
+                    DefaultCssClasses = firstTemplate.DefaultCssClasses ?? new Dictionary<string, string>
+                    {
+                        { "additionalProp1", "default" }
+                    },
+                    CustomCss = firstTemplate.CustomCss ?? "",
+                    CustomJs = tool.DefaultJs ?? "",
+                    IsFloating = true,
                 },
-                Asset = new AssetDTO
+                Asset = tool.DefaultAssets?.FirstOrDefault() ?? new AssetDTO
                 {
                     Url = "default-asset-url",
                     Type = "default-type",
                     AltText = "Default Alt",
-                    Content = "Default Content"
+                    Content = "Default Content",
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "additionalProp1", "default" }
+                    }
                 }
             };
 
+            // Add the new base element to the in-memory list
             _elements.Add(baseElement);
+
+            // Log the current state of the elements list for debugging
             Console.WriteLine("Current elements list:");
             foreach (var element in _elements)
             {
@@ -162,6 +196,7 @@ namespace App.Controllers
 
             return Ok(baseElement);
         }
+
 
 
         [HttpPost]
@@ -219,11 +254,5 @@ namespace App.Controllers
 
     }
 
-    // ViewModel for the EditElements view
-    public class EditElementsViewModel
-    {
-        public Guid PageId { get; set; }
-        public List<ToolDTO> Tools { get; set; }
-        public List<BaseElementDTO> Elements { get; set; }
-    }
+    
 }

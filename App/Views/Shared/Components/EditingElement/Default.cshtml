@@ -1,0 +1,138 @@
+﻿@model DTOs.Pagebuilder.BaseElementDTO
+
+<div class="editor-element" data-id="@Model.Id" data-tool-id="@Model.ToolId" onclick="selectElement(this)">
+    <!-- Hidden order input if needed -->
+    <input type="number" class="order" value="@Model.Order" style="display:none;" />
+    
+    <!-- Editor block for element content -->
+    <div class="editor">
+        @Html.Raw(Model.TemplateBody.HtmlTemplate)
+    </div>
+
+    <!-- Inline style block: inject element-specific custom CSS -->
+    <style>
+        @Html.Raw(Model.TemplateBody.CustomCss)
+    </style>
+
+    <!-- Resizable handles -->
+    <div class="resize-handle top"></div>
+    <div class="resize-handle bottom"></div>
+    <div class="resize-handle left"></div>
+    <div class="resize-handle right"></div>
+
+    <!-- Hidden inputs for custom CSS and asset URL with onchange events -->
+    <input type="hidden" class="custom-css" value="@Model.TemplateBody.CustomCss" onchange="updateSelectedElementValues()" />
+    <input type="hidden" class="asset-url" value="@Model.Asset.Url" onchange="updateSelectedElementValues()" />
+</div>
+
+<!-- Global CSS for the editor element and resize handles -->
+<style>
+
+    .editor-element {
+        position: relative;
+        max-width: 100%;
+        border: 1px solid #ccc;
+    }
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: rgba(0,0,0,0.5);
+        cursor: pointer;
+    }
+    .resize-handle.top {
+        top: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    .resize-handle.bottom {
+        bottom: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    .resize-handle.left {
+        left: -5px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    .resize-handle.right {
+        right: -5px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+</style>
+
+<!-- JavaScript for basic resizing logic and selection -->
+<script>
+    // Global variable to hold the currently selected editor element
+    var currentSelectedElement = null;
+
+    // Called when an editor-element is clicked.
+    // It shows the selectedElementSection and populates it using the hidden inputs.
+    function selectElement(editorElement) {
+        currentSelectedElement = editorElement;
+        
+        // Show the selected element section (assumes it exists and is hidden by default)
+        let selSection = document.getElementById("selectedElementSection");
+        if (selSection) {
+            showSection('selectedElement');
+        }
+        // Retrieve values from the hidden inputs within this specific editor element.
+        let customCss = editorElement.querySelector('input.custom-css').value;
+        let assetUrl = editorElement.querySelector('input.asset-url').value;
+
+        // Update the Selected Element section with these values.
+        document.getElementById("selectedCSS").innerText = customCss;
+        document.getElementById("selectedAsset").innerText = assetUrl;
+    }
+
+    // Called when a hidden input (custom-css or asset-url) changes.
+    // It updates the Selected Element section with the new values.
+    function updateSelectedElementValues() {
+        if (currentSelectedElement) {
+            let customCss = currentSelectedElement.querySelector('input.custom-css').value;
+            let assetUrl = currentSelectedElement.querySelector('input.asset-url').value;
+
+            document.getElementById("selectedCSS").innerText = customCss;
+            document.getElementById("selectedAsset").innerText = assetUrl;
+        }
+    }
+
+    // Basic resizing logic for demonstration (from your earlier code)
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll('.resize-handle').forEach(handle => {
+            handle.addEventListener('mousedown', initiateResize);
+        });
+
+        function initiateResize(e) {
+            const handle = e.target;
+            const editorElement = handle.closest('.editor-element');
+            let startX = e.clientX;
+            let startY = e.clientY;
+            const startWidth = editorElement.offsetWidth;
+            const startHeight = editorElement.offsetHeight;
+            const handleType = handle.classList.contains('right') ? 'right' :
+                               handle.classList.contains('left') ? 'left' :
+                               handle.classList.contains('bottom') ? 'bottom' :
+                               handle.classList.contains('top') ? 'top' : '';
+
+            function onMouseMove(e) {
+                if (handleType === 'right') {
+                    editorElement.style.width = startWidth + (e.clientX - startX) + 'px';
+                } else if (handleType === 'left') {
+                    editorElement.style.width = startWidth - (e.clientX - startX) + 'px';
+                } else if (handleType === 'bottom') {
+                    editorElement.style.height = startHeight + (e.clientY - startY) + 'px';
+                } else if (handleType === 'top') {
+                    editorElement.style.height = startHeight - (e.clientY - startY) + 'px';
+                }
+            }
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+    });
+</script>

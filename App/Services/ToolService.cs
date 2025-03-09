@@ -30,6 +30,20 @@ namespace App.Services
                 throw new HttpRequestException($"Request failed with status code {response.StatusCode}: {errorMessage}");
             }
         }
+        public async Task<ToolDTO> GetToolByIdAsync(Guid id)
+        {
+            var response = await _httpClient.GetAsync($"http://localhost:5000/pagebuilder/tool/{id}");
 
+            if (response.IsSuccessStatusCode)
+            {
+                var tool = await response.Content.ReadFromJsonAsync<ToolDTO>();
+                return tool;
+            }
+            else
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Request for tool id {id} failed with status code {response.StatusCode}: {errorMessage}");
+            }
+        }
     }
 }

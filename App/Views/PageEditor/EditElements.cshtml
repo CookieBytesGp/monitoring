@@ -1,7 +1,8 @@
-﻿@model App.Controllers.EditElementsViewModel
+﻿@model App.Models.PageEditor.EditElementsViewModel
 @{
     ViewData["PageId"] = Model.PageId;
 }
+<div class="BigD">
 
 @await Component.InvokeAsync("TopMenu", new
     {
@@ -10,6 +11,12 @@
         finalSaveUrl = Url.Action("FinalSave", "PageEditor") // if you use explicit URL for final save
     })
 @await Component.InvokeAsync("SideBar", Model.Tools)
-@await Component.InvokeAsync("EditorMain", Model.Elements)
+@await Component.InvokeAsync("EditorMain", new
+    {
+        elements = Model.Elements,
+        pageId = Model.PageId
+    })
+</div>
+
 
 
