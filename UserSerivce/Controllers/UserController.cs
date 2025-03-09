@@ -25,8 +25,7 @@ namespace Api.Controllers
         [ProducesResponseType(typeof(Result<UserVeiwModel>), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateUser([FromBody] Request viewModel)
         {
-            try
-            {
+
                 var result = await _userService.CreateUserAsync(
                     viewModel.FirstName,
                     viewModel.LastName,
@@ -42,12 +41,12 @@ namespace Api.Controllers
 
                 // در اینجا می‌توانید عملیات اضافه را انجام دهید، مانند ذخیره در دیتابیس
                 return Ok(result.Value);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error while creating user");
-                return StatusCode(500, "ریدی");
-            }
+            
+            //catch (Exception ex)
+            //{
+            //    _logger.LogError(ex, "Unexpected error while creating user");
+            //    return StatusCode(500, "ریدی");
+            //}
         }
 
         [HttpGet("{id}")]

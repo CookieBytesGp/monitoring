@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Resource.Messages {
+namespace Resources.Messages {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace Resource.Messages {
         public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Resource.Messages.Successes", typeof(Successes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Resources.Messages.Successes", typeof(Successes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

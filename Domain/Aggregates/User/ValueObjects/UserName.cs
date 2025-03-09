@@ -1,6 +1,6 @@
 ﻿using FluentResults;
-using Resource.Messages;
-using Resource;
+using Resources.Messages;
+using Resources;
 using Domain.SeedWork;
 using System.Text.Json.Serialization;
 
@@ -42,21 +42,21 @@ namespace Domain.Aggregates.User.ValueObjects
 
             if (string.IsNullOrEmpty(value))
             {
-                string errorMessage = string.Format(Validations.Required, DataDictionary.Username);
+                string errorMessage = string.Format(Validations.Required, DataDictionary.UserName);
                 result.WithError(errorMessage);
                 return result;
             }
 
             if (value.Length > MaxLength)
             {
-                string errorMessage = string.Format(Validations.MaxLength, DataDictionary.Username);
+                string errorMessage = string.Format(Validations.MaxLength, DataDictionary.UserName);
                 result.WithError(errorMessage);
                 return result;
             }
 
             if (value.Length < MinLength)
             {
-                string errorMessage = string.Format(Validations.MinLength, DataDictionary.Username);
+                string errorMessage = string.Format(Validations.MinLength, DataDictionary.UserName);
                 result.WithError(errorMessage);
                 return result;
             }
