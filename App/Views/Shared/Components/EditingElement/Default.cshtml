@@ -1,6 +1,9 @@
-﻿@model DTOs.Pagebuilder.BaseElementDTO
+﻿@using System.Text.Encodings.Web
+@model DTOs.Pagebuilder.BaseElementDTO
 
-<div class="editor-element" data-id="@Model.Id" data-tool-id="@Model.ToolId" onclick="selectElement(this)">
+<div class="editor-element" data-id="@Model.Id" data-tool-id="@Model.ToolId"
+     data-model='@Html.Raw(HtmlEncoder.Default.Encode(Newtonsoft.Json.JsonConvert.SerializeObject(Model)))'
+     onclick="selectElement(this)">
     <!-- Hidden order input if needed -->
     <input type="number" class="order" value="@Model.Order" style="display:none;" />
     
@@ -8,6 +11,7 @@
     <div class="editor">
         @Html.Raw(Model.TemplateBody.HtmlTemplate)
     </div>
+
 
     <!-- Inline style block: inject element-specific custom CSS -->
     <style>
@@ -19,25 +23,24 @@
     <div class="resize-handle bottom"></div>
     <div class="resize-handle left"></div>
     <div class="resize-handle right"></div>
-
-    <!-- Hidden inputs for custom CSS and asset URL with onchange events -->
-    <input type="hidden" class="custom-css" value="@Model.TemplateBody.CustomCss" onchange="updateSelectedElementValues()" />
-    <input type="hidden" class="asset-url" value="@Model.Asset.Url" onchange="updateSelectedElementValues()" />
+    
+    <!-- No hidden input needed now -->
 </div>
 
 <!-- Global CSS for the editor element and resize handles -->
 <style>
-
     .editor-element {
         position: relative;
         max-width: 100%;
+        min-height: 50px;
+        height: 100%;
         border: 1px solid #ccc;
     }
     .resize-handle {
         position: absolute;
         width: 10px;
         height: 10px;
-        background: rgba(0,0,0,0.5);
+        background: rgba(0, 0, 0, 0.5);
         cursor: pointer;
     }
     .resize-handle.top {
@@ -60,45 +63,272 @@
         top: 50%;
         transform: translateY(-50%);
     }
+    .editor {
+        height: 100%;
+        min-height: inherit;
+    }
 </style>
 
-<!-- JavaScript for basic resizing logic and selection -->
 <script>
     // Global variable to hold the currently selected editor element
     var currentSelectedElement = null;
 
+    // Function to apply dynamic classes to HTML elements
+    function applyDynamicClasses(editorElement) {
+        if (!editorElement) return;
+
+        try {
+            const jsonString = editorElement.getAttribute('data-model');
+            const modelData = JSON.parse(decodeURIComponent(jsonString));
+            
+            if (!modelData.TemplateBody?.DefaultCssClasses) return;
+
+            const editorContainer = editorElement.querySelector('.editor');
+            if (!editorContainer) return;
+
+            // Just apply the dynamic classes
+            Object.entries(modelData.TemplateBody.DefaultCssClasses).forEach(([defaultClass, dynamicClass]) => {
+                const elements = editorContainer.getElementsByClassName(defaultClass);
+                Array.from(elements).forEach(element => {
+                    if (!element.classList.contains(dynamicClass)) {
+                        element.classList.add(dynamicClass);
+                    }
+                });
+            });
+        } catch (err) {
+            console.error("Error in applyDynamicClasses:", err);
+        }
+    }
+
+    // Function to initialize all editor elements
+    function initializeEditorElements() {
+        console.log('Initializing editor elements');
+        document.querySelectorAll('.editor-element').forEach(element => {
+            console.log('Found editor element:', element);
+            
+            // Get and apply stored styles from data-model
+            try {
+                const jsonString = element.getAttribute('data-model');
+                const modelData = JSON.parse(decodeURIComponent(jsonString));
+                
+                if (modelData.TemplateBody?.CustomCss) {
+                    console.log('Applying stored CSS:', modelData.TemplateBody.CustomCss);
+                    synchronizeCSS(modelData.TemplateBody.CustomCss, null, element);
+                }
+            } catch (err) {
+                console.error("Error applying stored styles:", err);
+            }
+            
+            applyDynamicClasses(element);
+        });
+    }
+
     // Called when an editor-element is clicked.
-    // It shows the selectedElementSection and populates it using the hidden inputs.
     function selectElement(editorElement) {
+        console.log('Element selected:', editorElement);
         currentSelectedElement = editorElement;
         
-        // Show the selected element section (assumes it exists and is hidden by default)
+        // Apply dynamic classes when element is selected
+        applyDynamicClasses(editorElement);
+        
+        // Show the selected element section
         let selSection = document.getElementById("selectedElementSection");
         if (selSection) {
             showSection('selectedElement');
         }
-        // Retrieve values from the hidden inputs within this specific editor element.
-        let customCss = editorElement.querySelector('input.custom-css').value;
-        let assetUrl = editorElement.querySelector('input.asset-url').value;
-
-        // Update the Selected Element section with these values.
-        document.getElementById("selectedCSS").innerText = customCss;
-        document.getElementById("selectedAsset").innerText = assetUrl;
-    }
-
-    // Called when a hidden input (custom-css or asset-url) changes.
-    // It updates the Selected Element section with the new values.
-    function updateSelectedElementValues() {
-        if (currentSelectedElement) {
-            let customCss = currentSelectedElement.querySelector('input.custom-css').value;
-            let assetUrl = currentSelectedElement.querySelector('input.asset-url').value;
-
-            document.getElementById("selectedCSS").innerText = customCss;
-            document.getElementById("selectedAsset").innerText = assetUrl;
+        
+        // Retrieve the JSON from the data-model attribute and parse it.
+        const jsonString = editorElement.getAttribute('data-model');
+        let modelData;
+        try {
+            // Decode the HTML-encoded JSON string before parsing
+            modelData = JSON.parse(decodeURIComponent(jsonString));
+        } catch (err) {
+            console.error("Error parsing model JSON:", err);
+            alert("Error: Unable to parse element data");
+            return;
+        }
+        
+        // Update the Selected Element section with asset and style info
+        const assetSpan = document.getElementById("selectedAsset");
+        const cssEditor = document.getElementById("cssEditor");
+        const cssSpan = document.getElementById("selectedCSS");
+        
+        if (assetSpan) {
+            if (!modelData.Asset) {
+                assetSpan.innerText = "No asset data available";
+                alert("Warning: This element has no Asset data");
+            } else {
+                assetSpan.innerText = modelData.Asset.Url || "No asset URL";
+            }
+        }
+        
+        if (!modelData.TemplateBody) {
+            if (cssEditor) cssEditor.value = "";
+            if (cssSpan) cssSpan.innerText = "";
+            alert("Warning: This element has no TemplateBody data");
+            return;
+        }
+        
+        if (cssEditor) {
+            cssEditor.value = modelData.TemplateBody.CustomCss || "";
+        }
+        
+        if (cssSpan) {
+            cssSpan.innerText = modelData.TemplateBody.CustomCss || "";
         }
     }
 
-    // Basic resizing logic for demonstration (from your earlier code)
+    function synchronizeCSS(cssText, source = null, targetElement = null) {
+        const elementToUpdate = targetElement || currentSelectedElement;
+        
+        if (!elementToUpdate) {
+            console.warn("No element selected for CSS synchronization");
+            return;
+        }
+
+        try {
+            // Log the incoming CSS for debugging
+            console.log('Incoming CSS:', cssText);
+            
+            // Validate and clean the CSS before applying
+            const validatedCSS = validateCSS(cssText);
+            console.log('Validated CSS:', validatedCSS);
+            
+            // Find the parent ElemntBox
+            const elemntBox = elementToUpdate.closest('.ElemntBox');
+            if (elemntBox) {
+                console.log('Found ElemntBox:', elemntBox);
+            }
+            
+            // Update style tag - ensure we find or create it properly
+            let styleElement = elementToUpdate.querySelector('style');
+            if (!styleElement) {
+                styleElement = document.createElement('style');
+                elementToUpdate.appendChild(styleElement);
+            }
+            
+            // Apply styles directly to ensure they take effect
+            if (validatedCSS.includes('.ElemntBox')) {
+                const boxStyles = validatedCSS.match(/.ElemntBox[^}]+}/g);
+                if (boxStyles && elemntBox) {
+                    console.log('Applying ElemntBox styles:', boxStyles);
+                    styleElement.textContent = validatedCSS;
+                }
+            } else {
+                styleElement.textContent = validatedCSS;
+            }
+
+            // Update the model data
+            const jsonString = elementToUpdate.getAttribute('data-model');
+            let modelData = JSON.parse(decodeURIComponent(jsonString));
+            if (!modelData.TemplateBody) {
+                modelData.TemplateBody = {};
+            }
+            modelData.TemplateBody.CustomCss = validatedCSS;
+            elementToUpdate.setAttribute('data-model', 
+                encodeURIComponent(JSON.stringify(modelData)));
+
+            // Update UI elements if this is the currently selected element
+            if (elementToUpdate === currentSelectedElement) {
+                const cssEditor = document.getElementById('cssEditor');
+                if (cssEditor && source !== 'editor') {
+                    cssEditor.value = validatedCSS;
+                }
+
+                const cssSpan = document.getElementById("selectedCSS");
+                if (cssSpan) {
+                    cssSpan.innerText = validatedCSS;
+                }
+            }
+        } catch (err) {
+            console.error("Error in synchronizeCSS:", err, err.stack);
+        }
+    }
+
+    // Function to handle CSS input changes
+    function handleCSSChange(event) {
+        const cssText = event.target.value;
+        synchronizeCSS(cssText);
+    }
+
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM Content Loaded - Starting initialization');
+        
+        // Log initial state
+        document.querySelectorAll('.editor-element').forEach(element => {
+            console.log('Initial element state:', {
+                id: element.getAttribute('data-id'),
+                model: element.getAttribute('data-model'),
+                styles: element.querySelector('style')?.textContent
+            });
+        });
+        
+        initializeEditorElements();
+        
+        // Add style change observer
+        const styleObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' && mutation.target.tagName === 'STYLE') {
+                    console.log('Style changed:', {
+                        element: mutation.target.parentElement,
+                        newStyles: mutation.target.textContent
+                    });
+                }
+            });
+        });
+        
+        document.querySelectorAll('.editor-element style').forEach(style => {
+            styleObserver.observe(style, { childList: true, characterData: true });
+        });
+
+        // Then set up other event listeners
+        const cssEditor = document.getElementById('cssEditor');
+        if (cssEditor) {
+            cssEditor.addEventListener('input', handleCSSChange);
+        }
+
+        // Add mutation observer to handle dynamic content changes
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    const editorElement = mutation.target.closest('.editor-element');
+                    if (editorElement) {
+                        console.log('Content changed, reapplying classes');
+                        applyDynamicClasses(editorElement);
+                    }
+                }
+            });
+        });
+
+        // Observe all editor elements for changes
+        document.querySelectorAll('.editor-element').forEach(element => {
+            observer.observe(element.querySelector('.editor'), {
+                childList: true,
+                subtree: true
+            });
+        });
+    });
+
+    // Function to switch between inner tabs
+    function showInnerTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.inner-tab-content').forEach(tab => {
+            tab.style.display = 'none';
+        });
+        
+        // Show the selected tab
+        const selectedTab = document.getElementById(tabName + 'Tab');
+        if (selectedTab) {
+            selectedTab.style.display = 'block';
+        }
+    }
+</script>
+
+
+<!-- JavaScript for basic resizing logic and selection -->
+<script>
     document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll('.resize-handle').forEach(handle => {
             handle.addEventListener('mousedown', initiateResize);
@@ -107,32 +337,202 @@
         function initiateResize(e) {
             const handle = e.target;
             const editorElement = handle.closest('.editor-element');
+            const elemntBox = editorElement.closest('.ElemntBox');
+            
+            // Select the element when starting resize if not already selected
+            if (currentSelectedElement !== editorElement) {
+                selectElement(editorElement);
+            }
+
             let startX = e.clientX;
             let startY = e.clientY;
-            const startWidth = editorElement.offsetWidth;
-            const startHeight = editorElement.offsetHeight;
-            const handleType = handle.classList.contains('right') ? 'right' :
-                               handle.classList.contains('left') ? 'left' :
-                               handle.classList.contains('bottom') ? 'bottom' :
-                               handle.classList.contains('top') ? 'top' : '';
+            const startWidth = elemntBox.offsetWidth;
+            const startHeight = elemntBox.offsetHeight;
+            const startLeft = elemntBox.offsetLeft;
+            const startTop = elemntBox.offsetTop;
+            
+            // Get editor boundaries
+            const editorMain = document.querySelector('.editor-main');
+            const editorRect = editorMain.getBoundingClientRect();
+            const minWidth = 100; // Minimum width
+            const minHeight = 50; // Minimum height
+            const maxWidth = editorRect.width - startLeft;
+            const maxHeight = editorRect.height - startTop;
 
             function onMouseMove(e) {
-                if (handleType === 'right') {
-                    editorElement.style.width = startWidth + (e.clientX - startX) + 'px';
-                } else if (handleType === 'left') {
-                    editorElement.style.width = startWidth - (e.clientX - startX) + 'px';
-                } else if (handleType === 'bottom') {
-                    editorElement.style.height = startHeight + (e.clientY - startY) + 'px';
-                } else if (handleType === 'top') {
-                    editorElement.style.height = startHeight - (e.clientY - startY) + 'px';
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+                let newWidth, newHeight, newLeft, newTop;
+
+                switch(handle.classList[1]) {
+                    case 'right':
+                        newWidth = Math.min(Math.max(startWidth + deltaX, minWidth), maxWidth);
+                        elemntBox.style.width = `${newWidth}px`;
+                        break;
+                        
+                    case 'left':
+                        const potentialWidth = startWidth - deltaX;
+                        const potentialLeft = startLeft + deltaX;
+                        
+                        if (potentialLeft >= 0 && potentialWidth >= minWidth) {
+                            newWidth = potentialWidth;
+                            newLeft = potentialLeft;
+                            elemntBox.style.width = `${newWidth}px`;
+                            elemntBox.style.left = `${newLeft}px`;
+                        }
+                        break;
+                        
+                    case 'bottom':
+                        newHeight = Math.min(Math.max(startHeight + deltaY, minHeight), maxHeight);
+                        elemntBox.style.height = `${newHeight}px`;
+                        editorElement.style.height = `${newHeight}px`; // Update editor element height
+                        break;
+                        
+                    case 'top':
+                        const potentialHeight = startHeight - deltaY;
+                        const potentialTop = startTop + deltaY;
+                        
+                        if (potentialTop >= 0 && potentialHeight >= minHeight) {
+                            newHeight = potentialHeight;
+                            newTop = potentialTop;
+                            elemntBox.style.height = `${newHeight}px`;
+                            elemntBox.style.top = `${newTop}px`;
+                            editorElement.style.height = `${newHeight}px`; // Update editor element height
+                        }
+                        break;
                 }
+
+                // Update CSS through our management system
+                const elementId = editorElement.getAttribute('data-id');
+                const modelData = JSON.parse(decodeURIComponent(editorElement.getAttribute('data-model')));
+                let currentCSS = modelData.TemplateBody.CustomCss || '';
+                let cssRules = currentCSS.split('}')
+                    .filter(rule => rule.trim())
+                    .map(rule => rule.trim());
+
+                // Update both ElemntBox and editor-element rules
+                const boxSelector = `.ElemntBox[data-id="${elementId}"]`;
+                const editorSelector = `.editor-element[data-id="${elementId}"]`;
+                
+                let boxRule = cssRules.find(rule => rule.includes(boxSelector)) || `${boxSelector} {`;
+                let editorRule = cssRules.find(rule => rule.includes(editorSelector)) || `${editorSelector} {`;
+
+                // Update properties for both rules
+                if (newWidth !== undefined) {
+                    boxRule = updateCSSProperty(boxRule, 'width', `${newWidth}px`);
+                }
+                if (newHeight !== undefined) {
+                    boxRule = updateCSSProperty(boxRule, 'height', `${newHeight}px`);
+                    editorRule = updateCSSProperty(editorRule, 'height', `${newHeight}px`);
+                }
+                if (newLeft !== undefined) {
+                    boxRule = updateCSSProperty(boxRule, 'left', `${newLeft}px`);
+                }
+                if (newTop !== undefined) {
+                    boxRule = updateCSSProperty(boxRule, 'top', `${newTop}px`);
+                }
+
+                // Update or add the rules
+                const boxIndex = cssRules.findIndex(rule => rule.includes(boxSelector));
+                const editorIndex = cssRules.findIndex(rule => rule.includes(editorSelector));
+
+                if (boxIndex >= 0) {
+                    cssRules[boxIndex] = boxRule;
+                } else {
+                    cssRules.push(boxRule);
+                }
+
+                if (editorIndex >= 0) {
+                    cssRules[editorIndex] = editorRule;
+                } else {
+                    cssRules.push(editorRule);
+                }
+
+                // Combine rules and synchronize
+                const newCSS = cssRules
+                    .filter(rule => rule.trim())
+                    .map(rule => rule.endsWith('}') ? rule : rule + '}')
+                    .join('\n');
+
+                synchronizeCSS(newCSS, 'resize', editorElement);
             }
+
             function onMouseUp() {
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
             }
+
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         }
+
+        function updateCSSProperty(rule, property, value) {
+            // Split into selector and styles, handling missing styles case
+            let [selector, styles = ''] = rule.split('{');
+            
+            // Clean up the styles by removing closing brace and splitting into individual properties
+            styles = styles.replace('}', '').trim();
+            const styleProps = styles.split(';')
+                .filter(s => s.trim())
+                .map(s => s.trim());
+            
+            // Remove existing property if it exists
+            const filteredProps = styleProps.filter(prop => 
+                !prop.toLowerCase().startsWith(property.toLowerCase() + ':'));
+            
+            // Add new property
+            filteredProps.push(`${property}: ${value}`);
+            
+            // Reconstruct the rule with proper formatting
+            return `${selector.trim()} { ${filteredProps.join('; ')} }`;
+        }
     });
+</script>
+
+<script>
+    function generateDynamicCSS(editorElement, modelData) {
+        if (!modelData.TemplateBody?.DefaultCssClasses) return '';
+
+        const elementId = editorElement.getAttribute('data-id');
+        const existingCSS = modelData.TemplateBody.CustomCss || '';
+        
+        // Keep existing CSS rules
+        const cssRules = existingCSS.split('}')
+            .filter(rule => rule.trim())
+            .map(rule => rule.trim() + '}');
+
+        return cssRules.join('\n');
+    }
+</script>
+
+<script>
+    function validateCSS(cssText) {
+        if (!cssText || !cssText.trim()) return '';
+        
+        console.log('Validating CSS:', cssText);
+        
+        // Split into individual rules
+        return cssText.split('}')
+            .filter(rule => rule.trim())
+            .map(rule => {
+                rule = rule.trim();
+                if (!rule.includes('{')) return '';
+                
+                const [selector, styles] = rule.split('{');
+                if (!selector || !selector.trim()) return '';
+                
+                // Clean and validate individual style properties
+                const cleanStyles = styles.split(';')
+                    .filter(style => {
+                        const [prop, value] = style.split(':').map(s => s.trim());
+                        return prop && value;
+                    })
+                    .map(style => style.trim())
+                    .join('; ');
+                    
+                return `${selector.trim()} { ${cleanStyles} }`;
+            })
+            .filter(rule => rule)
+            .join('\n');
+    }
 </script>

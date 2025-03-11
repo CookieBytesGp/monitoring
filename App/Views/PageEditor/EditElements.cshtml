@@ -7,7 +7,7 @@
 @await Component.InvokeAsync("TopMenu", new
     {
         pageId = Model.PageId,
-        saveUrl = Url.Action("SaveElements", "PageEditor"),
+            saveUrl = Url.Action("UpdateElementsList", "PageEditor"),
         finalSaveUrl = Url.Action("FinalSave", "PageEditor") // if you use explicit URL for final save
     })
 @await Component.InvokeAsync("SideBar", Model.Tools)

@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Domain.Aggregates.Page.ValueObjects;
+using System.ComponentModel.DataAnnotations;
+using System.Reflection;
 
 namespace Domain.SeedWork
 {
@@ -121,5 +123,24 @@ namespace Domain.SeedWork
 
 			return type;
 		}
-	}
+        private static void SetEntityId(BaseElement element, Guid id)
+        {
+            // Assuming that the Id property is declared in the base class 'Entity'
+            // and it has a private setter. Adjust the BindingFlags as needed.
+            var idProperty = typeof(Entity).GetProperty("Id", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (idProperty != null && idProperty.CanWrite == false)
+            {
+                // Use reflection to bypass setter.
+                var setMethod = idProperty.GetSetMethod(true);
+                if (setMethod != null)
+                {
+                    setMethod.Invoke(element, new object[] { id });
+                }
+            }
+            else if (idProperty != null && idProperty.CanWrite)
+            {
+                idProperty.SetValue(element, id);
+            }
+        }
+    }
 }

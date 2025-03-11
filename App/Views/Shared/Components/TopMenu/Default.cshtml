@@ -6,31 +6,71 @@
 </div>
 
 <script type="text/javascript">
+    // Utility function to decode an HTML-encoded JSON stored in a data attribute.
+    function decodeModelData(encodedData) {
+        return decodeURIComponent(encodedData);
+    }
+
     const FinalSave = () => {
-        fetch('@Url.Action("FinalSave", "PageEditor")', {
+        // Gather updated elements from the DOM
+        const updatedElements = [];
+        const editorElements = document.querySelectorAll('.editor-element');
+
+        editorElements.forEach(el => {
+            const elementId = el.getAttribute('data-id');
+            const encodedData = el.getAttribute('data-model');
+            const jsonStr = decodeModelData(encodedData);
+            try {
+                const baseElement = JSON.parse(jsonStr);
+                // Ensure the element id from DOM is used in case the model is outdated.
+                baseElement.Id = elementId;
+                updatedElements.push(baseElement);
+            } catch (err) {
+                console.error("Error parsing data-model for element id " + elementId + ":", err);
+            }
+        });
+
+        // Build the payload as the list of base elements:
+        const payload = updatedElements; // Since we're sending an array of BaseElementDTO
+
+        // First, update the in-memory _elements list on the server.
+        fetch('@Url.Action("UpdateElementsList", "PageEditor")', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Failed to save page. Server returned status code: ${response.status}`);
+                    return response.text().then(error => {
+                        throw new Error(error || "Failed to update elements");
+                    });
                 }
-
-                const contentType = response.headers.get("Content-Type");
-                if (contentType && contentType.includes("application/json")) {
-                    return response.json(); // Parse as JSON if the response is JSON
-                } else {
-                    return response.text(); // Fallback to plain text
-                }
+                return response.text();
             })
             .then(data => {
-                console.log("Final save response:", data);
-                alert(data); // Show the response in an alert (whether JSON or plain text)
+                console.log("UpdateElementsList response:", data);
+                // Now call the FinalSave endpoint to update the database
+                return fetch('@Url.Action("FinalSave", "PageEditor")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
             })
-            .catch(error => {
-                console.error("Error during final save:", error);
-                alert(`Error during final save: ${error.message}`);
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(error => {
+                        throw new Error(error || "Failed to save page");
+                    });
+                }
+                return response.text();
+            })
+            .then(data => {
+                console.log("FinalSave response:", data);
+                alert("Page saved successfully. " + data);
+            })
+            .catch(err => {
+                console.error("Error updating elements or saving page:", err.message);
+                alert("Error: " + err.message);
             });
     };
-
 </script>
+

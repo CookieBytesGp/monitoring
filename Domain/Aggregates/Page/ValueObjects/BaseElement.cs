@@ -2,6 +2,7 @@
 using FluentResults;
 using Domain.SeedWork;
 using Domain.SharedKernel.Domain.SharedKernel;
+using System.Reflection;
 #endregion
 
 namespace Domain.Aggregates.Page.ValueObjects
@@ -102,7 +103,37 @@ namespace Domain.Aggregates.Page.ValueObjects
         {
             Order = order;
         }
+        
+        // New overload for rehydration that preserves an existing Id.
+        public static Result<BaseElement> Rehydrate(
+            Guid id,
+            Guid toolId,
+            int order,
+            TemplateBody templateBody,
+            Asset asset)
+        {
+            var result = Create(toolId, order, templateBody, asset);
+            if (result.IsSuccess)
+            {
+                // Use reflection to set the Id on the new domain object.
+                SetEntityId(result.Value, id);
+            }
+            return result;
+        }
 
+        // (Include the SetEntityId method here as a private static helper, or reference an external helper)
+        private static void SetEntityId(BaseElement element, Guid id)
+        {
+            var idProperty = typeof(Entity).GetProperty("Id", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (idProperty != null)
+            {
+                var setMethod = idProperty.GetSetMethod(true);
+                if (setMethod != null)
+                {
+                    setMethod.Invoke(element, new object[] { id });
+                }
+            }
+        }
         #endregion
     }
 

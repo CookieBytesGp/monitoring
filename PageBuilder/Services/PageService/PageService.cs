@@ -205,11 +205,23 @@ namespace PageBuilder.Services.PageService
                 {
                     return Result.Fail<BaseElement>(templateBodyResult.Errors.Concat(assetResult.Errors).ToList());
                 }
-                return BaseElement.Create(
-                    dto.ToolId,
-                    dto.Order,
-                    templateBodyResult.Value,
-                    assetResult.Value);
+                if (dto.Id != Guid.Empty)
+                {
+                    return BaseElement.Rehydrate(
+                        dto.Id,
+                        dto.ToolId,
+                        dto.Order,
+                        templateBodyResult.Value,
+                        assetResult.Value);
+                }
+                else
+                {
+                    return BaseElement.Create(
+                        dto.ToolId,
+                        dto.Order,
+                        templateBodyResult.Value,
+                        assetResult.Value);
+                }
             }).ToList();
 
             var failedResults = elementResults.Where(r => r.IsFailed).SelectMany(r => r.Errors).ToList();
@@ -221,6 +233,7 @@ namespace PageBuilder.Services.PageService
             var elements = elementResults.Select(r => r.Value).ToList();
             return Result.Ok(elements);
         }
+
 
         private BaseElementDTO ConvertToBaseElementDTO(BaseElement element)
         {

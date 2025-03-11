@@ -5,6 +5,7 @@ using App.Models;
 using App.Services;
 using DTOs.Pagebuilder;
 using App.Models.PageEditor;
+using System.Text.RegularExpressions;
 
 namespace App.Controllers
 {
@@ -88,12 +89,35 @@ namespace App.Controllers
                 return NotFound("Element not found");
             }
 
+            // Remove the specified element.
             _elements.Remove(element);
 
-            // Optionally, update database immediately:
-            // var result = await _pageService.RemoveElementAsync(request.PageId, request.ElementId);
-            // if (result.IsFailed)
-            //      return BadRequest("Failed to remove element: " + string.Join(", ", result.Errors));
+            // Recalculate order and update defaultCssClasses for each remaining element.
+            int newOrder = 1;
+            foreach (var elem in _elements)
+            {
+                // Update the order property
+                elem.Order = newOrder;
+
+                // Update each CSS class value to reflect the new order.
+                if (elem.TemplateBody?.DefaultCssClasses != null)
+                {
+                    // Grab a list of keys, so we can iterate and update.
+                    var keys = elem.TemplateBody.DefaultCssClasses.Keys.ToList();
+                    foreach (var key in keys)
+                    {
+                        var origVal = elem.TemplateBody.DefaultCssClasses[key];
+                        // If the original value is null or empty, use the key as default.
+                        string baseValue = string.IsNullOrEmpty(origVal) ? key : origVal;
+                        // Remove existing trailing digits using a regex.
+                        baseValue = Regex.Replace(baseValue, @"\d+$", "");
+                        // Append the new order value.
+                        elem.TemplateBody.DefaultCssClasses[key] = baseValue + newOrder.ToString();
+                    }
+                }
+
+                newOrder++;
+            }
 
             return Ok();
         }
@@ -139,34 +163,58 @@ namespace App.Controllers
                 return BadRequest("Tool cannot be null");
             }
 
-            // Retrieve the full tool information from the database
+            // Retrieve the full tool information from the database.
             var tool = await _toolService.GetToolByIdAsync(request.Tool.Id);
             if (tool == null)
             {
                 return NotFound("Tool not found");
             }
 
-            // Use the first available template from the tool's Templates list
+            // Use the first available template from the tool's Templates list.
             var firstTemplate = tool.Templates?.FirstOrDefault();
             if (firstTemplate == null)
             {
                 return BadRequest("No template defined for the specified tool.");
             }
 
-            // Construct the BaseElementDTO using real data from the tool
+            // Determine the order for the new element.
+            int order = _elements.Count + 1;
+
+            // Process DefaultCssClasses with duplicate-check logic.
+            Dictionary<string, string> defaultCssClasses;
+            if (firstTemplate.DefaultCssClasses != null)
+            {
+                defaultCssClasses = firstTemplate.DefaultCssClasses.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp =>
+                    {
+                        // Use kvp.Value if it's not empty, otherwise use the key.
+                        var baseValue = string.IsNullOrEmpty(kvp.Value) ? kvp.Key : kvp.Value;
+                        var orderStr = order.ToString();
+                        // If baseValue already ends with the order string, then leave it as is; otherwise, append.
+                        return baseValue.EndsWith(orderStr) ? baseValue : baseValue + orderStr;
+                    }
+                );
+            }
+            else
+            {
+                defaultCssClasses = new Dictionary<string, string>
+                {
+                    { "additionalProp1", "additionalProp1" + order.ToString() }
+                };
+            }
+
+
+            // Construct the BaseElementDTO using real data from the tool.
             var baseElement = new BaseElementDTO
             {
                 Id = Guid.NewGuid(),
                 ToolId = tool.Id,
-                Order = _elements.Count + 1, // Default incremental order
+                Order = order,
                 TemplateBody = new TemplateBodyDTO
                 {
-                    // Use the first template's values
                     HtmlTemplate = firstTemplate.HtmlTemplate,
-                    DefaultCssClasses = firstTemplate.DefaultCssClasses ?? new Dictionary<string, string>
-                    {
-                        { "additionalProp1", "default" }
-                    },
+                    DefaultCssClasses = defaultCssClasses,
                     CustomCss = firstTemplate.CustomCss ?? "",
                     CustomJs = tool.DefaultJs ?? "",
                     IsFloating = true,
@@ -178,16 +226,16 @@ namespace App.Controllers
                     AltText = "Default Alt",
                     Content = "Default Content",
                     Metadata = new Dictionary<string, string>
-                    {
-                        { "additionalProp1", "default" }
-                    }
+            {
+                { "additionalProp1", "default" }
+            }
                 }
             };
 
-            // Add the new base element to the in-memory list
+            // Add the new base element to the in-memory list.
             _elements.Add(baseElement);
 
-            // Log the current state of the elements list for debugging
+            // Log the current state of the elements list for debugging.
             Console.WriteLine("Current elements list:");
             foreach (var element in _elements)
             {
@@ -196,6 +244,7 @@ namespace App.Controllers
 
             return Ok(baseElement);
         }
+
 
 
 
@@ -251,8 +300,78 @@ namespace App.Controllers
             }
         }
 
+        [HttpPost]
+        public IActionResult UpdateElementsList([FromBody] List<BaseElementDTO> updatedElements)
+        {
+            if (updatedElements == null || !updatedElements.Any())
+            {
+                return BadRequest("No updated elements provided.");
+            }
+
+            // Replace your in-memory list with the updated data.
+            _elements = updatedElements;
+
+            int newOrder = 1;
+            foreach (var elem in _elements)
+            {
+                // Reset the order.
+                elem.Order = newOrder++;
+
+                // Validate and update the Asset.
+                elem.Asset = EnsureAssetIsValid(elem.Asset);
+            }
+
+            return Ok("Elements updated successfully.");
+        }
+
+
+        // Helper method that ensures every Asset has valid data.
+        private AssetDTO EnsureAssetIsValid(AssetDTO asset)
+        {
+            // If the asset is null, create a new one with default values.
+            if (asset == null)
+            {
+                return GetDefaultAsset();
+            }
+
+            // Validate each property: if null/empty, set default.
+            asset.Url = string.IsNullOrWhiteSpace(asset.Url) ? "default-asset-url" : asset.Url;
+            asset.Type = string.IsNullOrWhiteSpace(asset.Type) ? "default-type" : asset.Type;
+            asset.AltText = string.IsNullOrWhiteSpace(asset.AltText) ? "Default Alt" : asset.AltText;
+            asset.Content = string.IsNullOrWhiteSpace(asset.Content) ? "Default Content" : asset.Content;
+
+            // Ensure Metadata is valid.
+            if (asset.Metadata == null || !asset.Metadata.Any())
+            {
+                asset.Metadata = new Dictionary<string, string>
+                {
+                    { "additionalProp1", "default" }
+                };
+            }
+
+            return asset;
+        }
+
+        // Returns a default AssetDTO with mock data.
+        private AssetDTO GetDefaultAsset()
+        {
+            return new AssetDTO
+            {
+                Url = "default-asset-url",
+                Type = "default-type",
+                AltText = "Default Alt",
+                Content = "Default Content",
+                Metadata = new Dictionary<string, string>
+                {
+                    { "additionalProp1", "default" }
+                }
+            };
+        }
+
+
+
 
     }
 
-    
+
 }
