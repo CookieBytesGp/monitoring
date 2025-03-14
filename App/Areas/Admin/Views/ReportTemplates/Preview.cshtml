@@ -1,0 +1,225 @@
+@using App.Areas.Admin.Controllers
+ @model ReportPreviewViewModel
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = $"Preview - {Model.Template.Name}";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Report Preview: @Model.Template.Name</h2>
+        <div>
+            <a asp-action="Edit" asp-route-id="@Model.Template.Id" class="btn btn-info">
+                <i class="fas fa-edit"></i> Edit Template
+            </a>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Preview Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Time Range</label>
+                        <select id="timeRangeType" class="form-select">
+                            @foreach (var range in Model.TimeRanges)
+                            {
+                                <option value="@range.Value" @(range.Value == Model.Template.TimeRangeType ? "selected" : "")>
+                                    @range.Label
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div id="customDateRange" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" id="startDate" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">End Date</label>
+                            <input type="date" id="endDate" class="form-control">
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-primary w-100" onclick="generatePreview()">
+                        <i class="fas fa-sync"></i> Generate Preview
+                    </button>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Template Settings</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Format</dt>
+                        <dd class="col-sm-6">@Model.Template.Format</dd>
+
+                        <dt class="col-sm-6">Motion Stats</dt>
+                        <dd class="col-sm-6">@(Model.Template.IncludeMotionStats ? "Yes" : "No")</dd>
+
+                        <dt class="col-sm-6">Image Analysis</dt>
+                        <dd class="col-sm-6">@(Model.Template.IncludeImageAnalysis ? "Yes" : "No")</dd>
+
+                        <dt class="col-sm-6">Processing History</dt>
+                        <dd class="col-sm-6">@(Model.Template.IncludeProcessingHistory ? "Yes" : "No")</dd>
+
+                        <dt class="col-sm-6">Group by Camera</dt>
+                        <dd class="col-sm-6">@(Model.Template.GroupByCamera ? "Yes" : "No")</dd>
+
+                        <dt class="col-sm-6">Group by Date</dt>
+                        <dd class="col-sm-6">@(Model.Template.GroupByDate ? "Yes" : "No")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Preview Data</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Camera</th>
+                                    <th>Motion %</th>
+                                    <th>Status</th>
+                                    @if (Model.Template.IncludeMotionStats)
+                                    {
+                                        <th>Motion Stats</th>
+                                    }
+                                    @if (Model.Template.IncludeImageAnalysis)
+                                    {
+                                        <th>Image Analysis</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.PreviewData)
+                                {
+                                    <tr>
+                                        <td>@item.Timestamp.ToString("g")</td>
+                                        <td>@item.CameraName</td>
+                                        <td>@item.MotionPercentage.ToString("F2")%</td>
+                                        <td>
+                                            <span class="badge @(item.IsAcknowledged ? "bg-success" : "bg-warning")">
+                                                @(item.IsAcknowledged ? "Acknowledged" : "Pending")
+                                            </span>
+                                        </td>
+                                        @if (Model.Template.IncludeMotionStats)
+                                        {
+                                            <td>
+                                                <small>
+                                                    Area: @item.MotionStats?.MotionArea.ToString("F2")<br>
+                                                    Duration: @item.MotionStats?.Duration
+                                                </small>
+                                            </td>
+                                        }
+                                        @if (Model.Template.IncludeImageAnalysis)
+                                        {
+                                            <td>
+                                                <small>
+                                                    Quality: @item.ImageAnalysis?.Quality.ToString("F2")<br>
+                                                    Blur: @item.ImageAnalysis?.BlurLevel.ToString("F2")
+                                                </small>
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const timeRangeSelect = document.getElementById('timeRangeType');
+            const customDateRange = document.getElementById('customDateRange');
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+
+            // Set default dates
+            const today = new Date();
+            endDateInput.value = today.toISOString().split('T')[0];
+            startDateInput.value = new Date(today.setDate(today.getDate() - 7)).toISOString().split('T')[0];
+
+            timeRangeSelect.addEventListener('change', function() {
+                customDateRange.style.display = this.value === 'Custom' ? 'block' : 'none';
+                
+                if (this.value !== 'Custom') {
+                    const end = new Date();
+                    let start = new Date();
+                    
+                    switch(this.value) {
+                        case 'Daily':
+                            start.setDate(end.getDate() - 1);
+                            break;
+                        case 'Weekly':
+                            start.setDate(end.getDate() - 7);
+                            break;
+                        case 'Monthly':
+                            start.setMonth(end.getMonth() - 1);
+                            break;
+                    }
+                    
+                    startDateInput.value = start.toISOString().split('T')[0];
+                    endDateInput.value = end.toISOString().split('T')[0];
+                }
+            });
+
+            // Initialize display
+            timeRangeSelect.dispatchEvent(new Event('change'));
+        });
+
+        async function generatePreview() {
+            try {
+                const response = await fetch('/Admin/ReportTemplates/GeneratePreview/@Model.Template.Id', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        startDate: document.getElementById('startDate').value,
+                        endDate: document.getElementById('endDate').value
+                    })
+                });
+
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = response.headers.get('content-disposition').split('filename=')[1];
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                } else {
+                    toastr.error('Failed to generate preview');
+                }
+            } catch (error) {
+                console.error('Error generating preview:', error);
+                toastr.error('An error occurred while generating the preview');
+            }
+        }
+    </script>
+}

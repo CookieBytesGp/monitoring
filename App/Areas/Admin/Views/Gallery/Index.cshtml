@@ -1,0 +1,302 @@
+@using App.Models.Camera
+ @{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Motion Events Gallery";
+    var cameras = ViewBag.Cameras as IEnumerable<CameraDevice>;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Motion Events Gallery</h2>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary" id="refreshGallery">
+                <i class="fas fa-sync"></i> Refresh
+            </button>
+            <button class="btn btn-outline-danger" id="bulkDelete" disabled>
+                <i class="fas fa-trash"></i> Delete Selected
+            </button>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filters</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="cameraFilter">Camera</label>
+                        <select class="form-control" id="cameraFilter">
+                            <option value="">All Cameras</option>
+                            @foreach (var camera in cameras)
+                            {
+                                <option value="@camera.Id" 
+                                    @(camera.Id == ViewBag.SelectedCameraId ? "selected" : "")>
+                                    @camera.Name
+                                </option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="startDate">Start Date</label>
+                        <input type="datetime-local" class="form-control" id="startDate" 
+                               value="@(((DateTime)ViewBag.StartDate).ToString("yyyy-MM-ddTHH:mm"))">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="endDate">End Date</label>
+                        <input type="datetime-local" class="form-control" id="endDate"
+                               value="@(((DateTime)ViewBag.EndDate).ToString("yyyy-MM-ddTHH:mm"))">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="sortBy">Sort By</label>
+                        <select class="form-control" id="sortBy">
+                            <option value="timestamp">Time</option>
+                            <option value="motionPercentage">Motion %</option>
+                            <option value="cameraName">Camera Name</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="imageGallery"></div>
+
+    <div class="d-flex justify-content-center mt-4">
+        <nav aria-label="Gallery navigation">
+            <ul class="pagination" id="galleryPagination"></ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Image Preview Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Motion Event Details</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <img src="" class="img-fluid" id="previewImage" alt="Motion Event">
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted" id="previewCamera"></h6>
+                                <p class="mb-1">Time: <span id="previewTime"></span></p>
+                                <p class="mb-1">Motion: <span id="previewMotion"></span></p>
+                                <p class="mb-1">Location: <span id="previewLocation"></span></p>
+                                <hr>
+                                <div class="btn-group w-100">
+                                    <a href="#" class="btn btn-primary" id="previewDownload">
+                                        <i class="fas fa-download"></i> Download
+                                    </a>
+                                    <a href="#" class="btn btn-info" id="previewDetails">
+                                        <i class="fas fa-info-circle"></i> Details
+                                    </a>
+                                    <button type="button" class="btn btn-danger" id="previewDelete">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            let currentPage = 1;
+            const pageSize = 20;
+            let totalPages = 1;
+            let selectedImages = new Set();
+
+            function loadGallery() {
+                const params = {
+                    cameraId: $('#cameraFilter').val(),
+                    start: new Date($('#startDate').val()).toISOString(),
+                    end: new Date($('#endDate').val()).toISOString(),
+                    page: currentPage,
+                    pageSize: pageSize,
+                    sortBy: $('#sortBy').val(),
+                    ascending: false
+                };
+
+                $.get('/Admin/Gallery/GetImages', params, function(data) {
+                    const gallery = $('#imageGallery');
+                    gallery.empty();
+                    selectedImages.clear();
+                    updateBulkDeleteButton();
+
+                    data.events.forEach(event => {
+                        const card = $(`
+                            <div class="col-md-3 col-xl-2 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-img-top position-relative">
+                                        <img src="${event.imagePath}" class="img-fluid" 
+                                             alt="Motion event from ${event.cameraName}"
+                                             style="cursor: pointer;"
+                                             onclick="showPreview(${event.id})">
+                                        <div class="position-absolute" style="top: 10px; left: 10px;">
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" 
+                                                       id="select_${event.id}">
+                                                <label class="custom-control-label" 
+                                                       for="select_${event.id}"></label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-1">${event.cameraName}</h6>
+                                        <p class="card-text small text-muted mb-0">
+                                            ${new Date(event.timestamp).toLocaleString()}
+                                        </p>
+                                        <p class="card-text small">
+                                            Motion: ${Math.round(event.motionPercentage * 100)}%
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+
+                        gallery.append(card);
+
+                        $(`#select_${event.id}`).change(function() {
+                            if (this.checked) {
+                                selectedImages.add(event.id);
+                            } else {
+                                selectedImages.delete(event.id);
+                            }
+                            updateBulkDeleteButton();
+                        });
+                    });
+
+                    // Update pagination
+                    totalPages = data.totalPages;
+                    updatePagination();
+                });
+            }
+
+            function updatePagination() {
+                const pagination = $('#galleryPagination');
+                pagination.empty();
+
+                // Previous button
+                pagination.append(`
+                    <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a>
+                    </li>
+                `);
+
+                // Page numbers
+                for (let i = 1; i <= totalPages; i++) {
+                    if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                        pagination.append(`
+                            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                                <a class="page-link" href="#" data-page="${i}">${i}</a>
+                            </li>
+                        `);
+                    } else if (i === currentPage - 3 || i === currentPage + 3) {
+                        pagination.append(`
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        `);
+                    }
+                }
+
+                // Next button
+                pagination.append(`
+                    <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>
+                    </li>
+                `);
+
+                // Attach click handlers
+                $('.page-link[data-page]').click(function(e) {
+                    e.preventDefault();
+                    const newPage = parseInt($(this).data('page'));
+                    if (newPage >= 1 && newPage <= totalPages) {
+                        currentPage = newPage;
+                        loadGallery();
+                    }
+                });
+            }
+
+            function updateBulkDeleteButton() {
+                $('#bulkDelete').prop('disabled', selectedImages.size === 0);
+            }
+
+            // Event handlers
+            $('#refreshGallery').click(loadGallery);
+            $('#cameraFilter, #sortBy').change(function() {
+                currentPage = 1;
+                loadGallery();
+            });
+            $('#startDate, #endDate').change(loadGallery);
+
+            $('#bulkDelete').click(function() {
+                if (confirm('Are you sure you want to delete the selected images?')) {
+                    $.post('/Admin/Gallery/BulkDelete', { 
+                        ids: Array.from(selectedImages)
+                    }).done(function(response) {
+                        if (response.success) {
+                            loadGallery();
+                        } else {
+                            alert('Failed to delete some images');
+                        }
+                    });
+                }
+            });
+
+            // Global functions
+            window.showPreview = function(id) {
+                const event = currentEvents.find(e => e.id === id);
+                if (event) {
+                    $('#previewImage').attr('src', event.imagePath);
+                    $('#previewCamera').text(event.cameraName);
+                    $('#previewTime').text(new Date(event.timestamp).toLocaleString());
+                    $('#previewMotion').text(`${Math.round(event.motionPercentage * 100)}%`);
+                    $('#previewLocation').text(event.location);
+                    $('#previewDownload').attr('href', `/Admin/Gallery/Download/${event.id}`);
+                    $('#previewDetails').attr('href', `/Admin/Gallery/Details/${event.id}`);
+                    
+                    $('#previewDelete').off('click').click(function() {
+                        if (confirm('Are you sure you want to delete this image?')) {
+                            $.post(`/Admin/Gallery/DeleteImage/${event.id}`)
+                                .done(function(response) {
+                                    if (response.success) {
+                                        $('#imageModal').modal('hide');
+                                        loadGallery();
+                                    } else {
+                                        alert('Failed to delete image');
+                                    }
+                                });
+                        }
+                    });
+
+                    $('#imageModal').modal('show');
+                }
+            };
+
+            // Initial load
+            loadGallery();
+        });
+    </script>
+}

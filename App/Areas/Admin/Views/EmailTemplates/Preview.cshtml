@@ -1,0 +1,104 @@
+@using App.Areas.Admin.Controllers
+ @model EmailPreviewViewModel
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Preview Email Template";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Preview: @Model.Template.Name</h2>
+        <div>
+            <a asp-action="Edit" asp-route-id="@Model.Template.Id" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Edit Template
+            </a>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Email Preview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Subject</label>
+                        <div class="form-control bg-light">@Model.PreviewSubject</div>
+                    </div>
+                    <div>
+                        <label class="form-label">Body</label>
+                        <div class="border rounded p-3 bg-light">
+                            @Html.Raw(Model.PreviewBody)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Template Details</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Name</dt>
+                        <dd class="col-sm-8">@Model.Template.Name</dd>
+
+                        <dt class="col-sm-4">Description</dt>
+                        <dd class="col-sm-8">@(Model.Template.Description ?? "-")</dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Template.IsDefault)
+                            {
+                                <span class="badge bg-success">Default Template</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Regular Template</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Created</dt>
+                        <dd class="col-sm-8">@Model.Template.CreatedAt.ToString("g")</dd>
+
+                        @if (Model.Template.LastModifiedAt.HasValue)
+                        {
+                            <dt class="col-sm-4">Modified</dt>
+                            <dd class="col-sm-8">@Model.Template.LastModifiedAt.Value.ToString("g")</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Sample Data Used</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Report</dt>
+                        <dd class="col-sm-8">Sample Monthly Activity Report</dd>
+
+                        <dt class="col-sm-4">Date Range</dt>
+                        <dd class="col-sm-8">01/01/2024 - 01/31/2024</dd>
+
+                        <dt class="col-sm-4">Records</dt>
+                        <dd class="col-sm-8">150</dd>
+
+                        <dt class="col-sm-4">Format</dt>
+                        <dd class="col-sm-8">Excel</dd>
+
+                        <dt class="col-sm-4">Size</dt>
+                        <dd class="col-sm-8">2.5 MB</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

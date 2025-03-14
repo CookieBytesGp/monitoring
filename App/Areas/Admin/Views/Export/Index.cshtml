@@ -1,0 +1,146 @@
+@using App.Models.Camera
+ @{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Export Data";
+    var cameras = ViewBag.Cameras as IEnumerable<CameraDevice>;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Export Data</h2>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Export Motion Events</h5>
+                </div>
+                <div class="card-body">
+                    <form id="eventsExportForm">
+                        <div class="form-group">
+                            <label for="eventsCameraFilter">Camera</label>
+                            <select class="form-control" id="eventsCameraFilter" name="cameraId">
+                                <option value="">All Cameras</option>
+                                @foreach (var camera in cameras)
+                                {
+                                    <option value="@camera.Id">@camera.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Date Range</label>
+                            <div class="input-group">
+                                <input type="datetime-local" class="form-control" id="eventsStartDate" name="start">
+                                <div class="input-group-append input-group-prepend">
+                                    <span class="input-group-text">to</span>
+                                </div>
+                                <input type="datetime-local" class="form-control" id="eventsEndDate" name="end">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Format</label>
+                            <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                                <label class="btn btn-outline-primary active">
+                                    <input type="radio" name="format" value="csv" checked> CSV
+                                </label>
+                                <label class="btn btn-outline-primary">
+                                    <input type="radio" name="format" value="json"> JSON
+                                </label>
+                                <label class="btn btn-outline-primary">
+                                    <input type="radio" name="format" value="excel"> Excel
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-download"></i> Export Events
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Export Analytics Data</h5>
+                </div>
+                <div class="card-body">
+                    <form id="analyticsExportForm">
+                        <div class="form-group">
+                            <label for="analyticsCameraFilter">Camera</label>
+                            <select class="form-control" id="analyticsCameraFilter" name="cameraId">
+                                <option value="">All Cameras</option>
+                                @foreach (var camera in cameras)
+                                {
+                                    <option value="@camera.Id">@camera.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Date Range</label>
+                            <div class="input-group">
+                                <input type="datetime-local" class="form-control" id="analyticsStartDate" name="start">
+                                <div class="input-group-append input-group-prepend">
+                                    <span class="input-group-text">to</span>
+                                </div>
+                                <input type="datetime-local" class="form-control" id="analyticsEndDate" name="end">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Format</label>
+                            <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                                <label class="btn btn-outline-primary active">
+                                    <input type="radio" name="format" value="csv" checked> CSV
+                                </label>
+                                <label class="btn btn-outline-primary">
+                                    <input type="radio" name="format" value="json"> JSON
+                                </label>
+                                <label class="btn btn-outline-primary">
+                                    <input type="radio" name="format" value="excel"> Excel
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-download"></i> Export Analytics
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Set default date range
+            const now = new Date();
+            const lastWeek = new Date(now);
+            lastWeek.setDate(lastWeek.getDate() - 7);
+            
+            $('#eventsStartDate, #analyticsStartDate').val(lastWeek.toISOString().slice(0, 16));
+            $('#eventsEndDate, #analyticsEndDate').val(now.toISOString().slice(0, 16));
+
+            function submitExportForm(formId, endpoint) {
+                $(`#${formId}`).submit(function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    const queryString = new URLSearchParams(formData).toString();
+                    
+                    window.location.href = `/Admin/Export/${endpoint}?${queryString}`;
+                });
+            }
+
+            submitExportForm('eventsExportForm', 'ExportEvents');
+            submitExportForm('analyticsExportForm', 'ExportAnalytics');
+        });
+    </script>
+}

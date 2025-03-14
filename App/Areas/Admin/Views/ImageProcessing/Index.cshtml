@@ -1,0 +1,1114 @@
+@using App.Models
+    @model IEnumerable<MotionEvent>
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Image Processing";
+}
+
+<div class="container-fluid">
+    <h2 class="mb-4">Image Processing</h2>
+
+    <!-- Batch Processing Controls -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Batch Processing</h5>
+                    <div>
+                        <button class="btn btn-primary" onclick="toggleBatchMode()">
+                            <i class="fas fa-tasks"></i> Toggle Batch Mode
+                        </button>
+                        <button class="btn btn-success d-none" id="applyBatch" onclick="applyBatchProcessing()">
+                            <i class="fas fa-play"></i> Apply to Selected
+                        </button>
+                        <button class="btn btn-secondary d-none" id="cancelBatch" onclick="cancelBatchMode()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body d-none" id="batchControls">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="batchEnhance" checked>
+                                <label class="form-check-label" for="batchEnhance">Apply Enhancement</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="batchResize">
+                                <label class="form-check-label" for="batchResize">Apply Resize</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="batchRotate">
+                                <label class="form-check-label" for="batchRotate">Apply Rotation</label>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="progress d-none" id="batchProgress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%" 
+                                     id="batchProgressBar">0%</div>
+                            </div>
+                            <div id="batchStatus" class="mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Image Display Area -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Image Preview</h5>
+                    <div>
+                        <div class="btn-group me-2">
+                            <button class="btn btn-outline-info" onclick="toggleMotionVisualization()">
+                                <i class="fas fa-vector-square"></i> Motion Areas
+                            </button>
+                            <button class="btn btn-outline-info" onclick="toggleHeatmap()">
+                                <i class="fas fa-fire"></i> Heatmap
+                            </button>
+                        </div>
+                        <button class="btn btn-outline-primary" onclick="toggleComparison()">
+                            <i class="fas fa-columns"></i> Compare
+                        </button>
+                        <div class="btn-group ms-2" id="comparisonControls" style="display: none;">
+                            <button class="btn btn-outline-secondary" onclick="setComparisonMode('side-by-side')">Side by Side</button>
+                            <button class="btn btn-outline-secondary" onclick="setComparisonMode('overlay')">Overlay</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="imageContainer" class="text-center position-relative">
+                        <canvas id="motionOverlay" class="position-absolute top-0 start-50 translate-middle-x" style="display: none;"></canvas>
+                        <canvas id="heatmapOverlay" class="position-absolute top-0 start-50 translate-middle-x" style="display: none;"></canvas>
+                        <div id="comparisonView" style="display: none;">
+                            <div class="d-flex justify-content-between mb-3">
+                                <div class="comparison-image" style="width: 48%;">
+                                    <h6>Original</h6>
+                                    <img id="originalImage" class="img-fluid" src="" alt="Original Image" style="max-height: 500px;">
+                                </div>
+                                <div class="comparison-image" style="width: 48%;">
+                                    <h6>Processed</h6>
+                                    <img id="processedImage" class="img-fluid" src="" alt="Processed Image" style="max-height: 500px;">
+                                </div>
+                            </div>
+                            <div id="overlayControls" style="display: none;">
+                                <label for="opacitySlider">Opacity:</label>
+                                <input type="range" class="form-range" id="opacitySlider" min="0" max="100" value="50">
+                            </div>
+                        </div>
+                        <img id="previewImage" class="img-fluid" src="" alt="Select an image to process" style="max-height: 500px;">
+                        <div id="motionStats" class="mt-2" style="display: none;">
+                            <div class="alert alert-info">
+                                <h6>Motion Detection Stats</h6>
+                                <p class="mb-1">Motion Percentage: <span id="motionPercentage">0</span>%</p>
+                                <p class="mb-1">Detected Regions: <span id="regionCount">0</span></p>
+                                <p class="mb-0">Detection Confidence: <span id="detectionConfidence">0</span>%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <div class="col-md-4">
+            <!-- Processing Tools -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Processing Tools</h5>
+                </div>
+                <div class="card-body">
+                 <!-- Template Controls -->
+                            <div class="mb-4">
+                                <h6>Processing Templates</h6>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <select id="templateSelect" class="form-select">
+                                        <option value="">Select a template...</option>
+                                    </select>
+                                    <button class="btn btn-primary ms-2" onclick="applyTemplate()">Apply</button>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="saveAsTemplate()">Save as Template</button>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteTemplate()">Delete Template</button>
+                                </div>
+                            </div>
+                    <!-- Enhancement Controls -->
+                    <div class="mb-4">
+                        <h6>Image Enhancement</h6>
+                        <div class="form-group">
+                            <label for="brightness">Brightness</label>
+                            <input type="range" class="form-range" id="brightness" min="-1" max="1" step="0.1" value="0">
+                            <span id="brightnessValue">0</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="contrast">Contrast</label>
+                            <input type="range" class="form-range" id="contrast" min="-1" max="1" step="0.1" value="0">
+                            <span id="contrastValue">0</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="sharpness">Sharpness</label>
+                            <input type="range" class="form-range" id="sharpness" min="0" max="1" step="0.1" value="0">
+                            <span id="sharpnessValue">0</span>
+                        </div>
+                        <button class="btn btn-primary mt-2" onclick="enhanceImage()">Apply Enhancement</button>
+                    </div>
+
+                    <!-- Cropping Controls -->
+                    <div class="mb-4">
+                        <h6>Image Cropping</h6>
+                        <div class="form-group">
+                            <button class="btn btn-primary" onclick="toggleCropMode()">Start Cropping</button>
+                            <button class="btn btn-success d-none" id="applyCrop" onclick="applyCrop()">Apply Crop</button>
+                            <button class="btn btn-secondary d-none" id="cancelCrop" onclick="cancelCrop()">Cancel</button>
+                        </div>
+                        <div class="form-group mt-2">
+                            <div id="cropDimensions" class="d-none">
+                                <small class="text-muted">
+                                    Selection: <span id="cropX">0</span>, <span id="cropY">0</span>
+                                    Size: <span id="cropW">0</span> × <span id="cropH">0</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resize Controls -->
+                    <div class="mb-4">
+                        <h6>Resize Image</h6>
+                        <div class="form-group">
+                            <label for="width">Width</label>
+                            <input type="number" class="form-control" id="width" placeholder="Width in pixels">
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="height">Height</label>
+                            <input type="number" class="form-control" id="height" placeholder="Height in pixels">
+                        </div>
+                        <div class="form-check mt-2">
+                            <input type="checkbox" class="form-check-input" id="maintainAspectRatio" checked>
+                            <label class="form-check-label" for="maintainAspectRatio">Maintain Aspect Ratio</label>
+                        </div>
+                        <button class="btn btn-primary mt-2" onclick="resizeImage()">Resize</button>
+                    </div>
+
+                    <!-- Annotation Controls -->
+                    <div class="mb-4">
+                        <h6>Add Annotation</h6>
+                        <div class="form-group">
+                            <label for="annotationText">Text</label>
+                            <input type="text" class="form-control" id="annotationText" placeholder="Enter text">
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="fontSize">Font Size</label>
+                            <input type="number" class="form-control" id="fontSize" value="16">
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="textColor">Color</label>
+                            <input type="color" class="form-control" id="textColor" value="#FF0000">
+                        </div>
+                        <button class="btn btn-primary mt-2" onclick="addAnnotation()">Add Text</button>
+                    </div>
+
+                    <!-- Rotation Controls -->
+                    <div class="mb-4">
+                        <h6>Rotate Image</h6>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-secondary" onclick="rotateImage(-90)">-90°</button>
+                            <button class="btn btn-secondary" onclick="rotateImage(90)">+90°</button>
+                            <button class="btn btn-secondary" onclick="rotateImage(180)">180°</button>
+                        </div>
+                    </div>
+
+                    <!-- Image Analysis -->
+                    <div class="mb-4">
+                        <h6>Image Analysis</h6>
+                        <button class="btn btn-info" onclick="analyzeImage()">Analyze Quality</button>
+                        <div id="analysisResults" class="mt-2"></div>
+                    </div>
+
+                    <!-- Save/Reset Controls -->
+                    <div class="mt-4">
+                        <button class="btn btn-success" onclick="saveChanges()">Save Changes</button>
+                        <button class="btn btn-secondary" onclick="resetImage()">Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image List -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Motion Event Images</h5>
+                    <div class="batch-controls d-none">
+                        <button class="btn btn-outline-primary btn-sm" onclick="selectAll()">Select All</button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="deselectAll()">Deselect All</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="imageList">
+                        @foreach (var evt in Model)
+                        {
+                            <div class="col-md-3 mb-4">
+                                <div class="card">
+                                    <div class="card-img-top position-relative">
+                                        <div class="batch-checkbox position-absolute top-0 start-0 m-2 d-none">
+                                            <input type="checkbox" class="form-check-input batch-select" 
+                                                   data-event-id="@evt.Id" data-image-path="@evt.ImagePath">
+                                        </div>
+                                        <img src="@evt.ImagePath" class="img-fluid" alt="Motion Event"
+                                             onclick="loadImage(@evt.Id, '@evt.ImagePath')">
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="card-text">
+                                            Event ID: @evt.Id<br>
+                                            Camera: @evt.CameraName<br>
+                                            Time: @evt.Timestamp.ToString("g")
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
+    <script>
+        // State variables
+        let currentEventId = null;
+        let currentImagePath = null;
+        let originalImagePath = null;
+        let cropper = null;
+        let isCropping = false;
+        let isBatchMode = false;
+
+
+            function loadImage(eventId, imagePath) {
+                if (cropper) {
+                    cancelCrop();
+                }
+                currentEventId = eventId;
+                currentImagePath = imagePath;
+                originalImagePath = imagePath;
+                document.getElementById('previewImage').src = imagePath;
+                resetControls();
+            }
+
+            function resetControls() {
+                document.getElementById('brightness').value = 0;
+                document.getElementById('brightnessValue').textContent = '0';
+                document.getElementById('contrast').value = 0;
+                document.getElementById('contrastValue').textContent = '0';
+                document.getElementById('sharpness').value = 0;
+                document.getElementById('sharpnessValue').textContent = '0';
+                document.getElementById('width').value = '';
+                document.getElementById('height').value = '';
+                document.getElementById('annotationText').value = '';
+                document.getElementById('fontSize').value = '16';
+                document.getElementById('textColor').value = '#FF0000';
+                document.getElementById('analysisResults').innerHTML = '';
+                if (cropper) {
+                    cancelCrop();
+                }
+            }
+
+            // Update range input values
+            document.querySelectorAll('input[type="range"]').forEach(input => {
+                input.addEventListener('input', function() {
+                    document.getElementById(this.id + 'Value').textContent = this.value;
+                });
+            });
+
+            function toggleCropMode() {
+                if (!currentEventId) return;
+
+                const image = document.getElementById('previewImage');
+                const applyCropBtn = document.getElementById('applyCrop');
+                const cancelCropBtn = document.getElementById('cancelCrop');
+                const cropDimensions = document.getElementById('cropDimensions');
+
+                if (!isCropping) {
+                    // Start cropping
+                    cropper = new Cropper(image, {
+                        viewMode: 1,
+                        dragMode: 'crop',
+                        aspectRatio: NaN,
+                        autoCrop: true,
+                        crop: function(event) {
+                            document.getElementById('cropX').textContent = Math.round(event.detail.x);
+                            document.getElementById('cropY').textContent = Math.round(event.detail.y);
+                            document.getElementById('cropW').textContent = Math.round(event.detail.width);
+                            document.getElementById('cropH').textContent = Math.round(event.detail.height);
+                        }
+                    });
+
+                    applyCropBtn.classList.remove('d-none');
+                    cancelCropBtn.classList.remove('d-none');
+                    cropDimensions.classList.remove('d-none');
+                    isCropping = true;
+                } else {
+                    cancelCrop();
+                }
+            }
+
+            async function applyCrop() {
+                if (!cropper || !currentEventId) return;
+
+                const cropData = cropper.getData(true); // Get rounded data
+
+                try {
+                    const response = await fetch('/Admin/ImageProcessing/CropImage', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            eventId: currentEventId,
+                            x: cropData.x,
+                            y: cropData.y,
+                            width: cropData.width,
+                            height: cropData.height
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        currentImagePath = data.path;
+                        cancelCrop(); // Clean up cropper
+                        document.getElementById('previewImage').src = data.path + '?t=' + new Date().getTime();
+                    }
+                } catch (error) {
+                    console.error('Error cropping image:', error);
+                    alert('Failed to crop image');
+                }
+            }
+
+            function cancelCrop() {
+                if (cropper) {
+                    cropper.destroy();
+                    cropper = null;
+                }
+
+                document.getElementById('applyCrop').classList.add('d-none');
+                document.getElementById('cancelCrop').classList.add('d-none');
+                document.getElementById('cropDimensions').classList.add('d-none');
+                isCropping = false;
+            }
+
+            async function enhanceImage() {
+                if (!currentEventId) return;
+
+                try {
+                    const response = await fetch('/Admin/ImageProcessing/EnhanceImage', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            eventId: currentEventId,
+                            brightness: parseFloat(document.getElementById('brightness').value),
+                            contrast: parseFloat(document.getElementById('contrast').value),
+                            sharpness: parseFloat(document.getElementById('sharpness').value)
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        currentImagePath = data.path;
+                        document.getElementById('previewImage').src = data.path + '?t=' + new Date().getTime();
+                    }
+                } catch (error) {
+                    console.error('Error enhancing image:', error);
+                    alert('Failed to enhance image');
+                }
+            }
+
+            async function resizeImage() {
+                if (!currentEventId) return;
+
+                try {
+                    const response = await fetch('/Admin/ImageProcessing/ResizeImage', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            eventId: currentEventId,
+                            width: parseInt(document.getElementById('width').value),
+                            height: parseInt(document.getElementById('height').value),
+                            maintainAspectRatio: document.getElementById('maintainAspectRatio').checked
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        currentImagePath = data.path;
+                        document.getElementById('previewImage').src = data.path + '?t=' + new Date().getTime();
+                    }
+                } catch (error) {
+                    console.error('Error resizing image:', error);
+                    alert('Failed to resize image');
+                }
+            }
+
+            async function addAnnotation() {
+                if (!currentEventId) return;
+
+                try {
+                    const response = await fetch('/Admin/ImageProcessing/AddAnnotation', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            eventId: currentEventId,
+                            text: document.getElementById('annotationText').value,
+                            x: 10, // Default position, could be made interactive
+                            y: 10,
+                            fontSize: parseFloat(document.getElementById('fontSize').value),
+                            color: document.getElementById('textColor').value
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        currentImagePath = data.path;
+                        document.getElementById('previewImage').src = data.path + '?t=' + new Date().getTime();
+                    }
+                } catch (error) {
+                    console.error('Error adding annotation:', error);
+                    alert('Failed to add annotation');
+                }
+            }
+
+            async function rotateImage(degrees) {
+                if (!currentEventId) return;
+
+                try {
+                    const response = await fetch('/Admin/ImageProcessing/RotateImage', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            eventId: currentEventId,
+                            degrees: degrees
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        currentImagePath = data.path;
+                        document.getElementById('previewImage').src = data.path + '?t=' + new Date().getTime();
+                    }
+                } catch (error) {
+                    console.error('Error rotating image:', error);
+                    alert('Failed to rotate image');
+                }
+            }
+
+            async function analyzeImage() {
+                if (!currentEventId) return;
+
+                try {
+                    const response = await fetch(`/Admin/ImageProcessing/AnalyzeQuality?eventId=${currentEventId}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const resultsHtml = `
+                            <div class="alert alert-info">
+                                <p><strong>Brightness:</strong> ${(data.brightness * 100).toFixed(1)}%</p>
+                                <p><strong>Contrast:</strong> ${(data.contrast * 100).toFixed(1)}%</p>
+                                <p><strong>Blur Detection:</strong> ${data.isBlurry ? 'Blurry' : 'Sharp'}</p>
+                            </div>
+                        `;
+                        document.getElementById('analysisResults').innerHTML = resultsHtml;
+                    }
+                } catch (error) {
+                    console.error('Error analyzing image:', error);
+                    alert('Failed to analyze image');
+                }
+            }
+
+            function resetImage() {
+                if (originalImagePath) {
+                    currentImagePath = originalImagePath;
+                    document.getElementById('previewImage').src = originalImagePath;
+                    resetControls();
+                }
+            }
+
+            async function saveChanges() {
+                if (!currentImagePath || currentImagePath === originalImagePath) return;
+
+                try {
+                    const response = await fetch('/Admin/ImageProcessing/SaveChanges', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            eventId: currentEventId,
+                            processedImagePath: currentImagePath
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        originalImagePath = currentImagePath;
+                        alert('Changes saved successfully');
+                    }
+                } catch (error) {
+                    console.error('Error saving changes:', error);
+                    alert('Failed to save changes');
+                }
+            }
+             // Batch Processing Functions
+        function toggleBatchMode() {
+            isBatchMode = !isBatchMode;
+            const batchControls = document.getElementById('batchControls');
+            const applyBatchBtn = document.getElementById('applyBatch');
+            const cancelBatchBtn = document.getElementById('cancelBatch');
+            const batchCheckboxes = document.querySelectorAll('.batch-checkbox');
+            const batchControlButtons = document.querySelectorAll('.batch-controls');
+
+            if (isBatchMode) {
+                batchControls.classList.remove('d-none');
+                applyBatchBtn.classList.remove('d-none');
+                cancelBatchBtn.classList.remove('d-none');
+                batchCheckboxes.forEach(cb => cb.classList.remove('d-none'));
+                batchControlButtons.forEach(btn => btn.classList.remove('d-none'));
+            } else {
+                cancelBatchMode();
+            }
+        }
+
+        function cancelBatchMode() {
+            isBatchMode = false;
+            const batchControls = document.getElementById('batchControls');
+            const applyBatchBtn = document.getElementById('applyBatch');
+            const cancelBatchBtn = document.getElementById('cancelBatch');
+            const batchCheckboxes = document.querySelectorAll('.batch-checkbox');
+            const batchControlButtons = document.querySelectorAll('.batch-controls');
+            const batchProgress = document.getElementById('batchProgress');
+            
+            batchControls.classList.add('d-none');
+            applyBatchBtn.classList.add('d-none');
+            cancelBatchBtn.classList.add('d-none');
+            batchCheckboxes.forEach(cb => {
+                cb.classList.add('d-none');
+                cb.checked = false;
+            });
+            batchControlButtons.forEach(btn => btn.classList.add('d-none'));
+            batchProgress.classList.add('d-none');
+            document.getElementById('batchStatus').innerHTML = '';
+        }
+
+        function selectAll() {
+            document.querySelectorAll('.batch-select').forEach(cb => cb.checked = true);
+        }
+
+        function deselectAll() {
+            document.querySelectorAll('.batch-select').forEach(cb => cb.checked = false);
+        }
+
+        async function applyBatchProcessing() {
+            const selectedImages = Array.from(document.querySelectorAll('.batch-select:checked')).map(cb => ({
+                eventId: parseInt(cb.dataset.eventId),
+                imagePath: cb.dataset.imagePath
+            }));
+
+            if (selectedImages.length === 0) {
+                alert('Please select at least one image to process');
+                return;
+            }
+
+            const batchProgress = document.getElementById('batchProgress');
+            const progressBar = document.getElementById('batchProgressBar');
+            const statusDiv = document.getElementById('batchStatus');
+            
+            batchProgress.classList.remove('d-none');
+            statusDiv.innerHTML = '<div class="alert alert-info">Processing images...</div>';
+
+            const operations = {
+                enhance: document.getElementById('batchEnhance').checked ? {
+                    brightness: parseFloat(document.getElementById('brightness').value),
+                    contrast: parseFloat(document.getElementById('contrast').value),
+                    sharpness: parseFloat(document.getElementById('sharpness').value)
+                } : null,
+                resize: document.getElementById('batchResize').checked ? {
+                    width: parseInt(document.getElementById('width').value),
+                    height: parseInt(document.getElementById('height').value),
+                    maintainAspectRatio: document.getElementById('maintainAspectRatio').checked
+                } : null,
+                rotate: document.getElementById('batchRotate').checked ? {
+                    degrees: 0 // Will be set based on current rotation setting
+                } : null
+            };
+
+            try {
+                const total = selectedImages.length;
+                let processed = 0;
+
+                for (const image of selectedImages) {
+                    try {
+                        if (operations.enhance) {
+                            await fetch('/Admin/ImageProcessing/EnhanceImage', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    eventId: image.eventId,
+                                    ...operations.enhance
+                                })
+                            });
+                        }
+
+                        if (operations.resize) {
+                            await fetch('/Admin/ImageProcessing/ResizeImage', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    eventId: image.eventId,
+                                    ...operations.resize
+                                })
+                            });
+                        }
+
+                        if (operations.rotate) {
+                            await fetch('/Admin/ImageProcessing/RotateImage', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    eventId: image.eventId,
+                                    degrees: operations.rotate.degrees
+                                })
+                            });
+                        }
+
+                        processed++;
+                        const progress = (processed / total) * 100;
+                        progressBar.style.width = `${progress}%`;
+                        progressBar.textContent = `${Math.round(progress)}%`;
+                        
+                    } catch (error) {
+                        console.error(`Error processing image ${image.eventId}:`, error);
+                        statusDiv.innerHTML += `<div class="alert alert-danger">Error processing image ${image.eventId}</div>`;
+                    }
+                }
+
+                statusDiv.innerHTML = '<div class="alert alert-success">Batch processing completed successfully!</div>';
+                setTimeout(() => {
+                    location.reload(); // Refresh to show updated images
+                }, 2000);
+
+            } catch (error) {
+                console.error('Batch processing error:', error);
+                statusDiv.innerHTML = '<div class="alert alert-danger">Failed to complete batch processing</div>';
+            }
+        }
+         async function loadTemplates() {
+            try {
+                const response = await fetch('/Admin/ProcessingTemplates');
+                const templates = await response.json();
+                const select = document.getElementById('templateSelect');
+                select.innerHTML = '<option value="">Select a template...</option>';
+                templates.forEach(template => {
+                    select.innerHTML += `<option value="${template.id}">${template.name}</option>`;
+                });
+            } catch (error) {
+                console.error('Error loading templates:', error);
+            }
+        }
+
+        async function applyTemplate() {
+            const templateId = document.getElementById('templateSelect').value;
+            if (!templateId) return;
+
+            try {
+                const response = await fetch(`/Admin/ProcessingTemplates/GetTemplate/${templateId}`);
+                const template = await response.json();
+
+                // Apply enhancement settings
+                if (template.brightness !== null) {
+                    document.getElementById('brightness').value = template.brightness;
+                    document.getElementById('brightnessValue').textContent = template.brightness;
+                }
+                if (template.contrast !== null) {
+                    document.getElementById('contrast').value = template.contrast;
+                    document.getElementById('contrastValue').textContent = template.contrast;
+                }
+                if (template.sharpness !== null) {
+                    document.getElementById('sharpness').value = template.sharpness;
+                    document.getElementById('sharpnessValue').textContent = template.sharpness;
+                }
+
+                // Apply resize settings
+                if (template.width !== null) document.getElementById('width').value = template.width;
+                if (template.height !== null) document.getElementById('height').value = template.height;
+                document.getElementById('maintainAspectRatio').checked = template.maintainAspectRatio;
+
+                // Apply rotation if specified
+                if (template.rotationDegrees !== null) {
+                    await rotateImage(template.rotationDegrees);
+                }
+
+                // Apply enhancement if any enhancement settings are present
+                if (template.brightness !== null || template.contrast !== null || template.sharpness !== null) {
+                    await enhanceImage();
+                }
+
+                // Apply resize if dimensions are specified
+                if (template.width !== null || template.height !== null) {
+                    await resizeImage();
+                }
+
+            } catch (error) {
+                console.error('Error applying template:', error);
+                alert('Failed to apply template');
+            }
+        }
+
+        async function saveAsTemplate() {
+            const name = prompt('Enter a name for this template:');
+            if (!name) return;
+
+            const template = {
+                name: name,
+                description: 'Created from current settings',
+                brightness: parseFloat(document.getElementById('brightness').value),
+                contrast: parseFloat(document.getElementById('contrast').value),
+                sharpness: parseFloat(document.getElementById('sharpness').value),
+                width: document.getElementById('width').value ? parseInt(document.getElementById('width').value) : null,
+                height: document.getElementById('height').value ? parseInt(document.getElementById('height').value) : null,
+                maintainAspectRatio: document.getElementById('maintainAspectRatio').checked,
+                rotationDegrees: 0 // Current rotation state
+            };
+
+            try {
+                const response = await fetch('/Admin/ProcessingTemplates/Create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify(template)
+                });
+
+                if (response.ok) {
+                    alert('Template saved successfully');
+                    await loadTemplates();
+                } else {
+                    throw new Error('Failed to save template');
+                }
+            } catch (error) {
+                console.error('Error saving template:', error);
+                alert('Failed to save template');
+            }
+        }
+
+        async function deleteTemplate() {
+            const templateId = document.getElementById('templateSelect').value;
+            if (!templateId || !confirm('Are you sure you want to delete this template?')) return;
+
+            try {
+                const response = await fetch(`/Admin/ProcessingTemplates/Delete/${templateId}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    }
+                });
+
+                if (response.ok) {
+                    alert('Template deleted successfully');
+                    await loadTemplates();
+                } else {
+                    throw new Error('Failed to delete template');
+                }
+            } catch (error) {
+                console.error('Error deleting template:', error);
+                alert('Failed to delete template');
+            }
+        }
+        let isComparisonMode = false;
+        let comparisonMode = 'side-by-side';
+
+        function toggleComparison() {
+            isComparisonMode = !isComparisonMode;
+            const comparisonView = document.getElementById('comparisonView');
+            const previewImage = document.getElementById('previewImage');
+            const comparisonControls = document.getElementById('comparisonControls');
+            const overlayControls = document.getElementById('overlayControls');
+
+            if (isComparisonMode && currentImagePath) {
+                comparisonView.style.display = 'block';
+                previewImage.style.display = 'none';
+                comparisonControls.style.display = 'inline-flex';
+                
+                // Set images
+                document.getElementById('originalImage').src = originalImagePath;
+                document.getElementById('processedImage').src = currentImagePath;
+
+                // Show/hide overlay controls based on mode
+                overlayControls.style.display = comparisonMode === 'overlay' ? 'block' : 'none';
+            } else {
+                comparisonView.style.display = 'none';
+                previewImage.style.display = 'block';
+                comparisonControls.style.display = 'none';
+                overlayControls.style.display = 'none';
+            }
+        }
+
+        function setComparisonMode(mode) {
+            comparisonMode = mode;
+            const comparisonView = document.getElementById('comparisonView');
+            const overlayControls = document.getElementById('overlayControls');
+
+            if (mode === 'side-by-side') {
+                comparisonView.innerHTML = `
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="comparison-image" style="width: 48%;">
+                            <h6>Original</h6>
+                            <img id="originalImage" class="img-fluid" src="${originalImagePath}" alt="Original Image" style="max-height: 500px;">
+                        </div>
+                        <div class="comparison-image" style="width: 48%;">
+                            <h6>Processed</h6>
+                            <img id="processedImage" class="img-fluid" src="${currentImagePath}" alt="Processed Image" style="max-height: 500px;">
+                        </div>
+                    </div>
+                `;
+                overlayControls.style.display = 'none';
+            } else if (mode === 'overlay') {
+                comparisonView.innerHTML = `
+                    <div class="position-relative" style="max-width: 800px; margin: 0 auto;">
+                        <img id="originalImage" class="img-fluid position-absolute" src="${originalImagePath}" alt="Original Image" style="max-height: 500px;">
+                        <img id="processedImage" class="img-fluid" src="${currentImagePath}" alt="Processed Image" style="max-height: 500px; opacity: 0.5;">
+                    </div>
+                `;
+                overlayControls.style.display = 'block';
+                
+                // Update opacity based on slider
+                const opacitySlider = document.getElementById('opacitySlider');
+                const processedImage = document.getElementById('processedImage');
+                opacitySlider.addEventListener('input', function() {
+                    processedImage.style.opacity = this.value / 100;
+                });
+            }
+        }
+
+        // Update loadImage function to reset comparison mode
+        const originalLoadImage = loadImage;
+        loadImage = function(eventId, imagePath) {
+            originalLoadImage(eventId, imagePath);
+            if (isComparisonMode) {
+                toggleComparison();
+                toggleComparison();
+            }
+        };
+
+        // Update image processing functions to refresh comparison view
+        const updateComparisonView = () => {
+            if (isComparisonMode) {
+                document.getElementById('processedImage').src = currentImagePath + '?t=' + new Date().getTime();
+            }
+        };
+
+        // Add comparison view update to all image processing functions
+        const originalEnhanceImage = enhanceImage;
+        enhanceImage = async function() {
+            await originalEnhanceImage();
+            updateComparisonView();
+        };
+
+        const originalResizeImage = resizeImage;
+        resizeImage = async function() {
+            await originalResizeImage();
+            updateComparisonView();
+        };
+
+        const originalRotateImage = rotateImage;
+        rotateImage = async function(degrees) {
+            await originalRotateImage(degrees);
+            updateComparisonView();
+        };
+
+        const originalAddAnnotation = addAnnotation;
+        addAnnotation = async function() {
+            await originalAddAnnotation();
+            updateComparisonView();
+        };
+        let isMotionVisualizationActive = false;
+        let isHeatmapActive = false;
+        let motionData = null;
+
+        async function loadMotionData(eventId) {
+            try {
+                const response = await fetch(`/Admin/ImageProcessing/GetMotionData/${eventId}`);
+                const data = await response.json();
+                if (data.success) {
+                    motionData = data;
+                    updateMotionStats();
+                }
+            } catch (error) {
+                console.error('Error loading motion data:', error);
+            }
+        }
+
+        function updateMotionStats() {
+            if (!motionData) return;
+
+            const statsDiv = document.getElementById('motionStats');
+            document.getElementById('motionPercentage').textContent = motionData.motionPercentage.toFixed(2);
+            document.getElementById('regionCount').textContent = motionData.regions.length;
+            document.getElementById('detectionConfidence').textContent = (motionData.confidence * 100).toFixed(1);
+            statsDiv.style.display = 'block';
+        }
+
+        function toggleMotionVisualization() {
+            isMotionVisualizationActive = !isMotionVisualizationActive;
+            const canvas = document.getElementById('motionOverlay');
+            
+            if (isMotionVisualizationActive && motionData) {
+                canvas.style.display = 'block';
+                drawMotionAreas();
+            } else {
+                canvas.style.display = 'none';
+            }
+
+            // Disable heatmap if active
+            if (isHeatmapActive) {
+                isHeatmapActive = false;
+                document.getElementById('heatmapOverlay').style.display = 'none';
+            }
+        }
+
+        function drawMotionAreas() {
+            if (!motionData) return;
+
+            const canvas = document.getElementById('motionOverlay');
+            const ctx = canvas.getContext('2d');
+            const img = document.getElementById('previewImage');
+
+            // Set canvas size to match image
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw motion regions
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 2;
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+
+            motionData.regions.forEach(region => {
+                ctx.beginPath();
+                ctx.rect(
+                    region.x * canvas.width,
+                    region.y * canvas.height,
+                    region.width * canvas.width,
+                    region.height * canvas.height
+                );
+                ctx.fill();
+                ctx.stroke();
+
+                // Add region percentage
+                ctx.fillStyle = '#00ff00';
+                ctx.font = '12px Arial';
+                ctx.fillText(
+                    `${(region.percentage * 100).toFixed(1)}%`,
+                    (region.x * canvas.width) + 5,
+                    (region.y * canvas.height) + 15
+                );
+            });
+        }
+
+        function toggleHeatmap() {
+            isHeatmapActive = !isHeatmapActive;
+            const canvas = document.getElementById('heatmapOverlay');
+            
+            if (isHeatmapActive && motionData) {
+                canvas.style.display = 'block';
+                drawHeatmap();
+            } else {
+                canvas.style.display = 'none';
+            }
+
+            // Disable motion visualization if active
+            if (isMotionVisualizationActive) {
+                isMotionVisualizationActive = false;
+                document.getElementById('motionOverlay').style.display = 'none';
+            }
+        }
+
+        function drawHeatmap() {
+            if (!motionData) return;
+
+            const canvas = document.getElementById('heatmapOverlay');
+            const ctx = canvas.getContext('2d');
+            const img = document.getElementById('previewImage');
+
+            // Set canvas size to match image
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Create heatmap data
+            const heatmapData = new Array(20).fill(0).map(() => new Array(20).fill(0));
+            
+            motionData.regions.forEach(region => {
+                const gridX = Math.floor(region.x * 20);
+                const gridY = Math.floor(region.y * 20);
+                heatmapData[gridY][gridX] += region.percentage;
+            });
+
+            // Draw heatmap
+            const cellWidth = canvas.width / 20;
+            const cellHeight = canvas.height / 20;
+
+            heatmapData.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value > 0) {
+                        const intensity = Math.min(value * 2, 1);
+                        ctx.fillStyle = `rgba(255, 0, 0, ${intensity * 0.5})`;
+                        ctx.fillRect(
+                            x * cellWidth,
+                            y * cellHeight,
+                            cellWidth,
+                            cellHeight
+                        );
+                    }
+                });
+            });
+        }
+
+        // Update loadImage function to load motion data
+        const originalLoadImage = loadImage;
+        loadImage = async function(eventId, imagePath) {
+            originalLoadImage(eventId, imagePath);
+            await loadMotionData(eventId);
+            
+            // Reset visualizations
+            isMotionVisualizationActive = false;
+            isHeatmapActive = false;
+            document.getElementById('motionOverlay').style.display = 'none';
+            document.getElementById('heatmapOverlay').style.display = 'none';
+        };
+
+        // Add window resize handler to update visualizations
+        window.addEventListener('resize', () => {
+            if (isMotionVisualizationActive) {
+                drawMotionAreas();
+            } else if (isHeatmapActive) {
+                drawHeatmap();
+            }
+        });
+        // Load templates when the page loads
+        document.addEventListener('DOMContentLoaded', loadTemplates);
+        </script>
+    }

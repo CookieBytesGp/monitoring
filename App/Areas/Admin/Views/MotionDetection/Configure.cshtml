@@ -1,0 +1,176 @@
+@using App.Models.Camera
+@using App.Services.Interfaces
+ @model MotionDetectionSettings
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Configure Motion Detection";
+    var camera = ViewBag.Camera as CameraDevice;
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Configure Motion Detection - @camera.Name</h2>
+            <p class="text-muted">Location: @camera.Location</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="settingsForm" data-camera-id="@camera.Id">
+                        <div class="form-group">
+                            <label>Detection Status</label>
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="isActive" 
+                                       name="isActive" @(Model.IsActive ? "checked" : "")>
+                                <label class="custom-control-label" for="isActive">Enable Motion Detection</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sensitivity">Sensitivity (@(Model.Sensitivity * 100)%)</label>
+                            <input type="range" class="custom-range" id="sensitivity" name="sensitivity"
+                                   min="0" max="1" step="0.05" value="@Model.Sensitivity">
+                            <small class="form-text text-muted">
+                                Higher sensitivity will detect smaller movements but may increase false positives.
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Region of Interest</label>
+                            <div class="input-group mb-2">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">X</span>
+                                </div>
+                                <input type="number" class="form-control" id="roiX" name="regionOfInterest.x" 
+                                       value="@Model.RegionOfInterest.X">
+                                <div class="input-group-prepend ml-2">
+                                    <span class="input-group-text">Y</span>
+                                </div>
+                                <input type="number" class="form-control" id="roiY" name="regionOfInterest.y"
+                                       value="@Model.RegionOfInterest.Y">
+                            </div>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">Width</span>
+                                </div>
+                                <input type="number" class="form-control" id="roiWidth" name="regionOfInterest.width"
+                                       value="@Model.RegionOfInterest.Width">
+                                <div class="input-group-prepend ml-2">
+                                    <span class="input-group-text">Height</span>
+                                </div>
+                                <input type="number" class="form-control" id="roiHeight" name="regionOfInterest.height"
+                                       value="@Model.RegionOfInterest.Height">
+                            </div>
+                            <small class="form-text text-muted">
+                                Set to 0 for full frame detection. Otherwise, specify the region to monitor.
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="minimumMotionFrames">Minimum Motion Frames</label>
+                            <input type="number" class="form-control" id="minimumMotionFrames" 
+                                   name="minimumMotionFrames" value="@Model.MinimumMotionFrames">
+                            <small class="form-text text-muted">
+                                Number of consecutive frames with motion before triggering an alert.
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="thresholdValue">Threshold Value</label>
+                            <input type="number" class="form-control" id="thresholdValue" 
+                                   name="thresholdValue" value="@Model.ThresholdValue">
+                            <small class="form-text text-muted">
+                                Pixel difference threshold for motion detection (1-255).
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="saveDetectionImages" 
+                                       name="saveDetectionImages" @(Model.SaveDetectionImages ? "checked" : "")>
+                                <label class="custom-control-label" for="saveDetectionImages">Save Detection Images</label>
+                            </div>
+                            <small class="form-text text-muted">
+                                Save images when motion is detected.
+                            </small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">Back to List</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Live Preview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="embed-responsive embed-responsive-16by9 mb-3">
+                        <img src="@camera.StreamUrl" class="embed-responsive-item" id="cameraPreview" alt="Camera Feed">
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Motion detection settings will be applied to the area shown above.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const form = $('#settingsForm');
+            const sensitivityInput = $('#sensitivity');
+            const sensitivityLabel = $('label[for="sensitivity"]');
+
+            // Update sensitivity label when slider changes
+            sensitivityInput.on('input', function() {
+                const value = Math.round($(this).val() * 100);
+                sensitivityLabel.text(`Sensitivity (${value}%)`);
+            });
+
+            // Handle form submission
+            form.submit(function(e) {
+                e.preventDefault();
+                const cameraId = $(this).data('camera-id');
+                const formData = $(this).serializeArray();
+                
+                // Convert form data to object
+                const settings = {};
+                formData.forEach(item => {
+                    if (item.name.includes('.')) {
+                        const [parent, child] = item.name.split('.');
+                        settings[parent] = settings[parent] || {};
+                        settings[parent][child] = parseInt(item.value) || 0;
+                    } else {
+                        settings[item.name] = item.name === 'sensitivity' 
+                            ? parseFloat(item.value)
+                            : item.value === 'on' ? true : item.value;
+                    }
+                });
+
+                $.post('/Admin/MotionDetection/UpdateSettings', {
+                    cameraId: cameraId,
+                    settings: settings
+                })
+                .done(function() {
+                    alert('Settings saved successfully');
+                })
+                .fail(function() {
+                    alert('Failed to save settings');
+                });
+            });
+        });
+    </script>
+}

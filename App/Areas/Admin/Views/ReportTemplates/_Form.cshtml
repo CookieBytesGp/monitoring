@@ -1,0 +1,159 @@
+@using App.Models
+ @model ReportTemplate
+ 
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Basic Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label">Template Name</label>
+                    <input asp-for="Name" class="form-control" required>
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label">Description</label>
+                    <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Format" class="form-label">Export Format</label>
+                    <select asp-for="Format" class="form-select">
+                        <option value="CSV">CSV</option>
+                        <option value="JSON">JSON</option>
+                        <option value="EXCEL">Excel</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Content Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check mb-2">
+                    <input asp-for="IncludeMotionStats" class="form-check-input">
+                    <label asp-for="IncludeMotionStats" class="form-check-label">Include Motion Statistics</label>
+                </div>
+                <div class="form-check mb-2">
+                    <input asp-for="IncludeImageAnalysis" class="form-check-input">
+                    <label asp-for="IncludeImageAnalysis" class="form-check-label">Include Image Analysis</label>
+                </div>
+                <div class="form-check mb-2">
+                    <input asp-for="IncludeProcessingHistory" class="form-check-input">
+                    <label asp-for="IncludeProcessingHistory" class="form-check-label">Include Processing History</label>
+                </div>
+                <div class="form-check">
+                    <input asp-for="IncludeImages" class="form-check-input">
+                    <label asp-for="IncludeImages" class="form-check-label">Include Images</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Time Range Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label asp-for="TimeRangeType" class="form-label">Time Range</label>
+                    <select asp-for="TimeRangeType" class="form-select" id="timeRangeType">
+                        <option value="Daily">Daily</option>
+                        <option value="Weekly">Weekly</option>
+                        <option value="Monthly">Monthly</option>
+                        <option value="Custom">Custom</option>
+                    </select>
+                </div>
+                <div class="mb-3" id="customDaysGroup" style="display: none;">
+                    <label asp-for="CustomDays" class="form-label">Number of Days</label>
+                    <input asp-for="CustomDays" type="number" class="form-control" min="1">
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Filter Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label asp-for="CameraFilter" class="form-label">Cameras</label>
+                    <select asp-for="CameraFilter" class="form-select" multiple id="cameraFilter">
+                        @foreach (var camera in ViewBag.Cameras)
+                        {
+                            <option value="@camera.Id">@camera.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label asp-for="MinMotionPercentage" class="form-label">Min Motion %</label>
+                        <input asp-for="MinMotionPercentage" type="number" class="form-control" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="col-6">
+                        <label asp-for="MaxMotionPercentage" class="form-label">Max Motion %</label>
+                        <input asp-for="MaxMotionPercentage" type="number" class="form-control" min="0" max="100" step="0.1">
+                    </div>
+                </div>
+                <div class="form-check">
+                    <input asp-for="OnlyAcknowledged" class="form-check-input">
+                    <label asp-for="OnlyAcknowledged" class="form-check-label">Only Acknowledged Events</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Scheduling Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check mb-3">
+                    <input asp-for="IsScheduled" class="form-check-input" id="isScheduled">
+                    <label asp-for="IsScheduled" class="form-check-label">Enable Scheduling</label>
+                </div>
+                <div id="schedulingOptions" style="display: none;">
+                    <div class="mb-3">
+                        <label asp-for="Schedule" class="form-label">Schedule (Cron Expression)</label>
+                        <input asp-for="Schedule" class="form-control">
+                        <small class="text-muted">Example: 0 0 * * * (Daily at midnight)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="EmailRecipients" class="form-label">Email Recipients</label>
+                        <input asp-for="EmailRecipients" class="form-control">
+                        <small class="text-muted">Separate multiple emails with commas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('timeRangeType').addEventListener('change', function() {
+            const customDaysGroup = document.getElementById('customDaysGroup');
+            customDaysGroup.style.display = this.value === 'Custom' ? 'block' : 'none';
+        });
+
+        document.getElementById('isScheduled').addEventListener('change', function() {
+            const schedulingOptions = document.getElementById('schedulingOptions');
+            schedulingOptions.style.display = this.checked ? 'block' : 'none';
+        });
+
+        // Initialize displays
+        document.addEventListener('DOMContentLoaded', function() {
+            const timeRangeType = document.getElementById('timeRangeType');
+            const isScheduled = document.getElementById('isScheduled');
+            
+            document.getElementById('customDaysGroup').style.display = 
+                timeRangeType.value === 'Custom' ? 'block' : 'none';
+            
+            document.getElementById('schedulingOptions').style.display = 
+                isScheduled.checked ? 'block' : 'none';
+        });
+    </script>
+}

@@ -1,0 +1,333 @@
+@using App.Models.Camera
+ @model IEnumerable<CameraDevice>
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Motion Analytics Dashboard";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Motion Analytics Dashboard</h2>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary" id="refreshData">
+                <i class="fas fa-sync"></i> Refresh
+            </button>
+            <button class="btn btn-outline-secondary" id="exportData">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="mb-0">Analytics Overview</h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="startDate">
+                                <div class="input-group-append input-group-prepend">
+                                    <span class="input-group-text">to</span>
+                                </div>
+                                <input type="date" class="form-control" id="endDate">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title">Total Events</h6>
+                                    <h2 class="mb-0" id="totalEvents">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title">Unacknowledged</h6>
+                                    <h2 class="mb-0" id="unacknowledgedEvents">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title">Peak Activity Time</h6>
+                                    <h2 class="mb-0" id="peakTime">--:--</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title">Active Cameras</h6>
+                                    <h2 class="mb-0" id="activeCameras">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Event Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="eventTimeline" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Events by Camera</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="eventsByCamera" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Camera Analytics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @foreach (var camera in Model)
+                        {
+                            <div class="col-md-6 col-xl-4 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">@camera.Name</h6>
+                                        <small class="text-muted">@camera.Location</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <canvas id="hourlyChart_@camera.Id" height="200"></canvas>
+                                        </div>
+                                        <div class="row text-center">
+                                            <div class="col">
+                                                <h6>Today's Events</h6>
+                                                <h4 id="todayEvents_@camera.Id">0</h4>
+                                            </div>
+                                            <div class="col">
+                                                <h6>Peak Motion</h6>
+                                                <h4 id="peakMotion_@camera.Id">0%</h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer">
+                                        <a href="@Url.Action("CameraAnalytics", new { id = camera.Id })" 
+                                           class="btn btn-primary btn-block">
+                                            View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Set default date range
+            const now = new Date();
+            const lastWeek = new Date(now);
+            lastWeek.setDate(lastWeek.getDate() - 7);
+            
+            $('#startDate').val(lastWeek.toISOString().split('T')[0]);
+            $('#endDate').val(now.toISOString().split('T')[0]);
+
+            // Initialize charts
+            const timelineChart = new Chart($('#eventTimeline'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Events',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            const pieChart = new Chart($('#eventsByCamera'), {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            'rgb(255, 99, 132)',
+                            'rgb(54, 162, 235)',
+                            'rgb(255, 206, 86)',
+                            'rgb(75, 192, 192)',
+                            'rgb(153, 102, 255)',
+                            'rgb(255, 159, 64)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+
+            // Initialize hourly charts for each camera
+            @foreach (var camera in Model)
+            {
+                <text>
+                new Chart($('#hourlyChart_@camera.Id'), {
+                    type: 'bar',
+                    data: {
+                        labels: Array.from({length: 24}, (_, i) => i),
+                        datasets: [{
+                            label: 'Events by Hour',
+                            data: Array(24).fill(0),
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgb(75, 192, 192)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+                </text>
+            }
+
+            function loadData() {
+                const start = $('#startDate').val();
+                const end = $('#endDate').val();
+
+                // Load overview data
+                $.get('/Admin/Analytics/GetEventCountByCamera', { start, end }, function(data) {
+                    let total = 0;
+                    const labels = [];
+                    const counts = [];
+
+                    Object.entries(data).forEach(([cameraId, count]) => {
+                        const camera = findCamera(cameraId);
+                        if (camera) {
+                            labels.push(camera.name);
+                            counts.push(count);
+                            total += count;
+                        }
+                    });
+
+                    $('#totalEvents').text(total);
+                    $('#activeCameras').text(labels.length);
+
+                    pieChart.data.labels = labels;
+                    pieChart.data.datasets[0].data = counts;
+                    pieChart.update();
+                });
+
+                // Load timeline data
+                $.get('/Admin/Analytics/GetEventsByDay', { start, end }, function(data) {
+                    const labels = [];
+                    const counts = [];
+
+                    Object.entries(data).forEach(([date, count]) => {
+                        labels.push(new Date(date).toLocaleDateString());
+                        counts.push(count);
+                    });
+
+                    timelineChart.data.labels = labels;
+                    timelineChart.data.datasets[0].data = counts;
+                    timelineChart.update();
+                });
+
+                // Load data for each camera
+                @foreach (var camera in Model)
+                {
+                    <text>
+                    loadCameraData('@camera.Id');
+                    </text>
+                }
+            }
+
+            function loadCameraData(cameraId) {
+                const today = new Date().toISOString().split('T')[0];
+                
+                $.get('/Admin/Analytics/GetEventsByHour', { 
+                    cameraId: cameraId,
+                    date: today
+                }, function(data) {
+                    const chart = Chart.getChart(`hourlyChart_${cameraId}`);
+                    const hourlyData = Array(24).fill(0);
+                    let todayTotal = 0;
+
+                    Object.entries(data).forEach(([hour, count]) => {
+                        hourlyData[hour] = count;
+                        todayTotal += count;
+                    });
+
+                    chart.data.datasets[0].data = hourlyData;
+                    chart.update();
+
+                    $(`#todayEvents_${cameraId}`).text(todayTotal);
+                });
+
+                $.get('/Admin/Analytics/GetAnalytics', {
+                    cameraId: cameraId,
+                    start: today,
+                    end: today
+                }, function(data) {
+                    $(`#peakMotion_${cameraId}`).text(
+                        `${Math.round(data.peakMotionPercentage * 100)}%`
+                    );
+                });
+            }
+
+            function findCamera(id) {
+                const cameras = @Json.Serialize(Model);
+                return cameras.find(c => c.id === id);
+            }
+
+            // Event handlers
+            $('#refreshData').click(loadData);
+            $('#startDate, #endDate').change(loadData);
+
+            // Initial load
+            loadData();
+
+            // Auto refresh every 5 minutes
+            setInterval(loadData, 300000);
+        });
+    </script>
+}

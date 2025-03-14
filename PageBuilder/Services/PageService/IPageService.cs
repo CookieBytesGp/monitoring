@@ -20,3 +20,4 @@ namespace PageBuilder.Services.PageService
         Task<Result> UpdateElementAsync(Guid pageId, Guid elementId, BaseElementDTO elementDTO);
     }
 }
+

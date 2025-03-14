@@ -1,0 +1,102 @@
+@using App.Models.Camera
+ @model IEnumerable<CameraDevice>
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Motion Detection";
+}
+
+<div class="container-fluid">
+    <h2 class="mb-4">Motion Detection Management</h2>
+
+    <div class="row">
+        @foreach (var camera in Model)
+        {
+            <div class="col-md-6 col-xl-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">@camera.Name</h5>
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input detection-toggle" 
+                                   id="toggle_@camera.Id" data-camera-id="@camera.Id">
+                            <label class="custom-control-label" for="toggle_@camera.Id">Detection</label>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text"><strong>Location:</strong> @camera.Location</p>
+                        <p class="card-text"><strong>Status:</strong> 
+                            <span class="status-badge" id="status_@camera.Id">Loading...</span>
+                        </p>
+                        <div class="progress mb-3" style="height: 20px;">
+                            <div class="progress-bar" id="sensitivity_@camera.Id" 
+                                 role="progressbar" style="width: 0%">
+                                Sensitivity: 0%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <a href="@Url.Action("Configure", new { id = camera.Id })" 
+                           class="btn btn-primary btn-block">Configure Settings</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            function updateCameraStatus(cameraId) {
+                $.get('/Admin/MotionDetection/GetStatus', { cameraId: cameraId }, function (data) {
+                    const toggle = $(`#toggle_${cameraId}`);
+                    const statusBadge = $(`#status_${cameraId}`);
+                    const sensitivityBar = $(`#sensitivity_${cameraId}`);
+
+                    toggle.prop('checked', data.isActive);
+                    
+                    if (data.isActive) {
+                        statusBadge.html('<span class="badge badge-success">Active</span>');
+                    } else {
+                        statusBadge.html('<span class="badge badge-secondary">Inactive</span>');
+                    }
+
+                    const sensitivity = Math.round(data.settings.sensitivity * 100);
+                    sensitivityBar.css('width', `${sensitivity}%`);
+                    sensitivityBar.text(`Sensitivity: ${sensitivity}%`);
+                });
+            }
+
+            // Initialize all cameras
+            $('.detection-toggle').each(function() {
+                const cameraId = $(this).data('camera-id');
+                updateCameraStatus(cameraId);
+            });
+
+            // Handle toggle changes
+            $('.detection-toggle').change(function() {
+                const cameraId = $(this).data('camera-id');
+                const enable = $(this).is(':checked');
+
+                $.post('/Admin/MotionDetection/ToggleDetection', {
+                    cameraId: cameraId,
+                    enable: enable
+                })
+                .done(function() {
+                    updateCameraStatus(cameraId);
+                })
+                .fail(function() {
+                    alert('Failed to toggle motion detection');
+                    $(this).prop('checked', !enable);
+                });
+            });
+
+            // Refresh status periodically
+            setInterval(function() {
+                $('.detection-toggle').each(function() {
+                    const cameraId = $(this).data('camera-id');
+                    updateCameraStatus(cameraId);
+                });
+            }, 30000); // Update every 30 seconds
+        });
+    </script>
+}
