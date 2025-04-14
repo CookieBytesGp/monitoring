@@ -65,6 +65,7 @@ namespace UserSerivce.Services
         private async Task<User> GetUserFromDatabaseAsync(Guid userId)
         {
            var user = await _unitOfWork.UserRepository.FindAsync(userId);
+
             return user;
         }
 

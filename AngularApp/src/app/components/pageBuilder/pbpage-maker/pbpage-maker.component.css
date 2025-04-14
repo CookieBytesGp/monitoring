@@ -1,0 +1,51 @@
+/* Grid container */
+.grid-container {
+    display: grid;
+    grid-template-areas:
+        "topnav topnav topnav topnav topnav topnav"
+        "sidebar editor editor editor editor editor"
+        "sidebar editor editor editor editor editor";
+    grid-template-columns: 1fr 4fr;
+    /* Sidebar takes 1 part, editor takes 4 parts */
+    grid-template-rows: auto 1fr 1fr;
+    /* Topnav auto height, others flexible */
+    gap: 10px;
+    /* Space between grid items */
+    height: 100vh;
+    /* Full viewport height */
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+/* Top navigation area */
+.topnav {
+    grid-area: topnav;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    padding: 15px;
+    font-size: 1.5rem;
+    border-radius: 4px;
+}
+
+/* Sidebar area */
+.sidebar {
+    grid-area: sidebar;
+    background-color: #f8f9fa;
+    color: #333;
+    font-size: 1rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: .75rem .5rem
+}
+
+/* Editor area */
+.editor {
+    grid-area: editor;
+    background-color: #ffffff;
+    color: #333;
+    /* padding: 15px; */
+    font-size: 1rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}

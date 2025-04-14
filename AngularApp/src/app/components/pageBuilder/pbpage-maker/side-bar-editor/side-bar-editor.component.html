@@ -1,0 +1,55 @@
+<div class="sidebar-container" *ngIf="tools$ | async as tools">
+    <!-- Header Section -->
+    <div class="header-section">
+        <button class="tab-button" (click)="GoTab('tools')">Tools</button>
+        <button class="tab-button" (click)="GoTab('settings')">Settings</button>
+        <button class="tab-button" (click)="GoTab('style')">Style</button>
+    </div>
+    <!-- Section 1: Tools -->
+    <div class="tools-section Section" *ngIf="Selction == 'tools' ">
+        <h2 class="section-title">Tools</h2>
+        <ul class="tools-list">
+            <li class="tool-item" *ngFor="let tool of tools" (click)="onToolClick(tool.name)">
+                {{ tool.name }}
+            </li>
+        </ul>
+    </div>
+
+    <!-- Section 2: Page Settings -->
+    <div class="settings-section Section" *ngIf="Selction == 'settings' ">
+        <h2 class="section-title">Page Settings</h2>
+        <!-- <ul class="settings-list">
+            <li class="setting-item" *ngFor="let setting of settings">
+                <label>{{ setting.name }}</label>
+                <input type="text" [(ngModel)]="setting.value" class="setting-input" />
+            </li>
+        </ul> -->
+    </div>
+
+    <!-- Section 3: Element Editor -->
+    <div class="element-editor-section Section" *ngIf="Selction == 'style' ">
+        <h2 class="section-title">Element Editor</h2>
+        <div class="tabs">
+            <button class="tab-button" [class.active]="activeTab === 'assets'"
+                (click)="setActiveTab('assets')">Assets</button>
+            <button class="tab-button" [class.active]="activeTab === 'style'"
+                (click)="setActiveTab('style')">Style</button>
+        </div>
+        <div class="tab-content" *ngIf="activeTab === 'assets'">
+            <label>Asset 1:</label>
+            <input type="text" class="tab-input" />
+            <label>Asset 2:</label>
+            <input type="text" class="tab-input" />
+            <label>Asset 3:</label>
+            <input type="text" class="tab-input" />
+        </div>
+        <div class="tab-content" *ngIf="activeTab === 'style'">
+            <label>Style 1:</label>
+            <input type="text" class="tab-input" />
+            <label>Style 2:</label>
+            <input type="text" class="tab-input" />
+            <label>Style 3:</label>
+            <input type="text" class="tab-input" />
+        </div>
+    </div>
+</div>

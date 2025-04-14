@@ -1,0 +1,11 @@
+<!-- Render the HTML template -->
+<div class="editor" [innerHTML]="innerElement?.templateBody?.htmlTemplate"></div>
+
+<!-- Inline style block: inject element-specific custom CSS -->
+<style></style>
+
+<!-- Resizable handles -->
+<div class="resize-handle top" (mousedown)="startResize($event, 'top')"></div>
+<div class="resize-handle bottom" (mousedown)="startResize($event, 'bottom')"></div>
+<div class="resize-handle left" (mousedown)="startResize($event, 'left')"></div>
+<div class="resize-handle right" (mousedown)="startResize($event, 'right')"></div>

@@ -1,0 +1,17 @@
+<div class="element-container" [ngStyle]="{ position: 'relative' }">
+    <div *ngFor="let element of elements" 
+        class="ElemntBox" 
+        [attr.data-id]="element.id"
+        [ngStyle]="{ position: 'Absolute' }"
+        >
+        <!-- Absolute button at the top -->
+        <button class="absolute-button" (click)="deleteElement(element.id)">Action</button>
+
+        <!-- Element component with dynamic attributes -->
+        <element-base class="editor-element" 
+        [attr.data-id]="element.id" 
+        [innerElement]="element"
+        (styleChange)="onElementChange(element)">
+        </element-base>
+    </div>
+</div>

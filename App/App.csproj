@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Content Remove="Views\Page\Error.cshtml" />
+    <Content Remove="Views\Shared\_test.cshtml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -45,10 +46,16 @@
 
   <ItemGroup>
     <_ContentIncludedByDefault Remove="Views\Page\Error.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\Shared\_test.cshtml" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="Views\Page\Error.cshtml" />
+    <None Include="Views\Shared\_test.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Views\Shared\_test.cshtml" />
   </ItemGroup>
 
 </Project>

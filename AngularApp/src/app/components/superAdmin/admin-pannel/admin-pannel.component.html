@@ -1,0 +1,12 @@
+<div *ngIf="loading$ | async" class="loading-spinner">Loading...</div>
+<div class="tool-container" *ngIf="!(loading$ | async)">
+
+  <div *ngIf="tools$ | async as tools" class="tool-box">
+    <div *ngFor="let tool of tools">
+      {{ tool.name }}
+      <button (click)="editTool(tool.id)">Edit</button>
+    </div>
+  </div>
+  
+  <button (click)="createNewTool()" class="create-button">Create New Tool</button>
+</div>
