@@ -1,0 +1,257 @@
+@model IEnumerable<DTOs.Camera.CameraViewModel>
+@{
+    ViewData["Title"] = "Camera Management";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">دوربین‌های مانیتورینگ</h1>
+                    <p class="text-muted mb-0">مدیریت و کنترل دوربین‌های سیستم نظارتی</p>
+                </div>
+                <div>
+                    <a asp-action="Create" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        افزودن دوربین جدید
+                    </a>
+                </div>
+            </div>
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    @ViewBag.Error
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="card-title mb-0">لیست دوربین‌ها</h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshCameras()">
+                                    <i class="fas fa-sync-alt me-1"></i>
+                                    بروزرسانی
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportData()">
+                                    <i class="fas fa-download me-1"></i>
+                                    خروجی Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>نام دوربین</th>
+                                        <th>موقعیت</th>
+                                        <th>آدرس شبکه</th>
+                                        <th>نوع</th>
+                                        <th>وضعیت</th>
+                                        <th>آخرین فعالیت</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var camera in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="camera-icon me-2">
+                                                        <i class="fas fa-video text-primary"></i>
+                                                    </div>
+                                                    <div>
+                                                        <strong>@camera.Name</strong>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="text-muted">@camera.Location</span>
+                                                @if (!string.IsNullOrEmpty(camera.LocationZone))
+                                                {
+                                                    <br><small class="text-info">@camera.LocationZone</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <code>@camera.IpAddress:@camera.Port</code>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@camera.Type</span>
+                                            </td>
+                                            <td>
+                                                @switch (camera.Status)
+                                                {
+                                                    case Domain.Aggregates.Camera.CameraStatus.Active:
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-circle me-1"></i>
+                                                            فعال
+                                                        </span>
+                                                        break;
+                                                    case Domain.Aggregates.Camera.CameraStatus.Inactive:
+                                                        <span class="badge bg-secondary">
+                                                            <i class="fas fa-circle me-1"></i>
+                                                            غیرفعال
+                                                        </span>
+                                                        break;
+                                                    case Domain.Aggregates.Camera.CameraStatus.Error:
+                                                        <span class="badge bg-danger">
+                                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                                            خطا
+                                                        </span>
+                                                        break;
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (camera.LastActiveAt.HasValue)
+                                                {
+                                                    <span class="text-muted" title="@camera.LastActiveAt.Value.ToString("yyyy/MM/dd HH:mm:ss")">
+                                                        @GetRelativeTime(camera.LastActiveAt.Value)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">هرگز</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <a asp-action="Details" asp-route-id="@camera.Id" 
+                                                       class="btn btn-outline-primary" title="جزئیات">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a asp-action="Edit" asp-route-id="@camera.Id" 
+                                                       class="btn btn-outline-secondary" title="ویرایش">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a asp-action="Configuration" asp-route-id="@camera.Id" 
+                                                       class="btn btn-outline-info" title="تنظیمات">
+                                                        <i class="fas fa-cog"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-danger" 
+                                                            onclick="confirmDelete('@camera.Id', '@camera.Name')" title="حذف">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-video fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">هیچ دوربینی یافت نشد</h5>
+                            <p class="text-muted mb-3">برای شروع، دوربین جدیدی اضافه کنید</p>
+                            <a asp-action="Create" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>
+                                افزودن دوربین جدید
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تأیید حذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>آیا از حذف دوربین <strong id="deleteCameraName"></strong> اطمینان دارید؟</p>
+                <p class="text-warning"><small>این عمل قابل بازگشت نیست.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">حذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmDelete(cameraId, cameraName) {
+            document.getElementById('deleteCameraName').textContent = cameraName;
+            document.getElementById('deleteForm').action = '@Url.Action("Delete")/' + cameraId;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        function refreshCameras() {
+            window.location.reload();
+        }
+
+        function exportData() {
+            // TODO: Implement Excel export
+            alert('قابلیت خروجی Excel به زودی اضافه خواهد شد');
+        }
+
+        // Auto refresh every 30 seconds
+        setInterval(function() {
+            // Only refresh if no modals are open
+            if (!document.querySelector('.modal.show')) {
+                refreshCameras();
+            }
+        }, 30000);
+    </script>
+}
+
+@functions {
+    private string GetRelativeTime(DateTime dateTime)
+    {
+        var timeSpan = DateTime.UtcNow - dateTime;
+        
+        if (timeSpan.TotalMinutes < 1)
+            return "همین الان";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes} دقیقه پیش";
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours} ساعت پیش";
+        if (timeSpan.TotalDays < 7)
+            return $"{(int)timeSpan.TotalDays} روز پیش";
+        
+        return dateTime.ToString("yyyy/MM/dd");
+    }
+}

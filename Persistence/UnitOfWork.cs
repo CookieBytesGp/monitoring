@@ -2,6 +2,7 @@
 using Persistence.User;
 using Persistence.Tool;
 using Persistence.Page;
+using Persistence.Camera;
 
 namespace Persistence
 {
@@ -58,6 +59,23 @@ namespace Persistence
                 }
 
                 return _pageRepository;
+            }
+        }
+        // **********
+
+        // **********
+        private ICameraRepository _cameraRepository;
+
+        public ICameraRepository CameraRepository
+        {
+            get
+            {
+                if (_cameraRepository == null)
+                {
+                    _cameraRepository = new CameraRepository(databaseContext: DatabaseContext);
+                }
+
+                return _cameraRepository;
             }
         }
         // **********

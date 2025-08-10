@@ -1,7 +1,9 @@
 ﻿using Domain.Aggregates.Tools;
+using Domain.Aggregates.Camera;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Page.Configurations;
 using Persistence.Tools.Configuration;
+using Persistence.Camera.Configurations;
 using Domain.Aggregates.Page.ValueObjects;
 using Persistence.User.Configurations;
 using Domain.Aggregates.User;
@@ -19,6 +21,7 @@ namespace Persistence
         public DbSet<Domain.Aggregates.User.User> Users { get; set; }
         public DbSet<Domain.Aggregates.Tools.Tool> Tools { get; set; }
         public DbSet<Domain.Aggregates.Page.Page> Pages { get; set; }
+        public DbSet<Camera> Cameras { get; set; }
 
         // Ensure this line is commented out or removed
         // public DbSet<BaseElement> BaseElements { get; set; }
@@ -31,6 +34,9 @@ namespace Persistence
             modelBuilder.ApplyConfiguration(new UserConfiguration());
             modelBuilder.ApplyConfiguration(new PageConfiguration());
             modelBuilder.ApplyConfiguration(new ToolConfiguration());
+            
+            // Camera configuration (Only main aggregate configuration needed)
+            modelBuilder.ApplyConfiguration(new CameraConfiguration());
 
             base.OnModelCreating(modelBuilder);
         }
