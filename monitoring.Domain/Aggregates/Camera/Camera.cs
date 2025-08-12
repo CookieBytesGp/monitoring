@@ -1,6 +1,7 @@
 using Domain.Aggregates.Camera.ValueObjects;
 using Domain.Aggregates.Camera.Entities;
 using Monitoring.Domain.SeedWork;
+using Monitoring.Domain.Aggregates.Camera.ValueObjects;
 using FluentResults;
 
 namespace Monitoring.Domain.Aggregates.Camera;
@@ -41,6 +42,7 @@ public class Camera : AggregateRoot
     public CameraType Type { get; private set; }
     public CameraStatus Status { get; private set; }
     public CameraConfiguration Configuration { get; private set; }
+    public CameraConnectionInfo ConnectionInfo { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
     public DateTime? LastActiveAt { get; private set; }
 
@@ -56,6 +58,80 @@ public class Camera : AggregateRoot
     {
         Status = status;
         UpdatedAt = DateTime.UtcNow;
+        
+        // اگر دوربین فعال شد، LastActiveAt را بروزرسانی کن
+        if (status == CameraStatus.Active)
+        {
+            LastActiveAt = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>
+    /// تنظیم اطلاعات اتصال دوربین
+    /// </summary>
+    /// <param name="connectionInfo">اطلاعات اتصال</param>
+    public Result SetConnectionInfo(CameraConnectionInfo connectionInfo)
+    {
+        if (connectionInfo == null)
+            return Result.Fail("Connection info cannot be null");
+
+        ConnectionInfo = connectionInfo;
+        UpdatedAt = DateTime.UtcNow;
+
+        // بروزرسانی وضعیت دوربین بر اساس اتصال
+        if (connectionInfo.IsConnected)
+        {
+            SetStatus(CameraStatus.Active);
+        }
+        else
+        {
+            SetStatus(CameraStatus.Error);
+        }
+
+        return Result.Ok();
+    }
+
+    /// <summary>
+    /// بروزرسانی heartbeat اتصال
+    /// </summary>
+    public Result UpdateConnectionHeartbeat()
+    {
+        if (ConnectionInfo == null)
+            return Result.Fail("No connection info available");
+
+        if (!ConnectionInfo.IsConnected)
+            return Result.Fail("Camera is not connected");
+
+        ConnectionInfo = ConnectionInfo.UpdateHeartbeat();
+        LastActiveAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+
+        return Result.Ok();
+    }
+
+    /// <summary>
+    /// قطع اتصال دوربین
+    /// </summary>
+    public Result DisconnectCamera()
+    {
+        if (ConnectionInfo != null)
+        {
+            ConnectionInfo = ConnectionInfo.SetAsDisconnected();
+        }
+
+        SetStatus(CameraStatus.Inactive);
+        return Result.Ok();
+    }
+
+    /// <summary>
+    /// بررسی سلامت اتصال دوربین
+    /// </summary>
+    /// <param name="maxHeartbeatAge">حداکثر مدت زمان مجاز برای آخرین heartbeat</param>
+    /// <returns>وضعیت سلامت اتصال</returns>
+    public bool IsConnectionHealthy(TimeSpan maxHeartbeatAge)
+    {
+        if (ConnectionInfo == null) return false;
+        return ConnectionInfo.IsHealthy(maxHeartbeatAge);
     }
 
     public static Result<Camera> Create(
@@ -293,6 +369,106 @@ public class Camera : AggregateRoot
 
         return result;
     }
+
+    #region Strategy Support Methods
+
+    /// <summary>
+    /// بررسی اینکه آیا دوربین می‌تواند از استراتژی مشخص شده استفاده کند
+    /// </summary>
+    /// <param name="strategyName">نام استراتژی</param>
+    /// <returns>نتیجه بررسی</returns>
+    public Result<bool> CanUseStrategy(string strategyName)
+    {
+        if (string.IsNullOrWhiteSpace(strategyName))
+            return Result.Fail<bool>("Strategy name cannot be empty");
+
+        var strategy = strategyName.ToLower().Trim();
+        
+        var canUse = strategy switch
+        {
+            "hikvision" => CheckHikvisionCompatibility(),
+            "dahua" => CheckDahuaCompatibility(), 
+            "onvif" => CheckOnvifCompatibility(),
+            "rtsp" => CheckRtspCompatibility(),
+            "http" => CheckHttpCompatibility(),
+            "usb" => CheckUsbCompatibility(),
+            _ => false
+        };
+
+        return Result.Ok(canUse);
+    }
+
+    /// <summary>
+    /// دریافت لیست استراتژی‌های پشتیبانی شده برای این دوربین
+    /// </summary>
+    /// <returns>لیست نام استراتژی‌ها به ترتیب اولویت</returns>
+    public Result<List<string>> GetSupportedStrategies()
+    {
+        var strategies = new List<string>();
+
+        // اولویت با SDK های اختصاصی
+        if (CheckHikvisionCompatibility()) strategies.Add("hikvision");
+        if (CheckDahuaCompatibility()) strategies.Add("dahua");
+        
+        // پروتکل‌های استاندارد
+        if (CheckOnvifCompatibility()) strategies.Add("onvif");
+        if (CheckRtspCompatibility()) strategies.Add("rtsp");
+        if (CheckHttpCompatibility()) strategies.Add("http");
+        if (CheckUsbCompatibility()) strategies.Add("usb");
+
+        return Result.Ok(strategies);
+    }
+
+    /// <summary>
+    /// بهترین استراتژی برای این دوربین
+    /// </summary>
+    /// <returns>نام بهترین استراتژی</returns>
+    public Result<string> GetPreferredStrategy()
+    {
+        var supportedResult = GetSupportedStrategies();
+        if (supportedResult.IsFailed || !supportedResult.Value.Any())
+            return Result.Fail<string>("No supported strategy found for this camera");
+
+        return Result.Ok(supportedResult.Value.First());
+    }
+
+    private bool CheckHikvisionCompatibility()
+    {
+        return !string.IsNullOrEmpty(Configuration?.Brand) && 
+               Configuration.Brand.ToLower().Contains("hikvision");
+    }
+
+    private bool CheckDahuaCompatibility()
+    {
+        return !string.IsNullOrEmpty(Configuration?.Brand) && 
+               Configuration.Brand.ToLower().Contains("dahua");
+    }
+
+    private bool CheckOnvifCompatibility()
+    {
+        return Type == CameraType.IP && 
+               Network != null && 
+               (Network.Port == 80 || Network.Port == 8080);
+    }
+
+    private bool CheckRtspCompatibility()
+    {
+        return Type == CameraType.IP && 
+               Network != null;
+    }
+
+    private bool CheckHttpCompatibility()
+    {
+        return Type == CameraType.IP && 
+               Network != null;
+    }
+
+    private bool CheckUsbCompatibility()
+    {
+        return Type == CameraType.USB;
+    }
+
+    #endregion
 
     #endregion
 }

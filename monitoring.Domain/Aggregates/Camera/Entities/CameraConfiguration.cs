@@ -1,6 +1,7 @@
 using FluentResults;
 using Domain.Aggregates.Camera.ValueObjects;
 using Monitoring.Domain.SeedWork;
+using System.Collections.Generic;
 
 namespace Domain.Aggregates.Camera.Entities;
 
@@ -12,6 +13,8 @@ public class CameraConfiguration : Entity
     public int Bitrate { get; private set; }
     public bool AudioEnabled { get; private set; }
     public string AudioCodec { get; private set; }
+    public string Brand { get; private set; }
+    public Dictionary<string, string> AdditionalSettings { get; private set; }
     public MotionDetectionSettings MotionDetection { get; private set; }
     public RecordingSettings Recording { get; private set; }
 
@@ -27,6 +30,8 @@ public class CameraConfiguration : Entity
         int bitrate,
         bool audioEnabled = false,
         string audioCodec = null,
+        string brand = null,
+        Dictionary<string, string> additionalSettings = null,
         MotionDetectionSettings motionDetection = null,
         RecordingSettings recording = null) : this()
     {
@@ -44,6 +49,8 @@ public class CameraConfiguration : Entity
         Bitrate = bitrate;
         AudioEnabled = audioEnabled;
         AudioCodec = audioEnabled ? audioCodec?.ToUpperInvariant() : null;
+        Brand = brand?.ToUpperInvariant();
+        AdditionalSettings = additionalSettings ?? new Dictionary<string, string>();
         MotionDetection = motionDetection ?? MotionDetectionSettings.CreateDefault();
         Recording = recording ?? RecordingSettings.CreateDefault();
     }
@@ -87,6 +94,8 @@ public class CameraConfiguration : Entity
         int bitrate,
         bool audioEnabled = false,
         string audioCodec = null,
+        string brand = null,
+        Dictionary<string, string> additionalSettings = null,
         MotionDetectionSettings motionDetection = null,
         RecordingSettings recording = null,
         string createdBy = "System")
@@ -116,6 +125,8 @@ public class CameraConfiguration : Entity
             bitrate,
             audioEnabled,
             audioCodec,
+            brand,
+            additionalSettings,
             motionDetection,
             recording
         );
@@ -190,6 +201,31 @@ public class CameraConfiguration : Entity
         UpdatedAt = DateTime.UtcNow;
         UpdatedBy = updatedBy;
     }
+
+    public void UpdateBrand(string brand, string updatedBy = "User")
+    {
+        Brand = brand?.ToUpperInvariant();
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
+    }
+
+    public void UpdateAdditionalSettings(Dictionary<string, string> additionalSettings, string updatedBy = "User")
+    {
+        AdditionalSettings = additionalSettings ?? new Dictionary<string, string>();
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
+    }
+
+    public void AddAdditionalSetting(string key, string value, string updatedBy = "User")
+    {
+        if (string.IsNullOrWhiteSpace(key))
+            throw new ArgumentException("Key cannot be null or empty", nameof(key));
+
+        AdditionalSettings[key] = value;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
+    }
+
 
     
 

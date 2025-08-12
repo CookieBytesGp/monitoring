@@ -1,0 +1,41 @@
+# .gitignore for .NET/Visual Studio projects
+# Build results
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+*.cache
+*.log
+*.vspscc
+*.vssscc
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.dbmdl
+*.dbmdl
+*.bak
+*.ncb
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+*.vscode/
+# Rider
+.idea/
+*.sln.iml
+# OS generated files
+.DS_Store
+Thumbs.db
+# NuGet
+*.nupkg
+# Others
+Monitoring.zip
+*.TestResults/
+TestResults/
+*.publish/
+*.swp
+*.tmp
+*.log
+*.vs/

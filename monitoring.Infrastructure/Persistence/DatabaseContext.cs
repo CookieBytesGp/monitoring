@@ -15,7 +15,7 @@ public class DatabaseContext : DbContext
     //public DbSet<Domain.Aggregates.User.User> Users { get; set; }
     //public DbSet<Domain.Aggregates.Tools.Tool> Tools { get; set; }
     //public DbSet<Domain.Aggregates.Page.Page> Pages { get; set; }
-    public DbSet<Camera> cameras { get; set; }
+    public DbSet<Monitoring.Domain.Aggregates.Camera.Camera> cameras { get; set; }
 
     //// Ensure this line is commented out or removed
     //// public DbSet<BaseElement> BaseElements { get; set; }

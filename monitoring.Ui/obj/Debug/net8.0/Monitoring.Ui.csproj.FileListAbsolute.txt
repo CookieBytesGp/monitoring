@@ -207,3 +207,9 @@ D:\Monitoring\Monitoring.Ui\obj\Debug\net8.0\refint\Monitoring.Ui.dll
 D:\Monitoring\Monitoring.Ui\obj\Debug\net8.0\Monitoring.Ui.pdb
 D:\Monitoring\Monitoring.Ui\obj\Debug\net8.0\Monitoring.Ui.genruntimeconfig.cache
 D:\Monitoring\Monitoring.Ui\obj\Debug\net8.0\ref\Monitoring.Ui.dll
+D:\Monitoring\Monitoring.Ui\bin\Debug\net8.0\Microsoft.Extensions.Configuration.dll
+D:\Monitoring\Monitoring.Ui\bin\Debug\net8.0\Microsoft.Extensions.Configuration.Binder.dll
+D:\Monitoring\Monitoring.Ui\bin\Debug\net8.0\Microsoft.Extensions.Diagnostics.dll
+D:\Monitoring\Monitoring.Ui\bin\Debug\net8.0\Microsoft.Extensions.Diagnostics.Abstractions.dll
+D:\Monitoring\Monitoring.Ui\bin\Debug\net8.0\Microsoft.Extensions.Http.dll
+D:\Monitoring\Monitoring.Ui\bin\Debug\net8.0\Microsoft.Extensions.Options.ConfigurationExtensions.dll
