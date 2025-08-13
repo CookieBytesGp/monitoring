@@ -1,7 +1,4 @@
-using Monitoring.Application.Mappings;
-using Monitoring.Application.Services.Page;
-using Monitoring.Application.Services.Camera;
-using Monitoring.Application.Interfaces.Camera;
+using Monitoring.Ui.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,12 +6,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
 
-// Add AutoMapper
-builder.Services.AddAutoMapper(typeof(MappingProfile));
+// Add HttpClient
+builder.Services.AddHttpClient();
 
-// Add Application Services
-builder.Services.AddScoped<IPageService, PageService>();
-builder.Services.AddScoped<ICameraService, CameraService>();
+// Add API Services
+builder.Services.AddScoped<ICameraApiService, CameraApiService>();
 
 // Register SignalR adapters
 //builder.Services.AddScoped<Monitoring.Application.Interfaces.Realtime.ICameraNotifications, App.Hubs.Adapters.SignalRCameraNotifications>();

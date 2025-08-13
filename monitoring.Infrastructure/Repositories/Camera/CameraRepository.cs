@@ -7,9 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Monitoring.Infrastructure.Persistence;
-using Domain.Aggregates.Camera.ValueObjects;
+using Monitoring.Domain.Aggregates.Camera.ValueObjects;
 
-namespace Persistence.Camera
+namespace Monitoring.Infrastructure.Repositories.Camera
 {
     public class CameraRepository : Repository<Monitoring.Domain.Aggregates.Camera.Camera>, ICameraRepository
     {

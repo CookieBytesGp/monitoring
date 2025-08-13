@@ -1,11 +1,13 @@
 using AutoMapper;
-using Domain.Aggregates.Camera.Entities;
-using Domain.Aggregates.Camera.ValueObjects;
+using Monitoring.Domain.Aggregates.Camera.Entities;
+using Monitoring.Domain.Aggregates.Camera.ValueObjects;
 using Domain.Aggregates.Page.ValueObjects;
 using Domain.Aggregates.Tools.ValueObjects;
 using Domain.SharedKernel;
 using DTOs.Pagebuilder;
 using Monitoring.Application.DTOs.Page;
+using Domain.Aggregates.Camera.Entities;
+using Domain.Aggregates.Camera.ValueObjects;
 
 namespace Monitoring.Application.Mappings
 {
@@ -48,6 +50,40 @@ namespace Monitoring.Application.Mappings
                 .ForMember(dest => dest.Type, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore());
 
+            // CreateCameraDto to CameraDto mapping
+            CreateMap<Monitoring.Application.DTOs.Camera.CreateCameraDto, Monitoring.Application.DTOs.Camera.CameraDto>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => "Disconnected"))
+                .ForMember(dest => dest.Zone, opt => opt.MapFrom(src => new Monitoring.Application.DTOs.Camera.ZoneDto 
+                { 
+                    Id = Guid.NewGuid(), 
+                    Name = src.Zone ?? "Default Zone", 
+                    Description = "Auto-created zone" 
+                }))
+                .ForMember(dest => dest.Configuration, opt => opt.MapFrom(src => new Monitoring.Application.DTOs.Camera.CameraConfigurationDto
+                {
+                    MotionDetection = new Monitoring.Application.DTOs.Camera.MotionDetectionSettingsDto
+                    {
+                        IsEnabled = false,
+                        Sensitivity = 50,
+                        DetectionZones = new List<string>()
+                    },
+                    Recording = new Monitoring.Application.DTOs.Camera.RecordingSettingsDto
+                    {
+                        IsEnabled = false,
+                        Quality = "Medium",
+                        StoragePath = "",
+                        RetentionDays = 30
+                    },
+                    Alerts = new Dictionary<string, string>(),
+                    Display = new Dictionary<string, string>(),
+                    Advanced = new Dictionary<string, string>()
+                }))
+                .ForMember(dest => dest.Streams, opt => opt.MapFrom(src => new List<Monitoring.Application.DTOs.Camera.CameraStreamDto>()))
+                .ForMember(dest => dest.Capabilities, opt => opt.MapFrom(src => new List<Monitoring.Application.DTOs.Camera.CameraCapabilityDto>()));
+
             // Camera Streams and Capabilities
             CreateMap<CameraStream, Monitoring.Application.DTOs.Camera.CameraStreamDto>();
             CreateMap<CameraCapability, Monitoring.Application.DTOs.Camera.CameraCapabilityDto>();
@@ -57,7 +93,7 @@ namespace Monitoring.Application.Mappings
         private void CreatePageMappings()
         {
             // Page Domain to DTO
-            CreateMap<Domain.Aggregates.Page.Page, PageDTO>()
+            CreateMap<Monitoring.Domain.Aggregates.Page.Page, PageDTO>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status != null ? src.Status.Name : "Draft"))
                 .ForMember(dest => dest.BackgroundAsset, opt => opt.MapFrom(src => src.BackgroundAsset));
 
@@ -65,7 +101,7 @@ namespace Monitoring.Application.Mappings
             CreateMap<TemplateBody, TemplateBodyDTO>();
 
             // Page DTO to Domain - using factory methods
-            CreateMap<PageDTO, Domain.Aggregates.Page.Page>()
+            CreateMap<PageDTO, Monitoring.Domain.Aggregates.Page.Page>()
                 .ConstructUsing((src, context) =>
                 {
                     var pageResult = Domain.Aggregates.Page.Page.Create(src.Title, src.DisplayWidth, src.DisplayHeight);

@@ -9,7 +9,12 @@ namespace Domain.Aggregates.Page.ValueObjects
         public static readonly PageStatus Archived = new(3, "Archived");
         public static readonly PageStatus Scheduled = new(4, "Scheduled");
 
-        protected PageStatus(int value, string name) : base(value, name)
+
+        private PageStatus()
+        {
+            
+        }
+        private PageStatus(int value, string name) : base(value, name)
         {
         }
     }

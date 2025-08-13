@@ -1,4 +1,5 @@
 using Domain.Aggregates.Camera.ValueObjects;
+using Monitoring.Domain.Aggregates.Camera.ValueObjects;
 using Monitoring.Domain.SeedWork;
 
 namespace Domain.Aggregates.Camera.Entities;

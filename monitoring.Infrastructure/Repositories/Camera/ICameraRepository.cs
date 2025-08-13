@@ -1,7 +1,7 @@
-using Domain.Aggregates.Camera.ValueObjects;
+using Monitoring.Domain.Aggregates.Camera.ValueObjects;
 using Monitoring.Common.Interfaces;
 
-namespace Persistence.Camera
+namespace Monitoring.Infrastructure.Repositories.Camera
 {
     public interface ICameraRepository : IRepository<Monitoring.Domain.Aggregates.Camera.Camera>
     {

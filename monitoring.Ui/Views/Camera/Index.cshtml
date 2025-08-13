@@ -1,0 +1,84 @@
+@model List<Monitoring.Ui.Models.Camera.CameraViewModel>
+@{
+    ViewData["Title"] = "مدیریت دوربین‌ها";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>مدیریت دوربین‌ها</h2>
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> افزودن دوربین جدید
+                </a>
+            </div>
+
+            @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+            {
+                <div class="alert alert-danger">
+                    @ViewBag.ErrorMessage
+                </div>
+            }
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            @if (Model.Any())
+            {
+                <div class="row">
+                    @foreach (var camera in Model)
+                    {
+                        <div class="col-lg-4 col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">@camera.Name</h5>
+                                    <span class="badge @(camera.Status == "Active" ? "bg-success" : "bg-secondary")">
+                                        @camera.Status
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        <strong>مکان:</strong> @camera.Location<br>
+                                        <strong>IP:</strong> @camera.IpAddress<br>
+                                        <strong>نوع:</strong> @camera.Type
+                                    </p>
+                                    <div class="btn-group w-100" role="group">
+                                        <a asp-action="Details" asp-route-id="@camera.Id" class="btn btn-info btn-sm">
+                                            جزئیات
+                                        </a>
+                                        <a asp-action="LiveView" asp-route-id="@camera.Id" class="btn btn-success btn-sm">
+                                            تصویر زنده
+                                        </a>
+                                        <a asp-action="TestConnection" asp-route-id="@camera.Id" class="btn btn-warning btn-sm">
+                                            تست
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-video fa-3x mb-3"></i>
+                    <h4>هیچ دوربینی یافت نشد</h4>
+                    <p>برای شروع، اولین دوربین خود را اضافه کنید.</p>
+                    <a asp-action="Create" class="btn btn-primary">افزودن دوربین</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

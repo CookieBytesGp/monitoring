@@ -2,7 +2,7 @@ using FluentResults;
 using Domain.Aggregates.Camera.ValueObjects;
 using Monitoring.Domain.SeedWork;
 
-namespace Domain.Aggregates.Camera.ValueObjects;
+namespace Monitoring.Domain.Aggregates.Camera.ValueObjects;
 
 public class RecordingSettings : ValueObject
 {
@@ -48,12 +48,4 @@ public class RecordingSettings : ValueObject
         yield return Duration;
         yield return StoragePath ?? string.Empty;
     }
-}
-
-public enum RecordingQuality
-{
-    Low = 1,
-    Medium = 2,
-    High = 3,
-    UltraHigh = 4
 }

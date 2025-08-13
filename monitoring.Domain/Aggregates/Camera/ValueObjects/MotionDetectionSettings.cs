@@ -1,7 +1,7 @@
 using FluentResults;
 using Monitoring.Domain.SeedWork;
 
-namespace Domain.Aggregates.Camera.ValueObjects;
+namespace Monitoring.Domain.Aggregates.Camera.ValueObjects;
 
 public class MotionDetectionSettings : ValueObject
 {

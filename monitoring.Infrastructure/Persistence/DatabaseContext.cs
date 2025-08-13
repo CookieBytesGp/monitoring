@@ -1,6 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Monitoring.Domain.Aggregates.Camera;
-using Persistence.Camera.Configurations;
+using Domain.Aggregates.Camera;
+using Monitoring.Infrastructure.Configuration.Camera;
+using Persistence.Page.Configurations;
+using Persistence.Tools.Configuration;
+using Monitoring.Infrastructure.Configuration.Camera;
 
 namespace Monitoring.Infrastructure.Persistence;
 
@@ -29,8 +32,11 @@ public class DatabaseContext : DbContext
         //modelBuilder.ApplyConfiguration(new PageConfiguration());
         //modelBuilder.ApplyConfiguration(new ToolConfiguration());
 
-        // Camera configuration (Only main aggregate configuration needed)
-        modelBuilder.ApplyConfiguration(new CameraConfiguration());
+        // Camera configurations
+        modelBuilder.ApplyConfiguration(new CameraEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new CameraStreamEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new CameraCapabilityEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new CameraConfigurationEntityConfiguration());
 
         base.OnModelCreating(modelBuilder);
     }

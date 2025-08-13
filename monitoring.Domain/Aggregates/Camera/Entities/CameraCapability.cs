@@ -1,5 +1,6 @@
 
 using Domain.Aggregates.Camera.ValueObjects;
+using Monitoring.Domain.Aggregates.Camera.ValueObjects;
 using Monitoring.Domain.SeedWork;
 
 namespace Domain.Aggregates.Camera.Entities;
@@ -11,6 +12,11 @@ namespace Domain.Aggregates.Camera.Entities;
 /// </summary>
 public class CameraCapability : Entity
 {
+    // Parameterless constructor for EF Core
+    private CameraCapability()
+    {
+    }
+
     private CameraCapability(CapabilityType type, bool isEnabled, string configuration = null)
     {
         Id = Guid.NewGuid();

@@ -1,6 +1,6 @@
 using Monitoring.Domain.SeedWork;
 
-namespace Domain.Aggregates.Camera.ValueObjects
+namespace Monitoring.Domain.Aggregates.Camera.ValueObjects
 {
     /// <summary>
     /// نوع دوربین - Enumeration
@@ -14,7 +14,11 @@ namespace Domain.Aggregates.Camera.ValueObjects
         public static readonly CameraType Analog = new(5, "Analog");
         public static readonly CameraType Webcam = new(6, "Webcam");
 
-        public CameraType(int value, string name) : base(value, name) { }
+        private CameraType()
+        {
+            
+        }
+        private CameraType(int value, string name) : base(value, name) { }
     }
 
     /// <summary>
@@ -28,7 +32,11 @@ namespace Domain.Aggregates.Camera.ValueObjects
     public static readonly CameraStatus Maintenance = new(3, "Maintenance");
     public static readonly CameraStatus Connecting = new(4, "Connecting");
 
-        public CameraStatus(int value, string name) : base(value, name) { }
+        private CameraStatus()
+        {
+            
+        }
+        private CameraStatus(int value, string name) : base(value, name) { }
     }
 
     /// <summary>
@@ -41,7 +49,11 @@ namespace Domain.Aggregates.Camera.ValueObjects
     public static readonly StreamQuality High = new(3, "High");
     public static readonly StreamQuality Ultra = new(4, "Ultra");
 
-        public StreamQuality(int value, string name) : base(value, name) { }
+        private StreamQuality()
+        {
+            
+        }
+        private StreamQuality(int value, string name) : base(value, name) { }
     }
 
     /// <summary>
@@ -60,6 +72,43 @@ namespace Domain.Aggregates.Camera.ValueObjects
     public static readonly CapabilityType DigitalZoom = new(9, "DigitalZoom");
     public static readonly CapabilityType AutoFocus = new(10, "AutoFocus");
 
-        public CapabilityType(int value, string name) : base(value, name) { }
+        private CapabilityType()
+        {
+            
+        }
+        private CapabilityType(int value, string name) : base(value, name) { }
+    }
+
+    /// <summary>
+    /// نوع شبکه - Enumeration
+    /// </summary>
+    public class NetworkType : Enumeration
+    {
+        public static readonly NetworkType HTTP = new(1, "HTTP");
+        public static readonly NetworkType RTSP = new(2, "RTSP");
+        public static readonly NetworkType ONVIF = new(3, "ONVIF");
+
+        private NetworkType()
+        {
+            
+        }
+        private NetworkType(int value, string name) : base(value, name) { }
+    }
+
+    /// <summary>
+    /// کیفیت ضبط - Enumeration
+    /// </summary>
+    public class RecordingQuality : Enumeration
+    {
+        public static readonly RecordingQuality Low = new(1, "Low");
+        public static readonly RecordingQuality Medium = new(2, "Medium");
+        public static readonly RecordingQuality High = new(3, "High");
+        public static readonly RecordingQuality UltraHigh = new(4, "UltraHigh");
+
+        private RecordingQuality()
+        {
+            
+        }
+        private RecordingQuality(int value, string name) : base(value, name) { }
     }
 }

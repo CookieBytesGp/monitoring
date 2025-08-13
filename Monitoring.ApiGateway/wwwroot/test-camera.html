@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست دوربین گوشی</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .video-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        video, img {
+            max-width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        .instructions {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .url-examples {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 تست دوربین گوشی</h1>
+        
+        <div class="instructions">
+            <h3>راهنمای استفاده:</h3>
+            <ol>
+                <li><strong>IP Webcam (Android):</strong> نصب کنید و Start Server را بزنید</li>
+                <li><strong>DroidCam:</strong> WiFi Mode را انتخاب کنید</li>
+                <li><strong>EpocCam (iOS):</strong> WiFi mode را فعال کنید</li>
+                <li>IP و Port نمایش داده شده را در فرم زیر وارد کنید</li>
+            </ol>
+        </div>
+
+        <div class="form-group">
+            <label for="streamUrl">آدرس استریم دوربین:</label>
+            <input type="text" id="streamUrl" placeholder="مثال: http://192.168.1.100:8080/video">
+            <div class="url-examples">
+                نمونه URL ها:<br>
+                • IP Webcam: http://192.168.1.100:8080/video<br>
+                • DroidCam: http://192.168.1.100:4747/mjpegfeed<br>
+                • EpocCam: rtsp://192.168.1.100:554/live
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="snapshotUrl">آدرس عکس (اختیاری):</label>
+            <input type="text" id="snapshotUrl" placeholder="مثال: http://192.168.1.100:8080/shot.jpg">
+        </div>
+
+        <button onclick="testConnection()">🔍 تست اتصال</button>
+        <button onclick="showStream()">📺 نمایش استریم</button>
+        <button onclick="takeSnapshot()">📸 گرفتن عکس</button>
+
+        <div id="result" class="result"></div>
+
+        <div class="video-container">
+            <video id="videoPlayer" controls style="display:none;" width="640" height="480">
+                مرورگر شما از نمایش ویدیو پشتیبانی نمی‌کند.
+            </video>
+            <img id="snapshotImage" style="display:none;" alt="Snapshot">
+        </div>
+    </div>
+
+    <script>
+        async function testConnection() {
+            const streamUrl = document.getElementById('streamUrl').value;
+            const snapshotUrl = document.getElementById('snapshotUrl').value;
+            const resultDiv = document.getElementById('result');
+
+            if (!streamUrl) {
+                showResult('لطفاً آدرس استریم را وارد کنید.', false);
+                return;
+            }
+
+            try {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = '⏳ در حال تست اتصال...';
+
+                const response = await fetch('/api/camera/test-phone-camera', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        streamUrl: streamUrl,
+                        snapshotUrl: snapshotUrl
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.isConnected) {
+                    showResult(`✅ اتصال موفق!<br>
+                               📡 Stream URL: ${result.streamUrl}<br>
+                               📷 Snapshot URL: ${result.snapshotUrl || 'تعریف نشده'}<br>
+                               📊 Status Code: ${result.statusCode}<br>
+                               📝 Content Type: ${result.contentType || 'نامشخص'}`, true);
+                } else {
+                    showResult(`❌ اتصال ناموفق!<br>
+                               🔗 URL: ${result.streamUrl}<br>
+                               ⚠️ خطا: ${result.error || result.message}`, false);
+                }
+            } catch (error) {
+                showResult(`❌ خطا در تست اتصال: ${error.message}`, false);
+            }
+        }
+
+        function showStream() {
+            const streamUrl = document.getElementById('streamUrl').value;
+            const videoPlayer = document.getElementById('videoPlayer');
+            const snapshotImage = document.getElementById('snapshotImage');
+
+            if (!streamUrl) {
+                showResult('لطفاً آدرس استریم را وارد کنید.', false);
+                return;
+            }
+
+            // Hide snapshot
+            snapshotImage.style.display = 'none';
+            
+            // Show video
+            videoPlayer.src = streamUrl;
+            videoPlayer.style.display = 'block';
+            videoPlayer.load();
+            
+            showResult('📺 در حال نمایش استریم...', true);
+        }
+
+        function takeSnapshot() {
+            const snapshotUrl = document.getElementById('snapshotUrl').value || 
+                              document.getElementById('streamUrl').value.replace('/video', '/shot.jpg');
+            const snapshotImage = document.getElementById('snapshotImage');
+            const videoPlayer = document.getElementById('videoPlayer');
+
+            if (!snapshotUrl) {
+                showResult('لطفاً آدرس عکس را وارد کنید.', false);
+                return;
+            }
+
+            // Hide video
+            videoPlayer.style.display = 'none';
+            
+            // Show snapshot
+            snapshotImage.src = snapshotUrl + '?t=' + Date.now(); // Cache busting
+            snapshotImage.style.display = 'block';
+            
+            showResult('📸 در حال گرفتن عکس...', true);
+        }
+
+        function showResult(message, success) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = success ? 'result success' : 'result error';
+            resultDiv.innerHTML = message;
+        }
+    </script>
+</body>
+</html>

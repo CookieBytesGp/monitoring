@@ -1,0 +1,161 @@
+@model CreateCameraViewModel
+@{
+    ViewData["Title"] = "ایجاد دوربین جدید";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>🎥 ایجاد دوربین جدید</h2>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">🔧 اطلاعات پایه دوربین</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="Name" class="control-label">نام دوربین</label>
+                            <input asp-for="Name" class="form-control" placeholder="مثال: دوربین گوشی من" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Location" class="control-label">مکان</label>
+                            <input asp-for="Location" class="form-control" placeholder="مثال: اتاق نشیمن" />
+                            <span asp-validation-for="Location" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Zone" class="control-label">ناحیه</label>
+                            <input asp-for="Zone" class="form-control" placeholder="مثال: طبقه اول" />
+                            <span asp-validation-for="Zone" class="text-danger"></span>
+                        </div>
+
+                        <h5 class="mt-4">🌐 تنظیمات شبکه</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-group mb-3">
+                                    <label asp-for="IpAddress" class="control-label">آدرس IP</label>
+                                    <input asp-for="IpAddress" class="form-control" placeholder="192.168.1.100" />
+                                    <span asp-validation-for="IpAddress" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Port" class="control-label">پورت</label>
+                                    <input asp-for="Port" class="form-control" placeholder="8080" type="number" />
+                                    <span asp-validation-for="Port" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Username" class="control-label">نام کاربری</label>
+                                    <input asp-for="Username" class="form-control" placeholder="اختیاری" />
+                                    <span asp-validation-for="Username" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Password" class="control-label">رمز عبور</label>
+                                    <input asp-for="Password" class="form-control" type="password" placeholder="اختیاری" />
+                                    <span asp-validation-for="Password" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="CameraType" class="control-label">نوع دوربین</label>
+                            <select asp-for="CameraType" class="form-control">
+                                <option value="">انتخاب کنید...</option>
+                                <option value="RTSP">RTSP Camera</option>
+                                <option value="HTTP">HTTP/IP Webcam</option>
+                                <option value="USB">USB Camera</option>
+                                <option value="ONVIF">ONVIF Camera</option>
+                            </select>
+                            <span asp-validation-for="CameraType" class="text-danger"></span>
+                        </div>
+
+                        <h5 class="mt-4">📹 URL های استریم</h5>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="StreamUrl" class="control-label">آدرس استریم اصلی</label>
+                            <input asp-for="StreamUrl" class="form-control" placeholder="http://192.168.1.100:8080/video" />
+                            <span asp-validation-for="StreamUrl" class="text-danger"></span>
+                            <small class="form-text text-muted">
+                                نمونه URL ها:
+                                <br>• IP Webcam: http://192.168.1.100:8080/video
+                                <br>• DroidCam: http://192.168.1.100:4747/mjpegfeed  
+                                <br>• RTSP: rtsp://192.168.1.100:554/live
+                            </small>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="SnapshotUrl" class="control-label">آدرس عکس (اختیاری)</label>
+                            <input asp-for="SnapshotUrl" class="form-control" placeholder="http://192.168.1.100:8080/shot.jpg" />
+                            <span asp-validation-for="SnapshotUrl" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">💾 ایجاد دوربین</button>
+                            <a asp-action="Index" class="btn btn-secondary">↩️ بازگشت به لیست</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">📱 راهنمای دوربین گوشی</h5>
+                </div>
+                <div class="card-body">
+                    <h6>برای Android:</h6>
+                    <ol>
+                        <li>اپلیکیشن <strong>IP Webcam</strong> را نصب کنید</li>
+                        <li>Start Server را بزنید</li>
+                        <li>IP و Port نمایش داده شده را وارد کنید</li>
+                        <li>URL: http://IP:8080/video</li>
+                    </ol>
+
+                    <h6 class="mt-3">برای iOS:</h6>
+                    <ol>
+                        <li>اپلیکیشن <strong>EpocCam</strong> را نصب کنید</li>
+                        <li>WiFi mode را انتخاب کنید</li>
+                        <li>URL: rtsp://IP:554/live</li>
+                    </ol>
+
+                    <div class="alert alert-info mt-3">
+                        <strong>💡 نکته:</strong> مطمئن شوید گوشی و کامپیوتر در همان شبکه WiFi قرار دارند.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title">🔗 لینک های مفید</h5>
+                </div>
+                <div class="card-body">
+                    <a href="/test-camera.html" class="btn btn-info btn-sm mb-2" target="_blank">
+                        🧪 تست دوربین گوشی
+                    </a>
+                    <br>
+                    <a href="@Url.Action("Index")" class="btn btn-outline-primary btn-sm">
+                        📋 مشاهده لیست دوربین‌ها
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

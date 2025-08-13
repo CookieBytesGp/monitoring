@@ -1,254 +1,447 @@
+using Domain.Aggregates.Camera.Entities;
+using Domain.Aggregates.Camera.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Monitoring.Domain.Aggregates.Camera;
-using Domain.Aggregates.Camera.ValueObjects;
-using Domain.Aggregates.Camera.Entities;
+using Monitoring.Domain.Aggregates.Camera.Entities;
+using Monitoring.Domain.Aggregates.Camera.ValueObjects;
+using Newtonsoft.Json;
+using MotionDetection = Monitoring.Domain.Aggregates.Camera.ValueObjects.MotionDetectionSettings;
+using Recording = Monitoring.Domain.Aggregates.Camera.ValueObjects.RecordingSettings;
 
-namespace Persistence.Camera.Configurations
+namespace Monitoring.Infrastructure.Configuration.Camera;
+
+public class CameraEntityConfiguration : IEntityTypeConfiguration<Monitoring.Domain.Aggregates.Camera.Camera>
 {
-    internal class CameraConfiguration : IEntityTypeConfiguration<Monitoring.Domain.Aggregates.Camera.Camera>
+    public void Configure(EntityTypeBuilder<Monitoring.Domain.Aggregates.Camera.Camera> builder)
     {
-        public void Configure(EntityTypeBuilder<Monitoring.Domain.Aggregates.Camera.Camera> builder)
+        // ===============================
+        // TABLE & PRIMARY KEY
+        // ===============================
+        builder.ToTable("Cameras");
+        builder.HasKey(c => c.Id);
+        
+        builder.Property(c => c.Id)
+            .HasColumnName("Id")
+            .IsRequired();
+
+        // ===============================
+        // BASIC PROPERTIES
+        // ===============================
+        builder.Property(c => c.Name)
+            .HasMaxLength(200)
+            .IsRequired()
+            .HasColumnName("Name");
+
+        builder.Property(c => c.Status)
+            .HasConversion(
+                status => status.Value,
+                value => CameraStatus.FromValue<CameraStatus>(value))
+            .IsRequired()
+            .HasColumnName("Status");
+
+        builder.Property(c => c.Type)
+            .HasConversion(
+                type => type.Value,
+                value => CameraType.FromValue<CameraType>(value))
+            .IsRequired()
+            .HasColumnName("Type");
+
+        builder.Property(c => c.UpdatedAt)
+            .IsRequired(false)
+            .HasColumnName("UpdatedAt");
+
+        builder.Property(c => c.LastActiveAt)
+            .IsRequired(false)
+            .HasColumnName("LastActiveAt");
+
+        // ===============================
+        // CAMERA LOCATION VALUE OBJECT
+        // ===============================
+        builder.OwnsOne(c => c.Location, location =>
         {
-            // Table Configuration
-            builder.ToTable("Cameras");
-            
-            // Primary Key
-            builder.HasKey(p => p.Id);
-            builder.Property(p => p.Id)
-                .ValueGeneratedNever();
+            location.Property(l => l.Value)
+                .HasMaxLength(500)
+                .IsRequired()
+                .HasColumnName("Location_Value");
 
-            // Name Property (String)
-            builder
-                .Property(p => p.Name)
+            location.Property(l => l.Zone)
                 .HasMaxLength(100)
-                .IsRequired(true)
-                .HasColumnName("Name");
+                .IsRequired()
+                .HasColumnName("Location_Zone");
 
-            // Location Value Object
-            builder.OwnsOne(p => p.Location, location =>
-            {
-                location.Property(l => l.Value)
-                    .HasMaxLength(200)
-                    .IsRequired(true)
-                    .HasColumnName("Location");
-                    
-                location.Property(l => l.Zone)
-                    .HasMaxLength(100)
-                    .IsRequired(false)
-                    .HasColumnName("LocationZone");
-                    
-                location.Property(l => l.Latitude)
-                    .HasColumnType("decimal(10,8)")
-                    .IsRequired(false)
-                    .HasColumnName("Latitude");
-                    
-                location.Property(l => l.Longitude)
-                    .HasColumnType("decimal(11,8)")
-                    .IsRequired(false)
-                    .HasColumnName("Longitude");
-            });
-
-            // Network Value Object
-            builder.OwnsOne(p => p.Network, network =>
-            {
-                network.Property(n => n.IpAddress)
-                    .HasMaxLength(45)
-                    .IsRequired(true)
-                    .HasColumnName("IpAddress");
-                    
-                network.Property(n => n.Port)
-                    .IsRequired(true)
-                    .HasColumnName("Port");
-                    
-                network.Property(n => n.Username)
-                    .HasMaxLength(100)
-                    .IsRequired(false)
-                    .HasColumnName("Username");
-                    
-                network.Property(n => n.Password)
-                    .HasMaxLength(100)
-                    .IsRequired(false)
-                    .HasColumnName("Password");
-                    
-                network.Property(n => n.Type)
-                    .HasConversion<int>()
-                    .IsRequired(true)
-                    .HasColumnName("NetworkType");
-            });
-
-            // Enum Properties
-            builder.Property(p => p.Type)
-                .HasConversion<int>()
-                .IsRequired(true)
-                .HasColumnName("CameraType");
-                
-            builder.Property(p => p.Status)
-                .HasConversion<int>()
-                .IsRequired(true)
-                .HasColumnName("Status");
-
-            // Date Properties
-            builder.Property(p => p.CreatedAt)
-                .IsRequired(true)
-                .HasColumnName("CreatedAt");
-                
-            builder.Property(p => p.LastActiveAt)
+            location.Property(l => l.Latitude)
+                .HasPrecision(10, 8)
                 .IsRequired(false)
-                .HasColumnName("LastActiveAt");
-                
-            builder.Property(p => p.UpdatedAt)
+                .HasColumnName("Location_Latitude");
+
+            location.Property(l => l.Longitude)
+                .HasPrecision(11, 8)
                 .IsRequired(false)
-                .HasColumnName("UpdatedAt");
+                .HasColumnName("Location_Longitude");
+        });
 
-            // Configuration Entity (Owned Entity)
-            builder.OwnsOne(p => p.Configuration, config =>
+        // ===============================
+        // CAMERA NETWORK VALUE OBJECT
+        // ===============================
+        builder.OwnsOne(c => c.Network, network =>
+        {
+            network.Property(n => n.IpAddress)
+                .HasMaxLength(45) // IPv6 support
+                .IsRequired()
+                .HasColumnName("Network_IpAddress");
+
+            network.Property(n => n.Port)
+                .IsRequired()
+                .HasColumnName("Network_Port");
+
+            network.Property(n => n.Username)
+                .HasMaxLength(100)
+                .IsRequired()
+                .HasColumnName("Network_Username");
+
+            network.Property(n => n.Password)
+                .HasMaxLength(255)
+                .IsRequired()
+                .HasColumnName("Network_Password");
+
+            network.Property(n => n.Type)
+                .HasConversion(
+                    type => type.Value,
+                    value => NetworkType.FromValue<NetworkType>(value))
+                .IsRequired()
+                .HasColumnName("Network_Type");
+        });
+
+        // ===============================
+        // CAMERA CONNECTION INFO VALUE OBJECT
+        // ===============================
+        builder.OwnsOne(c => c.ConnectionInfo, connection =>
+        {
+            connection.Property(ci => ci.StreamUrl)
+                .HasMaxLength(1000)
+                .IsRequired()
+                .HasColumnName("Connection_StreamUrl");
+
+            connection.Property(ci => ci.SnapshotUrl)
+                .HasMaxLength(1000)
+                .IsRequired(false)
+                .HasColumnName("Connection_SnapshotUrl");
+
+            connection.Property(ci => ci.BackupStreamUrl)
+                .HasMaxLength(1000)
+                .IsRequired(false)
+                .HasColumnName("Connection_BackupStreamUrl");
+
+            connection.Property(ci => ci.ConnectionType)
+                .HasMaxLength(50)
+                .IsRequired()
+                .HasColumnName("Connection_Type");
+
+            connection.Property(ci => ci.IsConnected)
+                .IsRequired()
+                .HasColumnName("Connection_IsConnected");
+
+            connection.Property(ci => ci.ConnectedAt)
+                .IsRequired()
+                .HasColumnName("Connection_ConnectedAt");
+
+            connection.Property(ci => ci.LastHeartbeat)
+                .IsRequired(false)
+                .HasColumnName("Connection_LastHeartbeat");
+
+            // Configure Dictionary<string, string> as JSON
+            var additionalInfoConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<Dictionary<string, string>, string>(
+                v => JsonConvert.SerializeObject(v),
+                v => string.IsNullOrEmpty(v)
+                    ? new Dictionary<string, string>()
+                    : JsonConvert.DeserializeObject<Dictionary<string, string>>(v) ?? new Dictionary<string, string>()
+            );
+
+            connection.Property(ci => ci.AdditionalInfo)
+                .HasConversion(additionalInfoConverter)
+                .HasColumnName("Connection_AdditionalInfo")
+                .HasColumnType("nvarchar(max)");
+        });
+
+        // ===============================
+        // ENTITY RELATIONSHIPS
+        // ===============================
+        
+        // Camera Streams (One-to-Many)
+        builder.HasMany<CameraStream>()
+            .WithOne()
+            .HasForeignKey("CameraId")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Camera Capabilities (One-to-Many)
+        builder.HasMany<CameraCapability>()
+            .WithOne()
+            .HasForeignKey("CameraId")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Camera Configuration (One-to-One)
+        builder.HasOne<CameraConfiguration>()
+            .WithOne()
+            .HasForeignKey<CameraConfiguration>("CameraId")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ===============================
+        // INDEXES
+        // ===============================
+        builder.HasIndex(c => c.Name)
+            .HasDatabaseName("IX_Cameras_Name")
+            .IsUnique();
+
+        builder.HasIndex(c => c.Status)
+            .HasDatabaseName("IX_Cameras_Status");
+
+        builder.HasIndex(c => c.Type)
+            .HasDatabaseName("IX_Cameras_Type");
+    }
+}
+
+public class CameraStreamEntityConfiguration : IEntityTypeConfiguration<CameraStream>
+{
+    public void Configure(EntityTypeBuilder<CameraStream> builder)
+    {
+        // ===============================
+        // TABLE & PRIMARY KEY
+        // ===============================
+        builder.ToTable("CameraStreams");
+        builder.HasKey(cs => cs.Id);
+
+        builder.Property(cs => cs.Id)
+            .HasColumnName("Id")
+            .IsRequired();
+
+        // ===============================
+        // PROPERTIES
+        // ===============================
+        builder.Property(cs => cs.Quality)
+            .HasConversion(
+                quality => quality.Value,
+                value => StreamQuality.FromValue<StreamQuality>(value))
+            .IsRequired()
+            .HasColumnName("Quality");
+
+        builder.Property(cs => cs.Url)
+            .HasMaxLength(1000)
+            .IsRequired()
+            .HasColumnName("Url");
+
+        builder.Property(cs => cs.IsActive)
+            .IsRequired()
+            .HasColumnName("IsActive");
+
+        builder.Property(cs => cs.CreatedAt)
+            .IsRequired()
+            .HasColumnName("CreatedAt");
+
+        builder.Property(cs => cs.UpdatedAt)
+            .IsRequired(false)
+            .HasColumnName("UpdatedAt");
+
+        // Foreign Key (handled by Camera aggregate)
+        builder.Property<Guid>("CameraId")
+            .HasColumnName("CameraId")
+            .IsRequired();
+
+        // ===============================
+        // INDEXES
+        // ===============================
+        builder.HasIndex("CameraId")
+            .HasDatabaseName("IX_CameraStreams_CameraId");
+
+        builder.HasIndex(cs => cs.Quality)
+            .HasDatabaseName("IX_CameraStreams_Quality");
+    }
+}
+
+public class CameraCapabilityEntityConfiguration : IEntityTypeConfiguration<CameraCapability>
+{
+    public void Configure(EntityTypeBuilder<CameraCapability> builder)
+    {
+        // ===============================
+        // TABLE & PRIMARY KEY
+        // ===============================
+        builder.ToTable("CameraCapabilities");
+        builder.HasKey(cc => cc.Id);
+
+        builder.Property(cc => cc.Id)
+            .HasColumnName("Id")
+            .IsRequired();
+
+        // ===============================
+        // PROPERTIES
+        // ===============================
+        builder.Property(cc => cc.Type)
+            .HasConversion(
+                type => type.Value,
+                value => CapabilityType.FromValue<CapabilityType>(value))
+            .IsRequired()
+            .HasColumnName("Type");
+
+        builder.Property(cc => cc.IsEnabled)
+            .IsRequired()
+            .HasColumnName("IsEnabled");
+
+        builder.Property(cc => cc.Configuration)
+            .HasColumnType("nvarchar(max)")
+            .IsRequired(false)
+            .HasColumnName("Configuration");
+
+        builder.Property(cc => cc.CreatedAt)
+            .IsRequired()
+            .HasColumnName("CreatedAt");
+
+        builder.Property(cc => cc.UpdatedAt)
+            .IsRequired(false)
+            .HasColumnName("UpdatedAt");
+
+        // Foreign Key (handled by Camera aggregate)
+        builder.Property<Guid>("CameraId")
+            .HasColumnName("CameraId")
+            .IsRequired();
+
+        // ===============================
+        // INDEXES
+        // ===============================
+        builder.HasIndex("CameraId")
+            .HasDatabaseName("IX_CameraCapabilities_CameraId");
+
+        builder.HasIndex(cc => cc.Type)
+            .HasDatabaseName("IX_CameraCapabilities_Type");
+    }
+}
+
+public class CameraConfigurationEntityConfiguration : IEntityTypeConfiguration<Domain.Aggregates.Camera.Entities.CameraConfiguration>
+{
+    public void Configure(EntityTypeBuilder<Domain.Aggregates.Camera.Entities.CameraConfiguration> builder)
+    {
+        // ===============================
+        // TABLE & PRIMARY KEY
+        // ===============================
+        builder.ToTable("CameraConfigurations");
+        builder.HasKey(cc => cc.Id);
+
+        builder.Property(cc => cc.Id)
+            .HasColumnName("Id")
+            .IsRequired();
+
+        // ===============================
+        // BASIC PROPERTIES
+        // ===============================
+        builder.Property(cc => cc.Resolution)
+            .HasMaxLength(20)
+            .IsRequired()
+            .HasColumnName("Resolution");
+
+        builder.Property(cc => cc.FrameRate)
+            .IsRequired()
+            .HasColumnName("FrameRate");
+
+        builder.Property(cc => cc.VideoCodec)
+            .HasMaxLength(50)
+            .IsRequired()
+            .HasColumnName("VideoCodec");
+
+        builder.Property(cc => cc.Bitrate)
+            .IsRequired()
+            .HasColumnName("Bitrate");
+
+        builder.Property(cc => cc.AudioEnabled)
+            .IsRequired()
+            .HasColumnName("AudioEnabled");
+
+        builder.Property(cc => cc.AudioCodec)
+            .HasMaxLength(50)
+            .IsRequired(false)
+            .HasColumnName("AudioCodec");
+
+        builder.Property(cc => cc.Brand)
+            .HasMaxLength(100)
+            .IsRequired(false)
+            .HasColumnName("Brand");
+
+        var additionalSettingsConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<Dictionary<string, string>, string>(
+            v => JsonConvert.SerializeObject(v),
+            v => string.IsNullOrEmpty(v)
+                ? new Dictionary<string, string>()
+                : JsonConvert.DeserializeObject<Dictionary<string, string>>(v) ?? new Dictionary<string, string>()
+        );
+
+        builder.Property(cc => cc.AdditionalSettings)
+            .HasConversion(additionalSettingsConverter)
+            .HasColumnType("nvarchar(max)")
+            .IsRequired(false)
+            .HasColumnName("AdditionalSettings");
+
+        // ===============================
+        // MOTION DETECTION VALUE OBJECT
+        // ===============================
+        builder.OwnsOne<MotionDetection>(
+            cc => cc.MotionDetection, 
+            motion =>
             {
-                config.Property(c => c.Resolution)
-                    .HasMaxLength(20)
-                    .IsRequired(true)
-                    .HasColumnName("Configuration_Resolution");
+                motion.Property(m => m.IsEnabled)
+                    .IsRequired()
+                    .HasColumnName("MotionDetection_IsEnabled");
                     
-                config.Property(c => c.FrameRate)
-                    .IsRequired(true)
-                    .HasColumnName("Configuration_FrameRate");
+                motion.Property(m => m.Sensitivity)
+                    .IsRequired()
+                    .HasColumnName("MotionDetection_Sensitivity");
                     
-                config.Property(c => c.VideoCodec)
-                    .HasMaxLength(50)
-                    .IsRequired(true)
-                    .HasColumnName("Configuration_VideoCodec");
-                    
-                config.Property(c => c.Bitrate)
-                    .IsRequired(true)
-                    .HasColumnName("Configuration_Bitrate");
-                    
-                config.Property(c => c.AudioEnabled)
-                    .IsRequired(true)
-                    .HasColumnName("Configuration_AudioEnabled");
-                    
-                config.Property(c => c.AudioCodec)
-                    .HasMaxLength(50)
+                motion.Property(m => m.DetectionZone)
+                    .HasMaxLength(1000)
                     .IsRequired(false)
-                    .HasColumnName("Configuration_AudioCodec");
-
-                // Motion Detection Settings (Owned within Configuration)
-                config.OwnsOne(c => c.MotionDetection, motion =>
-                {
-                    motion.Property(m => m.Enabled)
-                        .IsRequired(true)
-                        .HasColumnName("Configuration_MotionDetection_Enabled");
-                        
-                    motion.Property(m => m.Sensitivity)
-                        .IsRequired(true)
-                        .HasColumnName("Configuration_MotionDetection_Sensitivity");
-                        
-                    motion.Property(m => m.PreRecordingDuration)
-                        .IsRequired(true)
-                        .HasColumnName("Configuration_MotionDetection_PreRecordingDuration");
-                        
-                    motion.Property(m => m.PostRecordingDuration)
-                        .IsRequired(true)
-                        .HasColumnName("Configuration_MotionDetection_PostRecordingDuration");
-                });
-
-                // Recording Settings (Owned within Configuration)
-                config.OwnsOne(c => c.Recording, recording =>
-                {
-                    recording.Property(r => r.Enabled)
-                        .IsRequired(true)
-                        .HasColumnName("Configuration_Recording_Enabled");
-                        
-                    recording.Property(r => r.Mode)
-                        .IsRequired(true)
-                        .HasColumnName("Configuration_Recording_Mode")
-                        .HasConversion<int>();
-                        
-                    recording.Property(r => r.MaxDuration)
-                        .IsRequired(true)
-                        .HasColumnName("Configuration_Recording_MaxDuration");
-                        
-                    recording.Property(r => r.MaxFileSize)
-                        .IsRequired(true)
-                        .HasColumnName("Configuration_Recording_MaxFileSize");
-                        
-                    recording.Property(r => r.StoragePath)
-                        .HasMaxLength(500)
-                        .IsRequired(false)
-                        .HasColumnName("Configuration_Recording_StoragePath");
-                });
+                    .HasColumnName("MotionDetection_Zone");
             });
 
-            // Streams Collection (Owned Many - Part of Camera Aggregate)
-            builder.OwnsMany(p => p.Streams, streams =>
+        // ===============================
+        // RECORDING SETTINGS VALUE OBJECT
+        // ===============================
+        builder.OwnsOne<Recording>(
+            cc => cc.Recording, 
+            recording =>
             {
-                streams.WithOwner().HasForeignKey("CameraId");
-                streams.Property<Guid>("CameraId");
-                streams.HasKey("CameraId", "Quality");
-                
-                streams.Property(s => s.Quality)
-                    .IsRequired(true)
-                    .HasConversion<int>();
+                recording.Property(r => r.IsEnabled)
+                    .IsRequired()
+                    .HasColumnName("Recording_IsEnabled");
                     
-                streams.Property(s => s.Url)
+                recording.Property(r => r.Quality)
+                    .HasConversion(
+                        quality => quality.Value,
+                        value => Domain.Aggregates.Camera.ValueObjects.RecordingQuality.FromValue<Domain.Aggregates.Camera.ValueObjects.RecordingQuality>(value))
+                    .IsRequired()
+                    .HasColumnName("Recording_Quality");
+                    
+                recording.Property(r => r.Duration)
+                    .HasConversion(
+                        duration => duration.TotalMinutes,
+                        minutes => TimeSpan.FromMinutes(minutes))
+                    .IsRequired()
+                    .HasColumnName("Recording_Duration");
+                    
+                recording.Property(r => r.StoragePath)
                     .HasMaxLength(500)
-                    .IsRequired(true);
-                    
-                streams.Property(s => s.IsActive)
-                    .IsRequired(true);
-                    
-                streams.Property(s => s.CreatedAt)
-                    .IsRequired(true);
-                    
-                streams.Property(s => s.UpdatedAt)
-                    .IsRequired(false);
-                    
-                streams.ToTable("Camera_Streams");
+                    .IsRequired(false)
+                    .HasColumnName("Recording_StoragePath");
             });
 
-            // Capabilities Collection (Owned Many - Part of Camera Aggregate)
-            builder.OwnsMany(p => p.Capabilities, capabilities =>
-            {
-                capabilities.WithOwner().HasForeignKey("CameraId");
-                capabilities.Property<Guid>("CameraId");
-                capabilities.HasKey("CameraId", "Type");
-                
-                capabilities.Property(c => c.Type)
-                    .IsRequired(true)
-                    .HasConversion<int>();
-                    
-                capabilities.Property(c => c.IsEnabled)
-                    .IsRequired(true);
-                    
-                capabilities.Property(c => c.Configuration)
-                    .HasMaxLength(2000)
-                    .IsRequired(false);
-                    
-                capabilities.Property(c => c.CreatedAt)
-                    .IsRequired(true);
-                    
-                capabilities.Property(c => c.UpdatedAt)
-                    .IsRequired(false);
-                    
-                capabilities.ToTable("Camera_Capabilities");
-            });
+        // Foreign Key (handled by Camera aggregate)
+        builder.Property<Guid>("CameraId")
+            .HasColumnName("CameraId")
+            .IsRequired();
 
-            // Domain Events Ignored
-            builder.Ignore(p => p.DomainEvents);
+        // ===============================
+        // INDEXES
+        // ===============================
+        builder.HasIndex("CameraId")
+            .HasDatabaseName("IX_CameraConfigurations_CameraId")
+            .IsUnique();
 
-            // Indexes
-            builder.HasIndex(p => p.Name)
-                .IsUnique()
-                .HasDatabaseName("IX_Cameras_Name");
-                
-            builder.HasIndex("Network_IpAddress", "Network_Port")
-                .IsUnique()
-                .HasDatabaseName("IX_Cameras_Network");
-                
-            builder.HasIndex(p => p.Status)
-                .HasDatabaseName("IX_Cameras_Status");
-                
-            builder.HasIndex(p => p.Type)
-                .HasDatabaseName("IX_Cameras_Type");
-        }
+        builder.HasIndex(cc => cc.Resolution)
+            .HasDatabaseName("IX_CameraConfigurations_Resolution");
     }
 }

@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitoring.Ui", "Monitoring
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitoring.Application", "monitoring.Application\Monitoring.Application.csproj", "{3A498172-281E-29D7-F2E8-F9071BF58040}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitoring.ApiGateway", "Monitoring.ApiGateway\Monitoring.ApiGateway.csproj", "{742CE905-0297-4A01-9187-55D2D4A68417}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{3A498172-281E-29D7-F2E8-F9071BF58040}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A498172-281E-29D7-F2E8-F9071BF58040}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A498172-281E-29D7-F2E8-F9071BF58040}.Release|Any CPU.Build.0 = Release|Any CPU
+		{742CE905-0297-4A01-9187-55D2D4A68417}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{742CE905-0297-4A01-9187-55D2D4A68417}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{742CE905-0297-4A01-9187-55D2D4A68417}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{742CE905-0297-4A01-9187-55D2D4A68417}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

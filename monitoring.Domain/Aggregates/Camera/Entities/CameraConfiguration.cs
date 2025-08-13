@@ -2,8 +2,9 @@ using FluentResults;
 using Domain.Aggregates.Camera.ValueObjects;
 using Monitoring.Domain.SeedWork;
 using System.Collections.Generic;
+using Monitoring.Domain.Aggregates.Camera.ValueObjects;
 
-namespace Domain.Aggregates.Camera.Entities;
+namespace Monitoring.Domain.Aggregates.Camera.Entities;
 
 public class CameraConfiguration : Entity
 {
@@ -344,77 +345,4 @@ public class CameraConfiguration : Entity
     }
 }
 
-#region Supporting Value Objects
 
-public class MotionDetectionSettings
-{
-    public bool Enabled { get; private set; }
-    public int Sensitivity { get; private set; }
-    public TimeSpan PreRecordingDuration { get; private set; }
-    public TimeSpan PostRecordingDuration { get; private set; }
-
-    public MotionDetectionSettings(bool enabled, int sensitivity = 50, TimeSpan? preRecording = null, TimeSpan? postRecording = null)
-    {
-        if (sensitivity < 1 || sensitivity > 100)
-            throw new ArgumentException("Sensitivity must be between 1 and 100", nameof(sensitivity));
-
-        Enabled = enabled;
-        Sensitivity = sensitivity;
-        PreRecordingDuration = preRecording ?? TimeSpan.FromSeconds(5);
-        PostRecordingDuration = postRecording ?? TimeSpan.FromSeconds(10);
-    }
-
-    public static MotionDetectionSettings CreateDefault()
-    {
-        return new MotionDetectionSettings(enabled: true, sensitivity: 75);
-    }
-
-    public static MotionDetectionSettings CreateDisabled()
-    {
-        return new MotionDetectionSettings(enabled: false);
-    }
-}
-
-public class RecordingSettings
-{
-    public bool Enabled { get; private set; }
-    public RecordingMode Mode { get; private set; }
-    public TimeSpan MaxDuration { get; private set; }
-    public int MaxFileSize { get; private set; } // در MB
-    public string StoragePath { get; private set; }
-
-    public RecordingSettings(bool enabled, RecordingMode mode, TimeSpan maxDuration, int maxFileSize, string storagePath)
-    {
-        if (maxDuration <= TimeSpan.Zero)
-            throw new ArgumentException("Max duration must be positive", nameof(maxDuration));
-
-        if (maxFileSize <= 0)
-            throw new ArgumentException("Max file size must be positive", nameof(maxFileSize));
-
-        Enabled = enabled;
-        Mode = mode;
-        MaxDuration = maxDuration;
-        MaxFileSize = maxFileSize;
-        StoragePath = storagePath?.Trim();
-    }
-
-    public static RecordingSettings CreateDefault()
-    {
-        return new RecordingSettings(
-            enabled: false,
-            mode: RecordingMode.OnMotion,
-            maxDuration: TimeSpan.FromMinutes(30),
-            maxFileSize: 100,
-            storagePath: "/recordings"
-        );
-    }
-}
-
-public enum RecordingMode
-{
-    Continuous = 1,
-    OnMotion = 2,
-    Scheduled = 3
-}
-
-#endregion

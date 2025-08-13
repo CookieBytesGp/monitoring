@@ -1,10 +1,10 @@
 
 using Microsoft.EntityFrameworkCore;
 using Monitoring.Infrastructure.Persistence;
+using Monitoring.Infrastructure.Repositories.Camera;
 using Monitoring.Infrastructure.Repositories.Page;
-using Persistence.Camera;
 
-namespace Shahzade.Infrastructure.Persistence;
+namespace Monitoring.Infrastructure.Persistence;
 
 /// <summary>
 /// پیاده‌سازی UnitOfWork برای مدیریت دسترسی به Repository‌ها

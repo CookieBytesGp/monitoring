@@ -1,6 +1,6 @@
 
+using Monitoring.Infrastructure.Repositories.Camera;
 using Monitoring.Infrastructure.Repositories.Page;
-using Persistence.Camera;
 
 namespace Monitoring.Infrastructure.Persistence;
 

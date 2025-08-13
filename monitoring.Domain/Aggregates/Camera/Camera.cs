@@ -2,6 +2,7 @@ using Domain.Aggregates.Camera.ValueObjects;
 using Domain.Aggregates.Camera.Entities;
 using Monitoring.Domain.SeedWork;
 using Monitoring.Domain.Aggregates.Camera.ValueObjects;
+using Monitoring.Domain.Aggregates.Camera.Entities;
 using FluentResults;
 
 namespace Monitoring.Domain.Aggregates.Camera;

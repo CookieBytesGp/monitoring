@@ -3,6 +3,8 @@ using Monitoring.Domain.SeedWork;
 using FluentResults;
 using System.Net;
 using System.Text.RegularExpressions;
+using Domain.Aggregates.Camera.ValueObjects;
+using Monitoring.Domain.Aggregates.Camera.ValueObjects;
 
 namespace Domain.Aggregates.Camera.ValueObjects;
 
@@ -19,15 +21,15 @@ public class CameraNetwork : ValueObject
         
     }
 
-    private CameraNetwork(string ipAddress, int port, string username = null, string password = null, NetworkType type = NetworkType.HTTP)
+    private CameraNetwork(string ipAddress, int port, string username = null, string password = null, NetworkType type = null)
     {
-        ValidateCoreSettings(ipAddress, port, type, username, password);
+        ValidateCoreSettings(ipAddress, port, type ?? NetworkType.HTTP, username, password);
 
         IpAddress = ipAddress.Trim();
         Port = port;
         Username = username?.Trim();
         Password = password?.Trim();
-        Type = type;
+        Type = type ?? NetworkType.HTTP;
     }
 
     public static Result<CameraNetwork> Create(string ipAddress, int port, string username = null, string password = null)
@@ -113,14 +115,14 @@ public class CameraNetwork : ValueObject
 
     public string GetBaseUrl()
     {
-        return Type switch
-        {
-            NetworkType.HTTP => $"http://{IpAddress}:{Port}",
-            NetworkType.RTSP => HasCredentials ? $"rtsp://{Username}:{Password}@{IpAddress}:{Port}" 
-                                               : $"rtsp://{IpAddress}:{Port}",
-            NetworkType.ONVIF => $"http://{IpAddress}:{Port}/onvif",
-            _ => throw new InvalidOperationException($"Unknown network type: {Type}")
-        };
+        if (Type == NetworkType.HTTP)
+            return $"http://{IpAddress}:{Port}";
+        else if (Type == NetworkType.RTSP)
+            return HasCredentials ? $"rtsp://{Username}:{Password}@{IpAddress}:{Port}" : $"rtsp://{IpAddress}:{Port}";
+        else if (Type == NetworkType.ONVIF)
+            return $"http://{IpAddress}:{Port}/onvif";
+        else
+            throw new InvalidOperationException($"Unknown network type: {Type}");
     }
 
     public string GetAuthHeader()
@@ -181,11 +183,4 @@ public class CameraNetwork : ValueObject
     {
         ValidateCoreSettings(IpAddress, Port, Type, Username, Password);
     }
-}
-
-public enum NetworkType
-{
-    HTTP = 1,
-    RTSP = 2,
-    ONVIF = 3
 }
