@@ -5,7 +5,6 @@ using Monitoring.Infrastructure.Repositories.Camera;
 using Monitoring.Common.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Monitoring.Infrastructure.Camera;
-using Monitoring.Application.Mappings;
 using Monitoring.Application.Interfaces.Realtime;
 using Monitoring.ApiGateway.Services;
 
@@ -23,7 +22,6 @@ builder.Services.AddDbContext<DatabaseContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add AutoMapper
-builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 // Add HttpClient
 builder.Services.AddHttpClient();

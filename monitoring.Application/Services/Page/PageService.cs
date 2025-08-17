@@ -24,11 +24,11 @@ namespace Monitoring.Application.Services.Page
             _mapper = mapper;
         }
 
-        public async Task<Result<PageDTO>> CreatePageAsync(string title, int displayWidth, int displayHeight, List<BaseElementDTO> elements = null)
+        public async Task<Result<PageDTO>> CreatePageAsync(string title, int displayWidth, int displayHeight, DisplayOrientation orientation, List<BaseElementDTO> elements = null)
         {
             try
             {
-                var pageResult = Monitoring.Domain.Aggregates.Page.Page.Create(title, displayWidth, displayHeight);
+                var pageResult = Monitoring.Domain.Aggregates.Page.Page.Create(title, displayWidth, displayHeight, orientation);
                 if (pageResult.IsFailed)
                 {
                     return Result.Fail<PageDTO>(pageResult.Errors);
@@ -289,6 +289,29 @@ namespace Monitoring.Application.Services.Page
             }
         }
 
+        public async Task<Result> SetPageDisplaySizeAsync(Guid pageId, int width, int height, DisplayOrientation orientation)
+        {
+            try
+            {
+                var page = await _unitOfWork.PageRepository.FindAsync(pageId);
+                
+                if (page == null)
+                {
+                    return Result.Fail("Page not found.");
+                }
+
+                page.UpdateDisplaySize(width, height, orientation);
+                await _unitOfWork.PageRepository.UpdateAsync(page);
+                await _unitOfWork.SaveAsync();
+
+                return Result.Ok();
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Error setting page display size: {ex.Message}");
+            }
+        }
+
         public async Task<Result> SetPageDisplaySizeAsync(Guid pageId, int width, int height)
         {
             try
@@ -300,7 +323,7 @@ namespace Monitoring.Application.Services.Page
                     return Result.Fail("Page not found.");
                 }
 
-                page.SetDisplaySize(width, height);
+                page.UpdateDisplaySize(width, height);
                 await _unitOfWork.PageRepository.UpdateAsync(page);
                 await _unitOfWork.SaveAsync();
 

@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Domain.Aggregates.Page;
-using Domain.Aggregates.Page.ValueObjects; // Ensure this using directive is present
+using Domain.Aggregates.Page.ValueObjects;
+using Domain.SharedKernel;
 
 namespace Persistence.Page.Configurations
 {
@@ -9,7 +10,7 @@ namespace Persistence.Page.Configurations
     {
         public void Configure(EntityTypeBuilder<Monitoring.Domain.Aggregates.Page.Page> builder)
         {
-            // Configure properties
+            // Configure primary properties
             builder.Property(p => p.Title)
                 .IsRequired()
                 .HasMaxLength(100);
@@ -19,6 +20,80 @@ namespace Persistence.Page.Configurations
 
             builder.Property(p => p.UpdatedAt)
                 .IsRequired();
+
+            // Configure PageStatus as owned value object
+            builder.OwnsOne(p => p.Status, statusBuilder =>
+            {
+                statusBuilder.Property(s => s.Value)
+                    .HasColumnName("Status")
+                    .IsRequired();
+
+                statusBuilder.Property(s => s.Name)
+                    .HasColumnName("StatusName")
+                    .HasMaxLength(50)
+                    .IsRequired();
+            });
+
+            // Configure DisplayConfiguration as owned value object
+            builder.OwnsOne(p => p.DisplayConfig, displayBuilder =>
+            {
+                displayBuilder.Property(d => d.Width)
+                    .HasColumnName("DisplayWidth")
+                    .IsRequired();
+
+                displayBuilder.Property(d => d.Height)
+                    .HasColumnName("DisplayHeight")
+                    .IsRequired();
+
+                displayBuilder.Property(d => d.ThumbnailUrl)
+                    .HasColumnName("ThumbnailUrl")
+                    .HasMaxLength(500);
+
+                // Configure DisplayOrientation as owned value object
+                displayBuilder.OwnsOne(d => d.Orientation, orientationBuilder =>
+                {
+                    orientationBuilder.Property(o => o.Value)
+                        .HasColumnName("DisplayOrientation")
+                        .IsRequired();
+
+                    orientationBuilder.Property(o => o.Name)
+                        .HasColumnName("DisplayOrientationName")
+                        .HasMaxLength(50)
+                        .IsRequired();
+                });
+            });
+
+            // Configure BackgroundAsset as owned value object (nullable)
+            builder.OwnsOne(p => p.BackgroundAsset, assetBuilder =>
+            {
+                assetBuilder.Property(a => a.Url)
+                    .HasColumnName("BackgroundAssetUrl")
+                    .HasMaxLength(500);
+
+                assetBuilder.Property(a => a.Type)
+                    .HasColumnName("BackgroundAssetType")
+                    .HasMaxLength(50);
+
+                assetBuilder.Property(a => a.AltText)
+                    .HasColumnName("BackgroundAssetAltText")
+                    .HasMaxLength(200);
+
+                assetBuilder.Property(a => a.Content)
+                    .HasColumnName("BackgroundAssetContent")
+                    .HasColumnType("TEXT");
+
+                // Configure Metadata with JSON converter
+                var metadataConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<Dictionary<string, string>, string>(
+                    v => Newtonsoft.Json.JsonConvert.SerializeObject(v),
+                    v => string.IsNullOrEmpty(v) ? new Dictionary<string, string>()
+                        : Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(v) ?? new Dictionary<string, string>()
+                );
+
+                assetBuilder.Property(a => a.Metadata)
+                    .HasColumnName("BackgroundAssetMetadata")
+                    .HasConversion(metadataConverter)
+                    .HasColumnType("TEXT");
+            });
 
             // Configure Elements as an owned collection
             builder.OwnsMany(p => p.Elements, elementsBuilder =>

@@ -20,13 +20,8 @@ namespace Monitoring.Domain.Aggregates.Page
         
         // فیلدهای جدید
         public PageStatus Status { get; private set; }
-        public string ThumbnailUrl { get; private set; }
+        public DisplayConfiguration DisplayConfig { get; private set; }
         
-        // اندازه نمایشگر
-        public int DisplayWidth { get; private set; }
-        public int DisplayHeight { get; private set; }
-        
-        // صدای پس‌زمینه (اختیاری)
         public Asset BackgroundAsset { get; private set; }
 
         private readonly List<BaseElement> _elements;
@@ -41,11 +36,10 @@ namespace Monitoring.Domain.Aggregates.Page
             _elements = new List<BaseElement>();
         }
 
-        private Page(string title, int displayWidth, int displayHeight)
+        private Page(string title, DisplayConfiguration displayConfig)
         {
             Title = title;
-            DisplayWidth = displayWidth;
-            DisplayHeight = displayHeight;
+            DisplayConfig = displayConfig;
             Status = PageStatus.Draft;
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
@@ -56,7 +50,7 @@ namespace Monitoring.Domain.Aggregates.Page
 
         #region Methods
 
-        public static Result<Page> Create(string title, int displayWidth, int displayHeight)
+        public static Result<Page> Create(string title, int displayWidth, int displayHeight, DisplayOrientation orientation)
         {
             var result = new Result<Page>();
 
@@ -65,9 +59,10 @@ namespace Monitoring.Domain.Aggregates.Page
                 result.WithError("Title is required.");
             }
 
-            if (displayWidth <= 0 || displayHeight <= 0)
+            var displayConfigResult = DisplayConfiguration.Create(displayWidth, displayHeight, orientation);
+            if (displayConfigResult.IsFailed)
             {
-                result.WithError("Display dimensions must be positive.");
+                result.WithErrors(displayConfigResult.Errors);
             }
 
             if (result.IsFailed)
@@ -75,7 +70,7 @@ namespace Monitoring.Domain.Aggregates.Page
                 return result;
             }
 
-            var page = new Page(title, displayWidth, displayHeight);
+            var page = new Page(title, displayConfigResult.Value);
 
             result.WithValue(page);
             return result;
@@ -152,14 +147,28 @@ namespace Monitoring.Domain.Aggregates.Page
             UpdatedAt = DateTime.UtcNow;
         }
 
-        public void SetDisplaySize(int width, int height)
+        public void SetDisplayConfiguration(DisplayConfiguration displayConfig)
         {
-            if (width <= 0 || height <= 0)
-                throw new ArgumentException("Display dimensions must be positive.");
-                
-            DisplayWidth = width;
-            DisplayHeight = height;
+            DisplayConfig = displayConfig ?? throw new ArgumentNullException(nameof(displayConfig));
             UpdatedAt = DateTime.UtcNow;
+        }
+
+        public void UpdateDisplaySize(int width, int height, DisplayOrientation orientation)
+        {
+            var displayConfigResult = DisplayConfiguration.Create(width, height, orientation, DisplayConfig?.ThumbnailUrl);
+            if (displayConfigResult.IsFailed)
+                throw new ArgumentException(string.Join(", ", displayConfigResult.Errors));
+                
+            DisplayConfig = displayConfigResult.Value;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        public void UpdateDisplaySize(int width, int height)
+        {
+            if (DisplayConfig == null)
+                throw new InvalidOperationException("Display configuration is not set.");
+                
+            UpdateDisplaySize(width, height, DisplayConfig.Orientation);
         }
 
         public void SetStatus(PageStatus status)
@@ -170,7 +179,10 @@ namespace Monitoring.Domain.Aggregates.Page
 
         public void SetThumbnail(string thumbnailUrl)
         {
-            ThumbnailUrl = thumbnailUrl;
+            if (DisplayConfig == null)
+                throw new InvalidOperationException("Display configuration is not set.");
+                
+            DisplayConfig = DisplayConfig.UpdateThumbnail(thumbnailUrl);
             UpdatedAt = DateTime.UtcNow;
         }
 
