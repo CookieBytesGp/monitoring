@@ -1,0 +1,356 @@
+@model Monitoring.Ui.Controllers.EditPageViewModel
+@{
+    ViewData["Title"] = "ویرایش صفحه";
+}
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 mb-1">ویرایش صفحه</h2>
+            <p class="text-muted">ویرایش جزئیات و تنظیمات صفحه نمایش</p>
+        </div>
+        <div class="btn-group">
+            <a href="@Url.Action("Details", new { id = Model.Id })" class="btn btn-info">
+                <i class="fas fa-eye me-2"></i>مشاهده جزئیات
+            </a>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>بازگشت به لیست
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <!-- Main Form -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">جزئیات صفحه</h6>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <input asp-for="Id" type="hidden" />
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                        
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label">عنوان صفحه <span class="text-danger">*</span></label>
+                            <input asp-for="Title" class="form-control" placeholder="عنوان صفحه را وارد کنید">
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+
+                        <!-- Display Configuration -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="DisplayWidth" class="form-label">عرض نمایش (پیکسل) <span class="text-danger">*</span></label>
+                                    <input asp-for="DisplayWidth" type="number" class="form-control" min="1" max="7680" 
+                                           onchange="updatePreview()">
+                                    <span asp-validation-for="DisplayWidth" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="DisplayHeight" class="form-label">ارتفاع نمایش (پیکسل) <span class="text-danger">*</span></label>
+                                    <input asp-for="DisplayHeight" type="number" class="form-control" min="1" max="4320"
+                                           onchange="updatePreview()">
+                                    <span asp-validation-for="DisplayHeight" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Orientation -->
+                        <div class="mb-3">
+                            <label asp-for="Orientation" class="form-label">جهت نمایش <span class="text-danger">*</span></label>
+                            <select asp-for="Orientation" class="form-select" onchange="updateOrientation()">
+                                <option value="Landscape">افقی (Landscape)</option>
+                                <option value="Portrait">عمودی (Portrait)</option>
+                                <option value="Square">مربعی (Square)</option>
+                            </select>
+                            <span asp-validation-for="Orientation" class="text-danger"></span>
+                        </div>
+
+                        <!-- Thumbnail URL -->
+                        <div class="mb-3">
+                            <label asp-for="ThumbnailUrl" class="form-label">آدرس تصویر بندانگشتی</label>
+                            <input asp-for="ThumbnailUrl" type="url" class="form-control" 
+                                   placeholder="https://example.com/thumbnail.jpg">
+                            <span asp-validation-for="ThumbnailUrl" class="text-danger"></span>
+                            <div class="form-text">آدرس تصویر برای نمایش در لیست صفحات</div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>ذخیره تغییرات
+                            </button>
+                            <a href="@Url.Action("Details", new { id = Model.Id })" class="btn btn-secondary">
+                                انصراف
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-5">
+            <!-- Preview -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">پیش‌نمایش</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div id="previewContainer" style="border: 2px dashed #dee2e6; padding: 20px; background: #f8f9fc;">
+                            <div id="previewDisplay" style="background: white; border: 1px solid #e3e6f0; margin: 0 auto; position: relative;">
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #858796;">
+                                    پیش‌نمایش صفحه
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Display Info -->
+                    <div class="small text-muted">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>رزولوشن:</span>
+                            <span id="resolutionText">@Model.DisplayWidth × @Model.DisplayHeight</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>نسبت ابعاد:</span>
+                            <span id="aspectRatioText"></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>جهت:</span>
+                            <span id="orientationText"></span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>نوع:</span>
+                            <span id="typeText"></span>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.ThumbnailUrl))
+                    {
+                        <hr>
+                        <div class="text-center">
+                            <label class="form-label small">تصویر بندانگشتی فعلی:</label>
+                            <img src="@Model.ThumbnailUrl" alt="Thumbnail" class="img-fluid rounded" 
+                                 style="max-height: 100px;" onerror="this.style.display='none'">
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Page Statistics -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">آمار صفحه</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <div class="h4 mb-0 text-primary">@Model.ElementsCount</div>
+                                <div class="small text-muted">المنت</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h4 mb-0 text-success">
+                                @(Model.HasBackgroundAsset ? "✓" : "✗")
+                            </div>
+                            <div class="small text-muted">پس‌زمینه</div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="small">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>وضعیت:</span>
+                            @{
+                                var statusClass = Model.Status switch
+                                {
+                                    "Published" => "success",
+                                    "Draft" => "warning",
+                                    "Archived" => "secondary",
+                                    _ => "info"
+                                };
+                                var statusText = Model.Status switch
+                                {
+                                    "Published" => "منتشر شده",
+                                    "Draft" => "پیش‌نویس",
+                                    "Archived" => "آرشیو شده",
+                                    _ => Model.Status
+                                };
+                            }
+                            <span class="badge bg-@statusClass">@statusText</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">عملیات سریع</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        @if (Model.Status == "Draft")
+                        {
+                            <button class="btn btn-success btn-sm" onclick="changeStatus('@Model.Id', 'Published')">
+                                <i class="fas fa-check me-2"></i>انتشار صفحه
+                            </button>
+                        }
+                        else if (Model.Status == "Published")
+                        {
+                            <button class="btn btn-warning btn-sm" onclick="changeStatus('@Model.Id', 'Draft')">
+                                <i class="fas fa-edit me-2"></i>تبدیل به پیش‌نویس
+                            </button>
+                        }
+                        
+                        <button class="btn btn-secondary btn-sm" onclick="changeStatus('@Model.Id', 'Archived')">
+                            <i class="fas fa-archive me-2"></i>آرشیو صفحه
+                        </button>
+                        
+                        <button class="btn btn-danger btn-sm" onclick="confirmDelete('@Model.Id', '@Model.Title')">
+                            <i class="fas fa-trash me-2"></i>حذف صفحه
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">تأیید حذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>آیا از حذف صفحه "<span id="deletePageTitle"></span>" اطمینان دارید؟</p>
+                <p class="text-danger"><small>این عمل غیرقابل بازگشت است.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <form method="post" id="deleteForm" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">حذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function updatePreview() {
+            const width = document.getElementById('DisplayWidth').value || @Model.DisplayWidth;
+            const height = document.getElementById('DisplayHeight').value || @Model.DisplayHeight;
+            
+            updateDisplayInfo(width, height);
+            updatePreviewSize(width, height);
+        }
+
+        function updateOrientation() {
+            const orientation = document.getElementById('Orientation').value;
+            const orientationText = {
+                'Landscape': 'افقی',
+                'Portrait': 'عمودی',
+                'Square': 'مربعی'
+            };
+            document.getElementById('orientationText').textContent = orientationText[orientation] || orientation;
+        }
+
+        function updateDisplayInfo(width, height) {
+            const aspectRatio = calculateAspectRatio(width, height);
+            const type = getDisplayType(width / height);
+            
+            document.getElementById('resolutionText').textContent = `${width} × ${height}`;
+            document.getElementById('aspectRatioText').textContent = aspectRatio;
+            document.getElementById('typeText').textContent = type;
+        }
+
+        function updatePreviewSize(width, height) {
+            const maxWidth = 200;
+            const maxHeight = 150;
+            
+            let previewWidth, previewHeight;
+            
+            if (width / height > maxWidth / maxHeight) {
+                previewWidth = maxWidth;
+                previewHeight = (height * maxWidth) / width;
+            } else {
+                previewHeight = maxHeight;
+                previewWidth = (width * maxHeight) / height;
+            }
+            
+            const previewDisplay = document.getElementById('previewDisplay');
+            previewDisplay.style.width = previewWidth + 'px';
+            previewDisplay.style.height = previewHeight + 'px';
+        }
+
+        function calculateAspectRatio(width, height) {
+            const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+            const divisor = gcd(width, height);
+            return `${width / divisor}:${height / divisor}`;
+        }
+
+        function getDisplayType(ratio) {
+            if (ratio >= 2.35) return 'Ultra Wide';
+            if (ratio >= 1.77) return 'Widescreen';
+            if (ratio >= 1.5) return 'Wide';
+            if (ratio >= 0.9 && ratio <= 1.1) return 'Square';
+            if (ratio < 0.9) return 'Portrait';
+            return 'Standard';
+        }
+
+        function changeStatus(pageId, newStatus) {
+            fetch('@Url.Action("ToggleStatus")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: `id=${pageId}&status=${newStatus}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('خطا: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('خطا در ارتباط با سرور');
+            });
+        }
+
+        function confirmDelete(pageId, pageTitle) {
+            document.getElementById('deletePageTitle').textContent = pageTitle;
+            document.getElementById('deleteForm').action = '@Url.Action("Delete")/' + pageId;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        // Initialize preview
+        document.addEventListener('DOMContentLoaded', function() {
+            updatePreview();
+            updateOrientation();
+        });
+    </script>
+}

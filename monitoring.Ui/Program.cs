@@ -11,6 +11,7 @@ builder.Services.AddHttpClient();
 
 // Add API Services
 builder.Services.AddScoped<ICameraApiService, CameraApiService>();
+builder.Services.AddScoped<IPageApiService, PageApiService>();
 
 // Register SignalR adapters
 //builder.Services.AddScoped<Monitoring.Application.Interfaces.Realtime.ICameraNotifications, App.Hubs.Adapters.SignalRCameraNotifications>();

@@ -1,0 +1,258 @@
+@model Monitoring.Ui.Controllers.CreatePageViewModel
+@{
+    ViewData["Title"] = "ایجاد صفحه جدید";
+}
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 mb-1">ایجاد صفحه جدید</h2>
+            <p class="text-muted">تنظیم مشخصات اولیه صفحه نمایش</p>
+        </div>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>بازگشت به لیست
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <!-- Main Form -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">مشخصات صفحه</h6>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                        
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label">عنوان صفحه <span class="text-danger">*</span></label>
+                            <input asp-for="Title" class="form-control" placeholder="عنوان صفحه را وارد کنید">
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+
+                        <!-- Display Configuration -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="DisplayWidth" class="form-label">عرض نمایش (پیکسل) <span class="text-danger">*</span></label>
+                                    <input asp-for="DisplayWidth" type="number" class="form-control" min="1" max="7680" 
+                                           onchange="updatePreview()">
+                                    <span asp-validation-for="DisplayWidth" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="DisplayHeight" class="form-label">ارتفاع نمایش (پیکسل) <span class="text-danger">*</span></label>
+                                    <input asp-for="DisplayHeight" type="number" class="form-control" min="1" max="4320"
+                                           onchange="updatePreview()">
+                                    <span asp-validation-for="DisplayHeight" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Orientation -->
+                        <div class="mb-3">
+                            <label asp-for="Orientation" class="form-label">جهت نمایش <span class="text-danger">*</span></label>
+                            <select asp-for="Orientation" class="form-select" onchange="updateOrientation()">
+                                <option value="Landscape">افقی (Landscape)</option>
+                                <option value="Portrait">عمودی (Portrait)</option>
+                                <option value="Square">مربعی (Square)</option>
+                            </select>
+                            <span asp-validation-for="Orientation" class="text-danger"></span>
+                        </div>
+
+                        <!-- Quick Presets -->
+                        <div class="mb-4">
+                            <label class="form-label">پیش‌تنظیمات سریع</label>
+                            <div class="row">
+                                <div class="col-md-3 mb-2">
+                                    <button type="button" class="btn btn-outline-secondary w-100" 
+                                            onclick="setPreset(1920, 1080, 'Landscape')">
+                                        Full HD<br><small>1920×1080</small>
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button type="button" class="btn btn-outline-secondary w-100" 
+                                            onclick="setPreset(1280, 720, 'Landscape')">
+                                        HD<br><small>1280×720</small>
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button type="button" class="btn btn-outline-secondary w-100" 
+                                            onclick="setPreset(1080, 1920, 'Portrait')">
+                                        Mobile<br><small>1080×1920</small>
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button type="button" class="btn btn-outline-secondary w-100" 
+                                            onclick="setPreset(1080, 1080, 'Square')">
+                                        Square<br><small>1080×1080</small>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>ایجاد صفحه
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                                انصراف
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-5">
+            <!-- Preview -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">پیش‌نمایش</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div id="previewContainer" style="border: 2px dashed #dee2e6; padding: 20px; background: #f8f9fc;">
+                            <div id="previewDisplay" style="background: white; border: 1px solid #e3e6f0; margin: 0 auto; position: relative;">
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #858796;">
+                                    پیش‌نمایش صفحه
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Display Info -->
+                    <div class="small text-muted">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>رزولوشن:</span>
+                            <span id="resolutionText">1920 × 1080</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>نسبت ابعاد:</span>
+                            <span id="aspectRatioText">16:9</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>جهت:</span>
+                            <span id="orientationText">افقی</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>نوع:</span>
+                            <span id="typeText">Widescreen</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">نکات مفید</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-lightbulb text-warning me-2"></i>
+                            <small>برای نمایش‌های تلویزیونی از رزولوشن Full HD استفاده کنید</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-mobile-alt text-info me-2"></i>
+                            <small>برای نمایش‌های موبایل از حالت عمودی استفاده کنید</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-square text-primary me-2"></i>
+                            <small>حالت مربعی برای شبکه‌های اجتماعی مناسب است</small>
+                        </li>
+                        <li>
+                            <i class="fas fa-edit text-success me-2"></i>
+                            <small>پس از ایجاد می‌توانید جزئیات بیشتری اضافه کنید</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function updatePreview() {
+            const width = document.getElementById('DisplayWidth').value || 1920;
+            const height = document.getElementById('DisplayHeight').value || 1080;
+            
+            updateDisplayInfo(width, height);
+            updatePreviewSize(width, height);
+        }
+
+        function updateOrientation() {
+            const orientation = document.getElementById('Orientation').value;
+            const orientationText = {
+                'Landscape': 'افقی',
+                'Portrait': 'عمودی',
+                'Square': 'مربعی'
+            };
+            document.getElementById('orientationText').textContent = orientationText[orientation] || orientation;
+        }
+
+        function setPreset(width, height, orientation) {
+            document.getElementById('DisplayWidth').value = width;
+            document.getElementById('DisplayHeight').value = height;
+            document.getElementById('Orientation').value = orientation;
+            updatePreview();
+            updateOrientation();
+        }
+
+        function updateDisplayInfo(width, height) {
+            const aspectRatio = calculateAspectRatio(width, height);
+            const type = getDisplayType(width / height);
+            
+            document.getElementById('resolutionText').textContent = `${width} × ${height}`;
+            document.getElementById('aspectRatioText').textContent = aspectRatio;
+            document.getElementById('typeText').textContent = type;
+        }
+
+        function updatePreviewSize(width, height) {
+            const maxWidth = 200;
+            const maxHeight = 150;
+            
+            let previewWidth, previewHeight;
+            
+            if (width / height > maxWidth / maxHeight) {
+                previewWidth = maxWidth;
+                previewHeight = (height * maxWidth) / width;
+            } else {
+                previewHeight = maxHeight;
+                previewWidth = (width * maxHeight) / height;
+            }
+            
+            const previewDisplay = document.getElementById('previewDisplay');
+            previewDisplay.style.width = previewWidth + 'px';
+            previewDisplay.style.height = previewHeight + 'px';
+        }
+
+        function calculateAspectRatio(width, height) {
+            const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+            const divisor = gcd(width, height);
+            return `${width / divisor}:${height / divisor}`;
+        }
+
+        function getDisplayType(ratio) {
+            if (ratio >= 2.35) return 'Ultra Wide';
+            if (ratio >= 1.77) return 'Widescreen';
+            if (ratio >= 1.5) return 'Wide';
+            if (ratio >= 0.9 && ratio <= 1.1) return 'Square';
+            if (ratio < 0.9) return 'Portrait';
+            return 'Standard';
+        }
+
+        // Initialize preview
+        document.addEventListener('DOMContentLoaded', function() {
+            updatePreview();
+            updateOrientation();
+        });
+    </script>
+}

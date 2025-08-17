@@ -15,6 +15,12 @@ namespace Monitoring.Ui.Controllers
 
         public IActionResult Index()
         {
+            // Redirect to Dashboard
+            return RedirectToAction("Dashboard");
+        }
+
+        public IActionResult Dashboard()
+        {
             return View();
         }
 

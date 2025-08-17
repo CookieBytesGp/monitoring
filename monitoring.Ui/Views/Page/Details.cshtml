@@ -1,0 +1,474 @@
+@model DTOs.Pagebuilder.PageDTO
+@{
+    ViewData["Title"] = "جزئیات صفحه";
+}
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 mb-1">@Model.Title</h2>
+            <p class="text-muted">جزئیات و مشخصات صفحه نمایش</p>
+        </div>
+        <div class="btn-group">
+            <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-primary">
+                <i class="fas fa-edit me-2"></i>ویرایش
+            </a>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>بازگشت به لیست
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-xl-8 col-lg-7">
+            <!-- Page Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">اطلاعات صفحه</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold text-gray-600">عنوان:</td>
+                                    <td>@Model.Title</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-gray-600">رزولوشن:</td>
+                                    <td>
+                                        <span class="badge bg-secondary">@Model.DisplayConfig.Resolution</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-gray-600">جهت نمایش:</td>
+                                    <td>
+                                        @{
+                                            var orientationIcon = Model.DisplayConfig.Orientation switch
+                                            {
+                                                "Landscape" => "fas fa-desktop",
+                                                "Portrait" => "fas fa-mobile-alt",
+                                                "Square" => "fas fa-square",
+                                                _ => "fas fa-question"
+                                            };
+                                            var orientationText = Model.DisplayConfig.Orientation switch
+                                            {
+                                                "Landscape" => "افقی",
+                                                "Portrait" => "عمودی",
+                                                "Square" => "مربعی",
+                                                _ => Model.DisplayConfig.Orientation
+                                            };
+                                        }
+                                        <i class="@orientationIcon me-2"></i>@orientationText
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-gray-600">نسبت ابعاد:</td>
+                                    <td>@Model.DisplayConfig.AspectRatio</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold text-gray-600">وضعیت:</td>
+                                    <td>
+                                        @{
+                                            var statusClass = Model.Status switch
+                                            {
+                                                "Published" => "success",
+                                                "Draft" => "warning",
+                                                "Archived" => "secondary",
+                                                _ => "info"
+                                            };
+                                            var statusText = Model.Status switch
+                                            {
+                                                "Published" => "منتشر شده",
+                                                "Draft" => "پیش‌نویس",
+                                                "Archived" => "آرشیو شده",
+                                                _ => Model.Status
+                                            };
+                                        }
+                                        <span class="badge bg-@statusClass">@statusText</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-gray-600">تاریخ ایجاد:</td>
+                                    <td>@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-gray-600">آخرین تغییر:</td>
+                                    <td>@Model.UpdatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-gray-600">تعداد المنت:</td>
+                                    <td>
+                                        <span class="badge bg-primary">@Model.ElementsCount المنت</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Background Asset -->
+            @if (Model.HasBackgroundAsset && Model.BackgroundAsset != null)
+            {
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-success">تصویر پس‌زمینه</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-image fa-2x text-success me-3"></i>
+                                    <div>
+                                        <div class="fw-bold">@(Model.BackgroundAsset.AltText ?? "تصویر پس‌زمینه")</div>
+                                        <div class="small text-muted">@Model.BackgroundAsset.Type</div>
+                                        @if (!string.IsNullOrEmpty(Model.BackgroundAsset.Url))
+                                        {
+                                            <a href="@Model.BackgroundAsset.Url" target="_blank" class="small text-primary">
+                                                مشاهده تصویر <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                @if (!string.IsNullOrEmpty(Model.BackgroundAsset.Url))
+                                {
+                                    <img src="@Model.BackgroundAsset.Url" alt="Background" 
+                                         class="img-fluid rounded shadow-sm" style="max-height: 80px;"
+                                         onerror="this.style.display='none'">
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Elements List -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-info">المنت‌های صفحه</h6>
+                    <span class="badge bg-info">@Model.ElementsCount المنت</span>
+                </div>
+                <div class="card-body">
+                    @if (Model.Elements.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ترتیب</th>
+                                        <th>شناسه ابزار</th>
+                                        <th>نوع المنت</th>
+                                        <th>وضعیت</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var element in Model.Elements.OrderBy(e => e.Order))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-secondary">#@element.Order</span>
+                                            </td>
+                                            <td>
+                                                <code class="small">@element.ToolId.ToString().Substring(0, 8)...</code>
+                                            </td>
+                                            <td>
+                                                @if (element.Asset != null)
+                                                {
+                                                    <span class="badge bg-success">@element.Asset.Type</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-light text-dark">متنی</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (element.TemplateBody != null)
+                                                {
+                                                    <i class="fas fa-check text-success" title="دارای قالب"></i>
+                                                }
+                                                @if (element.Asset != null)
+                                                {
+                                                    <i class="fas fa-file text-info" title="دارای فایل"></i>
+                                                }
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="showElementDetails('@element.Id')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-cube fa-3x text-gray-300 mb-3"></i>
+                            <h6 class="text-gray-500">هنوز المنتی اضافه نشده است</h6>
+                            <p class="text-gray-400">برای شروع، المنت‌های مورد نظر خود را اضافه کنید</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-xl-4 col-lg-5">
+            <!-- Visual Preview -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">پیش‌نمایش بصری</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div style="border: 2px dashed #dee2e6; padding: 20px; background: #f8f9fc;">
+                            <div id="previewDisplay" style="background: white; border: 1px solid #e3e6f0; margin: 0 auto; position: relative;">
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #858796; text-align: center;">
+                                    <i class="fas fa-desktop fa-2x mb-2"></i><br>
+                                    @Model.Title
+                                </div>
+                                @if (Model.HasBackgroundAsset)
+                                {
+                                    <div style="position: absolute; top: 5px; right: 5px;">
+                                        <i class="fas fa-image text-success" title="دارای پس‌زمینه"></i>
+                                    </div>
+                                }
+                                @if (Model.ElementsCount > 0)
+                                {
+                                    <div style="position: absolute; bottom: 5px; left: 5px;">
+                                        <small class="badge bg-primary">@Model.ElementsCount</small>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.DisplayConfig.ThumbnailUrl))
+                    {
+                        <div class="text-center mb-3">
+                            <label class="form-label small">تصویر بندانگشتی:</label><br>
+                            <img src="@Model.DisplayConfig.ThumbnailUrl" alt="Thumbnail" 
+                                 class="img-fluid rounded shadow-sm" style="max-height: 120px;"
+                                 onerror="this.style.display='none'">
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">آمار سریع</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border-end">
+                                <div class="h4 mb-0 text-primary">@Model.DisplayConfig.Width</div>
+                                <div class="small text-muted">عرض</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border-end">
+                                <div class="h4 mb-0 text-info">@Model.DisplayConfig.Height</div>
+                                <div class="small text-muted">ارتفاع</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 mb-0 text-success">@Model.ElementsCount</div>
+                            <div class="small text-muted">المنت</div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="small">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>نسبت ابعاد:</span>
+                            <span class="fw-bold">@Model.DisplayConfig.AspectRatio</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>نوع نمایش:</span>
+                            <span class="fw-bold">
+                                @if (Model.DisplayConfig.IsWidescreen)
+                                {
+                                    <text>Widescreen</text>
+                                }
+                                else if (Model.DisplayConfig.IsUltraWide)
+                                {
+                                    <text>Ultra Wide</text>
+                                }
+                                else if (Model.DisplayConfig.IsPortrait)
+                                {
+                                    <text>Portrait</text>
+                                }
+                                else if (Model.DisplayConfig.IsSquare)
+                                {
+                                    <text>Square</text>
+                                }
+                                else
+                                {
+                                    <text>Standard</text>
+                                }
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>خالی بودن:</span>
+                            <span class="fw-bold text-@(Model.IsEmpty ? "warning" : "success")">
+                                @(Model.IsEmpty ? "بله" : "خیر")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">عملیات سریع</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit me-2"></i>ویرایش جزئیات
+                        </a>
+
+                        @if (Model.Status == "Draft")
+                        {
+                            <button class="btn btn-success btn-sm" onclick="changeStatus('@Model.Id', 'Published')">
+                                <i class="fas fa-check me-2"></i>انتشار صفحه
+                            </button>
+                        }
+                        else if (Model.Status == "Published")
+                        {
+                            <button class="btn btn-warning btn-sm" onclick="changeStatus('@Model.Id', 'Draft')">
+                                <i class="fas fa-edit me-2"></i>تبدیل به پیش‌نویس
+                            </button>
+                        }
+
+                        <button class="btn btn-info btn-sm">
+                            <i class="fas fa-clone me-2"></i>کپی صفحه
+                        </button>
+
+                        <button class="btn btn-secondary btn-sm" onclick="changeStatus('@Model.Id', 'Archived')">
+                            <i class="fas fa-archive me-2"></i>آرشیو صفحه
+                        </button>
+
+                        <hr>
+
+                        <button class="btn btn-danger btn-sm" onclick="confirmDelete('@Model.Id', '@Model.Title')">
+                            <i class="fas fa-trash me-2"></i>حذف صفحه
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">تأیید حذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>آیا از حذف صفحه "<span id="deletePageTitle"></span>" اطمینان دارید؟</p>
+                <p class="text-danger"><small>این عمل غیرقابل بازگشت است و تمام المنت‌های مربوطه نیز حذف خواهند شد.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <form method="post" id="deleteForm" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">حذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function updatePreviewSize() {
+            const width = @Model.DisplayConfig.Width;
+            const height = @Model.DisplayConfig.Height;
+            const maxWidth = 200;
+            const maxHeight = 150;
+            
+            let previewWidth, previewHeight;
+            
+            if (width / height > maxWidth / maxHeight) {
+                previewWidth = maxWidth;
+                previewHeight = (height * maxWidth) / width;
+            } else {
+                previewHeight = maxHeight;
+                previewWidth = (width * maxHeight) / height;
+            }
+            
+            const previewDisplay = document.getElementById('previewDisplay');
+            previewDisplay.style.width = previewWidth + 'px';
+            previewDisplay.style.height = previewHeight + 'px';
+        }
+
+        function changeStatus(pageId, newStatus) {
+            fetch('@Url.Action("ToggleStatus")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: `id=${pageId}&status=${newStatus}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('خطا: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('خطا در ارتباط با سرور');
+            });
+        }
+
+        function confirmDelete(pageId, pageTitle) {
+            document.getElementById('deletePageTitle').textContent = pageTitle;
+            document.getElementById('deleteForm').action = '@Url.Action("Delete")/' + pageId;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        function showElementDetails(elementId) {
+            // TODO: Implement element details modal or navigation
+            alert('نمایش جزئیات المنت: ' + elementId);
+        }
+
+        // Initialize preview on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updatePreviewSize();
+        });
+    </script>
+}

@@ -1,5 +1,6 @@
 html {
   font-size: 14px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -9,7 +10,7 @@ html {
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #20b2aa;
 }
 
 html {
@@ -18,5 +19,145 @@ html {
 }
 
 body {
-  margin-bottom: 60px;
+  margin: 0;
+  padding: 0;
+  background: #f8f9fa;
+  color: #2c3e50;
+}
+
+/* Global Styles */
+* {
+  box-sizing: border-box;
+}
+
+.main-content {
+  padding-top: 70px; /* Space for fixed navigation */
+  min-height: calc(100vh - 140px);
+}
+
+/* Button Improvements */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: #20b2aa;
+  border-color: #20b2aa;
+}
+
+.btn-primary:hover {
+  background: #1a9999;
+  border-color: #1a9999;
+  transform: translateY(-2px);
+}
+
+.btn-outline-primary {
+  border-color: #20b2aa;
+  color: #20b2aa;
+}
+
+.btn-outline-primary:hover {
+  background: #20b2aa;
+  border-color: #20b2aa;
+}
+
+/* Form Improvements */
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #20b2aa;
+  box-shadow: 0 0 0 0.2rem rgba(32, 178, 170, 0.25);
+}
+
+/* Card Improvements */
+.card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  background: transparent;
+  border-bottom: 1px solid #eee;
+  padding: 20px 25px;
+}
+
+.card-body {
+  padding: 25px;
+}
+
+/* Utility Classes */
+.text-mint {
+  color: #20b2aa !important;
+}
+
+.bg-mint {
+  background-color: #20b2aa !important;
+}
+
+.border-mint {
+  border-color: #20b2aa !important;
+}
+
+/* Animation Classes */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-up {
+  animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive Utilities */
+@media (max-width: 576px) {
+  .main-content {
+    padding: 80px 10px 20px 10px;
+  }
+  
+  .container-fluid {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #20b2aa;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1a9999;
 }

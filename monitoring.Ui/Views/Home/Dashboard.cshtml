@@ -1,0 +1,630 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <div class="header-content">
+            <h1 class="dashboard-title">
+                <i class="fas fa-tachometer-alt"></i>
+                Dashboard
+            </h1>
+            <p class="dashboard-subtitle">مانیتورینگ سیستم - نمای کلی</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-refresh">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <div class="dashboard-stats">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon monitors">
+                        <i class="fas fa-tv"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">12</h3>
+                        <p class="stat-label">Active Monitors</p>
+                        <span class="stat-change positive">+2 از هفته گذشته</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon cameras">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">24</h3>
+                        <p class="stat-label">Connected Cameras</p>
+                        <span class="stat-change positive">+5 از ماه گذشته</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon pages">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">8</h3>
+                        <p class="stat-label">Published Pages</p>
+                        <span class="stat-change neutral">بدون تغییر</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon alerts">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">3</h3>
+                        <p class="stat-label">Active Alerts</p>
+                        <span class="stat-change negative">+1 امروز</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-sections">
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h4>
+                            <i class="fas fa-chart-line"></i>
+                            System Performance
+                        </h4>
+                        <div class="card-actions">
+                            <select class="form-select form-select-sm">
+                                <option>Last 24 Hours</option>
+                                <option>Last 7 Days</option>
+                                <option>Last 30 Days</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-placeholder">
+                            <i class="fas fa-chart-area"></i>
+                            <p>Performance Chart</p>
+                            <small>نمودار عملکرد سیستم در اینجا نمایش داده می‌شود</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 mb-4">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h4>
+                            <i class="fas fa-bell"></i>
+                            Recent Alerts
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert-list">
+                            <div class="alert-item high">
+                                <div class="alert-icon">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                </div>
+                                <div class="alert-content">
+                                    <p>Camera offline: CAM-001</p>
+                                    <small>2 minutes ago</small>
+                                </div>
+                            </div>
+                            
+                            <div class="alert-item medium">
+                                <div class="alert-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="alert-content">
+                                    <p>High CPU usage on Monitor-3</p>
+                                    <small>15 minutes ago</small>
+                                </div>
+                            </div>
+                            
+                            <div class="alert-item low">
+                                <div class="alert-icon">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <div class="alert-content">
+                                    <p>System backup completed</p>
+                                    <small>1 hour ago</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert-actions">
+                            <a href="#" class="btn btn-outline-primary btn-sm">View All Alerts</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h4>
+                            <i class="fas fa-video"></i>
+                            Camera Status
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="camera-grid">
+                            <div class="camera-item online">
+                                <div class="camera-preview">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <div class="camera-info">
+                                    <span class="camera-name">CAM-001</span>
+                                    <span class="camera-status">Online</span>
+                                </div>
+                            </div>
+                            
+                            <div class="camera-item online">
+                                <div class="camera-preview">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <div class="camera-info">
+                                    <span class="camera-name">CAM-002</span>
+                                    <span class="camera-status">Online</span>
+                                </div>
+                            </div>
+                            
+                            <div class="camera-item offline">
+                                <div class="camera-preview">
+                                    <i class="fas fa-video-slash"></i>
+                                </div>
+                                <div class="camera-info">
+                                    <span class="camera-name">CAM-003</span>
+                                    <span class="camera-status">Offline</span>
+                                </div>
+                            </div>
+                            
+                            <div class="camera-item online">
+                                <div class="camera-preview">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <div class="camera-info">
+                                    <span class="camera-name">CAM-004</span>
+                                    <span class="camera-status">Online</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="camera-actions">
+                            <a href="@Url.Action("Index", "Camera")" class="btn btn-outline-primary btn-sm">Manage Cameras</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6 mb-4">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h4>
+                            <i class="fas fa-file-alt"></i>
+                            Recent Pages
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="page-list">
+                            <div class="page-item">
+                                <div class="page-thumbnail">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div class="page-info">
+                                    <h6>Main Dashboard Layout</h6>
+                                    <p>Published • 2 days ago</p>
+                                </div>
+                                <div class="page-actions">
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="page-item">
+                                <div class="page-thumbnail">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div class="page-info">
+                                    <h6>Security Monitor View</h6>
+                                    <p>Draft • 5 days ago</p>
+                                </div>
+                                <div class="page-actions">
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="page-item">
+                                <div class="page-thumbnail">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div class="page-info">
+                                    <h6>Alert Display Page</h6>
+                                    <p>Published • 1 week ago</p>
+                                </div>
+                                <div class="page-actions">
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="page-actions">
+                            <a href="@Url.Action("Index", "Page")" class="btn btn-outline-primary btn-sm">Manage Pages</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Dashboard Background */
+.main-content {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #20b2aa 0%, #ffffff 60%);
+    padding-top: 90px; /* Space for fixed header */
+    padding-bottom: 50px;
+}
+
+.dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 25px 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-title {
+    font-size: 2.2rem;
+    color: #2c3e50;
+    margin-bottom: 5px;
+    font-weight: 700;
+}
+
+.dashboard-title i {
+    margin-right: 15px;
+    color: #20b2aa;
+}
+
+.dashboard-subtitle {
+    color: #7f8c8d;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.btn-refresh {
+    background: #20b2aa;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-refresh:hover {
+    background: #1a9999;
+    transform: translateY(-2px);
+}
+
+/* Stats Cards */
+.dashboard-stats {
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.stat-icon.monitors { background: linear-gradient(45deg, #3498db, #2980b9); }
+.stat-icon.cameras { background: linear-gradient(45deg, #e74c3c, #c0392b); }
+.stat-icon.pages { background: linear-gradient(45deg, #f39c12, #e67e22); }
+.stat-icon.alerts { background: linear-gradient(45deg, #e67e22, #d35400); }
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: #7f8c8d;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.stat-change {
+    font-size: 0.85rem;
+    padding: 4px 8px;
+    border-radius: 15px;
+    font-weight: 500;
+}
+
+.stat-change.positive {
+    background: #d5ffe0;
+    color: #27ae60;
+}
+
+.stat-change.negative {
+    background: #ffe0d5;
+    color: #e74c3c;
+}
+
+.stat-change.neutral {
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h4 {
+    color: #2c3e50;
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.card-header i {
+    margin-right: 10px;
+    color: #20b2aa;
+}
+
+.card-body {
+    padding: 25px;
+}
+
+/* Chart Placeholder */
+.chart-placeholder {
+    height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 10px;
+    color: #6c757d;
+}
+
+.chart-placeholder i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+/* Alert List */
+.alert-list {
+    margin-bottom: 20px;
+}
+
+.alert-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    border-left: 4px solid;
+}
+
+.alert-item.high {
+    background: #ffe0e0;
+    border-left-color: #e74c3c;
+}
+
+.alert-item.medium {
+    background: #fff3cd;
+    border-left-color: #f39c12;
+}
+
+.alert-item.low {
+    background: #d5ffe0;
+    border-left-color: #27ae60;
+}
+
+.alert-icon {
+    margin-right: 15px;
+    font-size: 1.2rem;
+}
+
+.alert-item.high .alert-icon { color: #e74c3c; }
+.alert-item.medium .alert-icon { color: #f39c12; }
+.alert-item.low .alert-icon { color: #27ae60; }
+
+.alert-content p {
+    margin: 0;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.alert-content small {
+    color: #7f8c8d;
+}
+
+/* Camera Grid */
+.camera-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.camera-item {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.camera-item.online {
+    border: 2px solid #27ae60;
+    background: #d5ffe0;
+}
+
+.camera-item.offline {
+    border: 2px solid #e74c3c;
+    background: #ffe0e0;
+}
+
+.camera-preview {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.camera-item.online .camera-preview { color: #27ae60; }
+.camera-item.offline .camera-preview { color: #e74c3c; }
+
+.camera-name {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.camera-status {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+}
+
+/* Page List */
+.page-list {
+    margin-bottom: 20px;
+}
+
+.page-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.page-item:hover {
+    background: #e9ecef;
+}
+
+.page-thumbnail {
+    margin-right: 15px;
+    font-size: 1.5rem;
+    color: #20b2aa;
+}
+
+.page-info {
+    flex: 1;
+}
+
+.page-info h6 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+}
+
+.page-info p {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+/* Footer */
+.main-footer {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px 0;
+    border-top: 1px solid #eee;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #7f8c8d;
+}
+
+/* Responsive */
+@@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .camera-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .footer-content {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+}
+</style>

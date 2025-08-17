@@ -7,7 +7,7 @@ using Domain.SharedKernel;
 using Domain.Aggregates.Page.ValueObjects;
 using Monitoring.Application.DTOs.Page;
 
-namespace Monitoring.Application.Services.Page
+namespace Monitoring.Application.Interfaces.Page
 {
     public interface IPageService
     {
@@ -29,7 +29,7 @@ namespace Monitoring.Application.Services.Page
         Task<Result> SetPageThumbnailAsync(Guid pageId, string thumbnailUrl);
         Task<Result> SetPageDisplaySizeAsync(Guid pageId, int width, int height, DisplayOrientation orientation);
         Task<Result> SetPageDisplaySizeAsync(Guid pageId, int width, int height);
-        Task<Result> SetBackgroundAssetAsync(Guid pageId, Asset asset);
+        Task<Result> SetBackgroundAssetAsync(Guid pageId, AssetDTO asset);
         Task<Result> RemoveBackgroundAssetAsync(Guid pageId);
     }
 }

@@ -7,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using Monitoring.Infrastructure.Camera;
 using Monitoring.Application.Interfaces.Realtime;
 using Monitoring.ApiGateway.Services;
+using Monitoring.Application.Interfaces.Page;
+using Monitoring.Application.Services.Page;
+using Monitoring.Infrastructure.Repositories.Page;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +31,7 @@ builder.Services.AddHttpClient();
 
 // Add repositories
 builder.Services.AddScoped<ICameraRepository, CameraRepository>();
+builder.Services.AddScoped<IPageRepository, PageRepository>();
 builder.Services.AddScoped<Monitoring.Infrastructure.Persistence.IUnitOfWork, Monitoring.Infrastructure.Persistence.UnitOfWork>();
 
 // Add camera strategies (Infrastructure layer)
@@ -42,6 +46,7 @@ builder.Services.AddScoped<ICameraNotifications, ApiCameraNotifications>();
 
 // Add services
 builder.Services.AddScoped<ICameraService, CameraService>();
+builder.Services.AddScoped<IPageService, PageService>();
 builder.Services.AddScoped<Monitoring.Application.Interfaces.Camera.ICameraStreamService, Monitoring.Application.Services.Camera.CameraStreamService>();
 
 var app = builder.Build();

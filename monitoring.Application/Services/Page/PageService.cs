@@ -1,10 +1,10 @@
-﻿using AutoMapper;
-using Domain.Aggregates.Page;
+﻿using Domain.Aggregates.Page;
 using Domain.Aggregates.Page.ValueObjects;
 using Domain.SharedKernel;
 using DTOs.Pagebuilder;
 using FluentResults;
 using Monitoring.Application.DTOs.Page;
+using Monitoring.Application.Interfaces.Page;
 using Monitoring.Infrastructure.Persistence;
 using System;
 using System.Collections.Generic;
@@ -16,12 +16,132 @@ namespace Monitoring.Application.Services.Page
     public class PageService : IPageService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
 
-        public PageService(IUnitOfWork unitOfWork, IMapper mapper)
+        public PageService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
-            _mapper = mapper;
+        }
+
+        // Manual mapping methods
+        private PageDTO MapToDto(Monitoring.Domain.Aggregates.Page.Page page)
+        {
+            if (page == null) return null;
+
+            return new PageDTO
+            {
+                Id = page.Id,
+                Title = page.Title,
+                CreatedAt = page.CreatedAt,
+                UpdatedAt = page.UpdatedAt,
+                Status = page.Status?.Name,
+                DisplayConfig = new DisplayConfigurationDTO
+                {
+                    Width = page.DisplayConfig.Width,
+                    Height = page.DisplayConfig.Height,
+                    ThumbnailUrl = page.DisplayConfig.ThumbnailUrl,
+                    Orientation = page.DisplayConfig.Orientation?.Name,
+                    CommonAspectRatio = page.DisplayConfig.AspectRatio.ToString()
+                },
+                BackgroundAsset = page.BackgroundAsset != null ? MapAssetToDto(page.BackgroundAsset) : null,
+                Elements = page.Elements?.Select(MapElementToDto).ToList() ?? new List<BaseElementDTO>()
+            };
+        }
+
+        private List<PageDTO> MapToDtoList(IEnumerable<Monitoring.Domain.Aggregates.Page.Page> pages)
+        {
+            return pages?.Select(MapToDto).ToList() ?? new List<PageDTO>();
+        }
+
+        private BaseElementDTO MapElementToDto(BaseElement element)
+        {
+            if (element == null) return null;
+
+            return new BaseElementDTO
+            {
+                Id = element.Id,
+                ToolId = element.ToolId,
+                Order = element.Order,
+                TemplateBody = element.TemplateBody != null ? MapTemplateBodyToDto(element.TemplateBody) : null,
+                Asset = element.Asset != null ? MapAssetToDto(element.Asset) : null
+            };
+        }
+
+        private AssetDTO MapAssetToDto(Asset asset)
+        {
+            if (asset == null) return null;
+
+            return new AssetDTO
+            {
+                Url = asset.Url,
+                Type = asset.Type,
+                AltText = asset.AltText,
+                Content = asset.Content,
+                Metadata = asset.Metadata
+            };
+        }
+
+        private TemplateBodyDTO MapTemplateBodyToDto(TemplateBody templateBody)
+        {
+            if (templateBody == null) return null;
+
+            return new TemplateBodyDTO
+            {
+                HtmlTemplate = templateBody.HtmlTemplate,
+                DefaultCssClasses = templateBody.DefaultCssClasses,
+                CustomCss = templateBody.CustomCss,
+                CustomJs = templateBody.CustomJs,
+                IsFloating = templateBody.IsFloating
+            };
+        }
+
+        private BaseElement MapElementFromDto(BaseElementDTO dto)
+        {
+            if (dto == null) return null;
+
+            // Map TemplateBody and Asset from DTOs
+            var templateBody = MapTemplateBodyFromDto(dto.TemplateBody);
+            var asset = MapAssetFromDto(dto.Asset);
+
+            // Use the Create method and handle the Result
+            var elementResult = BaseElement.Create(dto.ToolId, dto.Order, templateBody, asset);
+            
+            if (elementResult.IsFailed)
+            {
+                // Log error or handle failure - for now return null
+                return null;
+            }
+
+            return elementResult.Value;
+        }
+
+        private Asset MapAssetFromDto(AssetDTO dto)
+        {
+            if (dto == null) return null;
+
+            var assetResult = Asset.Create(
+                url: dto.Url,
+                type: dto.Type,
+                content: dto.Content,
+                altText: dto.AltText,
+                metadata: dto.Metadata
+            );
+
+            return assetResult.IsSuccess ? assetResult.Value : null;
+        }
+
+        private TemplateBody MapTemplateBodyFromDto(TemplateBodyDTO dto)
+        {
+            if (dto == null) return null;
+
+            var templateResult = TemplateBody.Create(
+                htmlTemplate: dto.HtmlTemplate,
+                defaultCssClasses: dto.DefaultCssClasses ?? new Dictionary<string, string>(),
+                customCss: dto.CustomCss,
+                customJs: dto.CustomJs,
+                isFloating: dto.IsFloating
+            );
+
+            return templateResult.IsSuccess ? templateResult.Value : null;
         }
 
         public async Task<Result<PageDTO>> CreatePageAsync(string title, int displayWidth, int displayHeight, DisplayOrientation orientation, List<BaseElementDTO> elements = null)
@@ -41,7 +161,7 @@ namespace Monitoring.Application.Services.Page
                 {
                     foreach (var elementDto in elements)
                     {
-                        var element = _mapper.Map<BaseElement>(elementDto);
+                        var element = MapElementFromDto(elementDto);
                         if (element != null)
                         {
                             page.AddElement(element);
@@ -53,7 +173,7 @@ namespace Monitoring.Application.Services.Page
                 await repository.AddAsync(page);
                 await _unitOfWork.SaveAsync();
 
-                var pageDto = _mapper.Map<PageDTO>(page);
+                var pageDto = MapToDto(page);
                 return Result.Ok(pageDto);
             }
             catch (Exception ex)
@@ -73,7 +193,7 @@ namespace Monitoring.Application.Services.Page
                     return Result.Fail<PageDTO>("Page not found.");
                 }
 
-                var pageDto = _mapper.Map<PageDTO>(page);
+                var pageDto = MapToDto(page);
                 return Result.Ok(pageDto);
             }
             catch (Exception ex)
@@ -87,8 +207,8 @@ namespace Monitoring.Application.Services.Page
             try
             {
                 var pages = await _unitOfWork.PageRepository.GetAllAsync();
-                var pageDTOs = _mapper.Map<IEnumerable<PageDTO>>(pages);
-                return Result.Ok(pageDTOs);
+                var pageDTOs = MapToDtoList(pages);
+                return Result.Ok(pageDTOs.AsEnumerable());
             }
             catch (Exception ex)
             {
@@ -107,13 +227,13 @@ namespace Monitoring.Application.Services.Page
                     return Result.Fail("Page not found.");
                 }
 
-                // Convert elements using AutoMapper
+                // Convert elements using manual mapping
                 var domainElements = new List<BaseElement>();
                 if (elements != null && elements.Any())
                 {
                     foreach (var elementDto in elements)
                     {
-                        var element = _mapper.Map<BaseElement>(elementDto);
+                        var element = MapElementFromDto(elementDto);
                         if (element != null)
                         {
                             domainElements.Add(element);
@@ -165,7 +285,7 @@ namespace Monitoring.Application.Services.Page
                     return Result.Fail("Page not found.");
                 }
 
-                var element = _mapper.Map<BaseElement>(elementDTO);
+                var element = MapElementFromDto(elementDTO);
                 if (element == null)
                 {
                     return Result.Fail("Invalid element data.");
@@ -224,8 +344,8 @@ namespace Monitoring.Application.Services.Page
                 }
 
                 // Update element using mapped data
-                var templateBody = _mapper.Map<TemplateBody>(elementDTO.TemplateBody);
-                var asset = _mapper.Map<Asset>(elementDTO.Asset);
+                var templateBody = MapTemplateBodyFromDto(elementDTO.TemplateBody);
+                var asset = MapAssetFromDto(elementDTO.Asset);
 
                 if (templateBody != null) element.UpdateTemplateBody(templateBody);
                 if (asset != null) element.UpdateAsset(asset);
@@ -335,7 +455,30 @@ namespace Monitoring.Application.Services.Page
             }
         }
 
-        public async Task<Result> SetBackgroundAssetAsync(Guid pageId, Asset asset)
+        // public async Task<Result> SetBackgroundAssetAsync(Guid pageId, Asset asset)
+        // {
+        //     try
+        //     {
+        //         var page = await _unitOfWork.PageRepository.FindAsync(pageId);
+                
+        //         if (page == null)
+        //         {
+        //             return Result.Fail("Page not found.");
+        //         }
+
+        //         page.SetBackgroundAsset(asset);
+        //         await _unitOfWork.PageRepository.UpdateAsync(page);
+        //         await _unitOfWork.SaveAsync();
+
+        //         return Result.Ok();
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         return Result.Fail($"Error setting background asset: {ex.Message}");
+        //     }
+        // }
+
+        public async Task<Result> SetBackgroundAssetAsync(Guid pageId, AssetDTO assetDto)
         {
             try
             {
@@ -346,7 +489,21 @@ namespace Monitoring.Application.Services.Page
                     return Result.Fail("Page not found.");
                 }
 
-                page.SetBackgroundAsset(asset);
+                // Map DTO to domain Asset using factory method
+                var assetResult = Asset.Create(
+                    url: assetDto.Url,
+                    type: assetDto.Type,
+                    content: assetDto.Content,
+                    altText: assetDto.AltText,
+                    metadata: assetDto.Metadata
+                );
+
+                if (assetResult.IsFailed)
+                {
+                    return Result.Fail(assetResult.Errors);
+                }
+
+                page.SetBackgroundAsset(assetResult.Value);
                 await _unitOfWork.PageRepository.UpdateAsync(page);
                 await _unitOfWork.SaveAsync();
 

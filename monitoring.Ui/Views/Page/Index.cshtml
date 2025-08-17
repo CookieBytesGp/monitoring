@@ -1,0 +1,269 @@
+@model IEnumerable<DTOs.Pagebuilder.PageDTO>
+@{
+    ViewData["Title"] = "مدیریت صفحات";
+}
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 mb-1">مدیریت صفحات</h2>
+            <p class="text-muted">ایجاد و مدیریت صفحات نمایش</p>
+        </div>
+        <a href="@Url.Action("Create")" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>صفحه جدید
+        </a>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                کل صفحات
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count()</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                صفحات منتشر شده
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(p => p.Status == "Published")</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                پیش‌نویس‌ها
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(p => p.Status == "Draft")</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-edit fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                کل المنت‌ها
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Sum(p => p.ElementsCount)</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-cube fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pages Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">لیست صفحات</h6>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="pagesTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>عنوان</th>
+                                <th>رزولوشن</th>
+                                <th>وضعیت</th>
+                                <th>المنت‌ها</th>
+                                <th>تاریخ ایجاد</th>
+                                <th>آخرین تغییر</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var page in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            @if (page.HasBackgroundAsset)
+                                            {
+                                                <i class="fas fa-image text-success me-2" title="دارای تصویر پس‌زمینه"></i>
+                                            }
+                                            <div>
+                                                <strong>@page.Title</strong>
+                                                @if (!string.IsNullOrEmpty(page.DisplayConfig.ThumbnailUrl))
+                                                {
+                                                    <br><small class="text-muted">دارای تصویر بندانگشتی</small>
+                                                }
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">@page.DisplayConfig.Resolution</span>
+                                        <br>
+                                        <small class="text-muted">@page.DisplayConfig.Orientation</small>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var statusClass = page.Status switch
+                                            {
+                                                "Published" => "success",
+                                                "Draft" => "warning",
+                                                "Archived" => "secondary",
+                                                _ => "info"
+                                            };
+                                            var statusText = page.Status switch
+                                            {
+                                                "Published" => "منتشر شده",
+                                                "Draft" => "پیش‌نویس",
+                                                "Archived" => "آرشیو شده",
+                                                _ => page.Status
+                                            };
+                                        }
+                                        <span class="badge bg-@statusClass">@statusText</span>
+                                    </td>
+                                    <td>
+                                        @if (page.ElementsCount > 0)
+                                        {
+                                            <span class="badge bg-primary">@page.ElementsCount المنت</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-dark">خالی</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small>@page.CreatedAt.ToString("yyyy/MM/dd HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        <small>@page.UpdatedAt.ToString("yyyy/MM/dd HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="@Url.Action("Details", new { id = page.Id })" 
+                                               class="btn btn-sm btn-outline-info" title="مشاهده جزئیات">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="@Url.Action("Edit", new { id = page.Id })" 
+                                               class="btn btn-sm btn-outline-primary" title="ویرایش">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="confirmDelete('@page.Id', '@page.Title')" title="حذف">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fa-3x text-gray-300 mb-3"></i>
+                    <h5 class="text-gray-500">هنوز صفحه‌ای ایجاد نشده است</h5>
+                    <p class="text-gray-400">برای شروع، اولین صفحه خود را ایجاد کنید</p>
+                    <a href="@Url.Action("Create")" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>ایجاد صفحه جدید
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">تأیید حذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>آیا از حذف صفحه "<span id="deletePageTitle"></span>" اطمینان دارید؟</p>
+                <p class="text-danger"><small>این عمل غیرقابل بازگشت است.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <form method="post" id="deleteForm" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">حذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmDelete(pageId, pageTitle) {
+            document.getElementById('deletePageTitle').textContent = pageTitle;
+            document.getElementById('deleteForm').action = '@Url.Action("Delete")/' + pageId;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        // Initialize DataTable
+        $(document).ready(function() {
+            $('#pagesTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/fa.json"
+                },
+                "order": [[ 5, "desc" ]], // Sort by last updated
+                "pageLength": 25,
+                "responsive": true
+            });
+        });
+    </script>
+}
