@@ -1,6 +1,7 @@
 using Monitoring.Ui.Models.Page;
 using Monitoring.Ui.Interfaces;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,15 @@ using Microsoft.Extensions.Configuration;
 
 namespace Monitoring.Ui.Services
 {
+    public class ApiResponse<T>
+    {
+        public bool Success { get; set; }
+        public T Data { get; set; }
+        public string Message { get; set; }
+        public IEnumerable<string> Errors { get; set; }
+        public int? Count { get; set; }
+    }
+
     public class PageApiService : IPageApiService
     {
         private readonly HttpClient _httpClient;
@@ -25,7 +35,9 @@ namespace Monitoring.Ui.Services
             _jsonOptions = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                PropertyNameCaseInsensitive = true
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                Converters = { new JsonStringEnumConverter() }
             };
 
             // Base address should point to API Gateway
@@ -37,15 +49,49 @@ namespace Monitoring.Ui.Services
         {
             try
             {
+                _logger.LogInformation("Requesting pages from API Gateway at {BaseUrl}", _httpClient.BaseAddress);
+                
                 var response = await _httpClient.GetAsync("api/page");
+                
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var pages = JsonSerializer.Deserialize<List<PageViewModel>>(json, _jsonOptions);
-                    return pages ?? new List<PageViewModel>();
+                    _logger.LogInformation("Received API response: {Json}", json);
+                    
+                    // Parse the JSON as JsonDocument to handle dynamic structure
+                    using var document = JsonDocument.Parse(json);
+                    var root = document.RootElement;
+                    
+                    // Check if it's a structured response with success/data format
+                    if (root.TryGetProperty("success", out var successProp) && successProp.GetBoolean())
+                    {
+                        if (root.TryGetProperty("data", out var dataProp) && dataProp.ValueKind == JsonValueKind.Array)
+                        {
+                            var pages = JsonSerializer.Deserialize<List<PageViewModel>>(dataProp.GetRawText(), _jsonOptions);
+                            _logger.LogInformation("Successfully parsed structured response with {Count} pages", pages?.Count ?? 0);
+                            return pages ?? new List<PageViewModel>();
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Structured response has no data array");
+                            return new List<PageViewModel>();
+                        }
+                    }
+                    else
+                    {
+                        // Try to parse as direct array
+                        var pages = JsonSerializer.Deserialize<List<PageViewModel>>(json, _jsonOptions);
+                        _logger.LogInformation("Successfully parsed direct array with {Count} pages", pages?.Count ?? 0);
+                        return pages ?? new List<PageViewModel>();
+                    }
                 }
                 
-                _logger.LogWarning("Failed to get pages from API Gateway. Status: {StatusCode}", response.StatusCode);
+                _logger.LogWarning("Failed to get pages from API Gateway. Status: {StatusCode}, Reason: {ReasonPhrase}", 
+                    response.StatusCode, response.ReasonPhrase);
+                    
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Error response content: {ErrorContent}", errorContent);
+                
                 return new List<PageViewModel>();
             }
             catch (Exception ex)
@@ -59,14 +105,42 @@ namespace Monitoring.Ui.Services
         {
             try
             {
+                _logger.LogInformation("Requesting page {PageId} from API Gateway", id);
+                
                 var response = await _httpClient.GetAsync($"api/page/{id}");
+                
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    return JsonSerializer.Deserialize<PageViewModel>(json, _jsonOptions);
+                    _logger.LogInformation("Received page response: {ResponseLength} characters", json.Length);
+                    
+                    // Try to parse as new structured response format first
+                    try
+                    {
+                        var structuredResponse = JsonSerializer.Deserialize<ApiResponse<PageViewModel>>(json, _jsonOptions);
+                        if (structuredResponse?.Success == true && structuredResponse.Data != null)
+                        {
+                            _logger.LogInformation("Successfully parsed structured response for page {PageId}", id);
+                            return structuredResponse.Data;
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        _logger.LogInformation("Failed to parse as structured response, trying direct object parse");
+                    }
+                    
+                    // Fallback to direct object parsing
+                    var page = JsonSerializer.Deserialize<PageViewModel>(json, _jsonOptions);
+                    _logger.LogInformation("Successfully parsed direct object for page {PageId}", id);
+                    return page;
                 }
                 
-                _logger.LogWarning("Failed to get page {PageId} from API Gateway. Status: {StatusCode}", id, response.StatusCode);
+                _logger.LogWarning("Failed to get page {PageId} from API Gateway. Status: {StatusCode}, Reason: {ReasonPhrase}", 
+                    id, response.StatusCode, response.ReasonPhrase);
+                    
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Error response content: {ErrorContent}", errorContent);
+                
                 return null;
             }
             catch (Exception ex)
@@ -80,17 +154,45 @@ namespace Monitoring.Ui.Services
         {
             try
             {
+                _logger.LogInformation("Creating page with title: {Title}", request.Title);
+                
                 var json = JsonSerializer.Serialize(request, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 var response = await _httpClient.PostAsync("api/page", content);
+                
                 if (response.IsSuccessStatusCode)
                 {
                     var responseJson = await response.Content.ReadAsStringAsync();
-                    return JsonSerializer.Deserialize<PageViewModel>(responseJson, _jsonOptions);
+                    _logger.LogInformation("Create page response: {ResponseLength} characters", responseJson.Length);
+                    
+                    // Try to parse as new structured response format first
+                    try
+                    {
+                        var structuredResponse = JsonSerializer.Deserialize<ApiResponse<PageViewModel>>(responseJson, _jsonOptions);
+                        if (structuredResponse?.Success == true && structuredResponse.Data != null)
+                        {
+                            _logger.LogInformation("Successfully created page with structured response");
+                            return structuredResponse.Data;
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        _logger.LogInformation("Failed to parse as structured response, trying direct object parse");
+                    }
+                    
+                    // Fallback to direct object parsing
+                    var page = JsonSerializer.Deserialize<PageViewModel>(responseJson, _jsonOptions);
+                    _logger.LogInformation("Successfully created page with direct response parse");
+                    return page;
                 }
 
-                _logger.LogWarning("Failed to create page. Status: {StatusCode}", response.StatusCode);
+                _logger.LogWarning("Failed to create page. Status: {StatusCode}, Reason: {ReasonPhrase}", 
+                    response.StatusCode, response.ReasonPhrase);
+                    
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Create page error content: {ErrorContent}", errorContent);
+                
                 return null;
             }
             catch (Exception ex)

@@ -184,7 +184,7 @@
                                         <small>@(page.CreatedAt.ToString("yyyy/MM/dd HH:mm"))</small>
                                     </td>
                                     <td>
-                                        <small>@(page.UpdatedAt.ToString("yyyy/MM/dd HH:mm"))</small>
+                                        <small>@(page.UpdatedAt?.ToString("yyyy/MM/dd HH:mm") ?? "Never")</small>
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">

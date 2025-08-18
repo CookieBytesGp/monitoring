@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Domain.Aggregates.Camera;
 using Monitoring.Infrastructure.Configuration.Camera;
-using Persistence.Page.Configurations;
-using Persistence.Tools.Configuration;
-using Monitoring.Infrastructure.Configuration.Camera;
+using Monitoring.Infrastructure.Configuration.Page;
+using Monitoring.Infrastructure.Configuration.Tools;
+using Domain.Aggregates.Page.ValueObjects;
 
 namespace Monitoring.Infrastructure.Persistence;
 
@@ -16,8 +16,8 @@ public class DatabaseContext : DbContext
 
 
     //public DbSet<Domain.Aggregates.User.User> Users { get; set; }
-    //public DbSet<Domain.Aggregates.Tools.Tool> Tools { get; set; }
-    //public DbSet<Domain.Aggregates.Page.Page> Pages { get; set; }
+    public DbSet<Monitoring.Domain.Aggregates.Tools.Tool> Tools { get; set; }
+    public DbSet<Monitoring.Domain.Aggregates.Page.Page> Pages { get; set; }
     public DbSet<Monitoring.Domain.Aggregates.Camera.Camera> cameras { get; set; }
 
     //// Ensure this line is commented out or removed
@@ -25,12 +25,12 @@ public class DatabaseContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        //modelBuilder.Ignore<BaseElement>(); // Ensure BaseElement is ignored as a non-owned entity
+        modelBuilder.Ignore<BaseElement>(); // Ensure BaseElement is ignored as a non-owned entity
 
         ////modelBuilder.ApplyConfigurationsFromAssembly(typeof(DatabaseContext).Assembly);
         //modelBuilder.ApplyConfiguration(new UserConfiguration());
-        //modelBuilder.ApplyConfiguration(new PageConfiguration());
-        //modelBuilder.ApplyConfiguration(new ToolConfiguration());
+        modelBuilder.ApplyConfiguration(new PageConfiguration());
+        modelBuilder.ApplyConfiguration(new ToolConfiguration());
 
         // Camera configurations
         modelBuilder.ApplyConfiguration(new CameraEntityConfiguration());

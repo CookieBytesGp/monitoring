@@ -12,8 +12,8 @@ using Monitoring.Infrastructure.Persistence;
 namespace Monitoring.Infrastructure.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20250813095439_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250818200440_init1")]
+    partial class init1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -290,6 +290,87 @@ namespace Monitoring.Infrastructure.Migrations
                     b.ToTable("CameraConfigurations", (string)null);
                 });
 
+            modelBuilder.Entity("Monitoring.Domain.Aggregates.Page.Page", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Pages", (string)null);
+                });
+
+            modelBuilder.Entity("Monitoring.Domain.Aggregates.Tools.Tool", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DefaultAssets")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DefaultJs")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ElementType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Tools");
+                });
+
             modelBuilder.Entity("Domain.Aggregates.Camera.Entities.CameraCapability", b =>
                 {
                     b.HasOne("Monitoring.Domain.Aggregates.Camera.Camera", null)
@@ -527,6 +608,282 @@ namespace Monitoring.Infrastructure.Migrations
 
                     b.Navigation("Recording")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Monitoring.Domain.Aggregates.Page.Page", b =>
+                {
+                    b.OwnsMany("Domain.Aggregates.Page.ValueObjects.BaseElement", "Elements", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<DateTime>("CreatedAt")
+                                .HasColumnType("datetime2");
+
+                            b1.Property<string>("CreatedBy")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<int>("Order")
+                                .HasColumnType("int");
+
+                            b1.Property<Guid>("PageId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<byte[]>("RowVersion")
+                                .IsRequired()
+                                .HasColumnType("varbinary(max)");
+
+                            b1.Property<Guid>("ToolId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<DateTime?>("UpdatedAt")
+                                .HasColumnType("datetime2");
+
+                            b1.Property<string>("UpdatedBy")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("PageId");
+
+                            b1.ToTable("BaseElement");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PageId");
+
+                            b1.OwnsOne("Domain.SharedKernel.Asset", "Asset", b2 =>
+                                {
+                                    b2.Property<Guid>("BaseElementId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<string>("AltText")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("Content")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("Metadata")
+                                        .IsRequired()
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<string>("Type")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("Url")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.HasKey("BaseElementId");
+
+                                    b2.ToTable("BaseElement");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("BaseElementId");
+                                });
+
+                            b1.OwnsOne("Domain.Aggregates.Page.ValueObjects.TemplateBody", "TemplateBody", b2 =>
+                                {
+                                    b2.Property<Guid>("BaseElementId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<string>("CustomCss")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("CustomJs")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("DefaultCssClasses")
+                                        .IsRequired()
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<string>("HtmlTemplate")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<bool>("IsFloating")
+                                        .HasColumnType("bit");
+
+                                    b2.HasKey("BaseElementId");
+
+                                    b2.ToTable("BaseElement");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("BaseElementId");
+                                });
+
+                            b1.Navigation("Asset")
+                                .IsRequired();
+
+                            b1.Navigation("TemplateBody")
+                                .IsRequired();
+                        });
+
+                    b.OwnsOne("Domain.Aggregates.Page.ValueObjects.DisplayConfiguration", "DisplayConfig", b1 =>
+                        {
+                            b1.Property<Guid>("PageId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<int>("Height")
+                                .HasColumnType("int")
+                                .HasColumnName("DisplayHeight");
+
+                            b1.Property<string>("ThumbnailUrl")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)")
+                                .HasColumnName("ThumbnailUrl");
+
+                            b1.Property<int>("Width")
+                                .HasColumnType("int")
+                                .HasColumnName("DisplayWidth");
+
+                            b1.HasKey("PageId");
+
+                            b1.ToTable("Pages");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PageId");
+
+                            b1.OwnsOne("Domain.Aggregates.Page.ValueObjects.DisplayOrientation", "Orientation", b2 =>
+                                {
+                                    b2.Property<Guid>("DisplayConfigurationPageId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<string>("Name")
+                                        .IsRequired()
+                                        .HasMaxLength(50)
+                                        .HasColumnType("nvarchar(50)")
+                                        .HasColumnName("DisplayOrientationName");
+
+                                    b2.Property<int>("Value")
+                                        .HasColumnType("int")
+                                        .HasColumnName("DisplayOrientation");
+
+                                    b2.HasKey("DisplayConfigurationPageId");
+
+                                    b2.ToTable("Pages");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("DisplayConfigurationPageId");
+                                });
+
+                            b1.Navigation("Orientation")
+                                .IsRequired();
+                        });
+
+                    b.OwnsOne("Domain.Aggregates.Page.ValueObjects.PageStatus", "Status", b1 =>
+                        {
+                            b1.Property<Guid>("PageId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("nvarchar(50)")
+                                .HasColumnName("StatusName");
+
+                            b1.Property<int>("Value")
+                                .HasColumnType("int")
+                                .HasColumnName("Status");
+
+                            b1.HasKey("PageId");
+
+                            b1.ToTable("Pages");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PageId");
+                        });
+
+                    b.OwnsOne("Domain.SharedKernel.Asset", "BackgroundAsset", b1 =>
+                        {
+                            b1.Property<Guid>("PageId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("AltText")
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)")
+                                .HasColumnName("BackgroundAssetAltText");
+
+                            b1.Property<string>("Content")
+                                .HasColumnType("TEXT")
+                                .HasColumnName("BackgroundAssetContent");
+
+                            b1.Property<string>("Metadata")
+                                .HasColumnType("TEXT")
+                                .HasColumnName("BackgroundAssetMetadata");
+
+                            b1.Property<string>("Type")
+                                .HasMaxLength(50)
+                                .HasColumnType("nvarchar(50)")
+                                .HasColumnName("BackgroundAssetType");
+
+                            b1.Property<string>("Url")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)")
+                                .HasColumnName("BackgroundAssetUrl");
+
+                            b1.HasKey("PageId");
+
+                            b1.ToTable("Pages");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PageId");
+                        });
+
+                    b.Navigation("BackgroundAsset")
+                        .IsRequired();
+
+                    b.Navigation("DisplayConfig")
+                        .IsRequired();
+
+                    b.Navigation("Elements");
+
+                    b.Navigation("Status")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Monitoring.Domain.Aggregates.Tools.Tool", b =>
+                {
+                    b.OwnsMany("Domain.Aggregates.Tools.ValueObjects.Template", "Templates", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
+
+                            b1.Property<string>("DefaultCss")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("DefaultCssClasses")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("HtmlStructure")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<Guid>("ToolId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("ToolId");
+
+                            b1.ToTable("Template");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ToolId");
+                        });
+
+                    b.Navigation("Templates");
                 });
 
             modelBuilder.Entity("Monitoring.Domain.Aggregates.Camera.Camera", b =>

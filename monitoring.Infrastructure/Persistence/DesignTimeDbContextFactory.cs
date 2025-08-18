@@ -10,7 +10,7 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<DatabaseCo
         var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
         
         // Use a default connection string for design time
-        optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=MonitoringDb;Trusted_Connection=true;MultipleActiveResultSets=true");
+        optionsBuilder.UseSqlServer("Server=.;Database=MonitoringDB;User Id=sa;Password=123456;TrustServerCertificate=True;");
         
         return new DatabaseContext(optionsBuilder.Options);
     }

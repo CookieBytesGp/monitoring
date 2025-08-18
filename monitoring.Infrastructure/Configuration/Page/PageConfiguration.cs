@@ -1,15 +1,18 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Domain.Aggregates.Page;
+using Monitoring.Domain.Aggregates.Page;
 using Domain.Aggregates.Page.ValueObjects;
 using Domain.SharedKernel;
 
-namespace Persistence.Page.Configurations
+namespace Monitoring.Infrastructure.Configuration.Page
 {
     internal class PageConfiguration : IEntityTypeConfiguration<Monitoring.Domain.Aggregates.Page.Page>
     {
         public void Configure(EntityTypeBuilder<Monitoring.Domain.Aggregates.Page.Page> builder)
         {
+            // Configure table name explicitly
+            builder.ToTable("Pages");
+            
             // Configure primary properties
             builder.Property(p => p.Title)
                 .IsRequired()
@@ -19,7 +22,7 @@ namespace Persistence.Page.Configurations
                 .IsRequired();
 
             builder.Property(p => p.UpdatedAt)
-                .IsRequired();
+                .IsRequired(false); // Make UpdatedAt nullable
 
             // Configure PageStatus as owned value object
             builder.OwnsOne(p => p.Status, statusBuilder =>
@@ -47,7 +50,8 @@ namespace Persistence.Page.Configurations
 
                 displayBuilder.Property(d => d.ThumbnailUrl)
                     .HasColumnName("ThumbnailUrl")
-                    .HasMaxLength(500);
+                    .HasMaxLength(500)
+                    .IsRequired(false); // Make nullable since it's set later
 
                 // Configure DisplayOrientation as owned value object
                 displayBuilder.OwnsOne(d => d.Orientation, orientationBuilder =>
@@ -68,19 +72,23 @@ namespace Persistence.Page.Configurations
             {
                 assetBuilder.Property(a => a.Url)
                     .HasColumnName("BackgroundAssetUrl")
-                    .HasMaxLength(500);
+                    .HasMaxLength(500)
+                    .IsRequired(false); // Make nullable
 
                 assetBuilder.Property(a => a.Type)
                     .HasColumnName("BackgroundAssetType")
-                    .HasMaxLength(50);
+                    .HasMaxLength(50)
+                    .IsRequired(false); // Make nullable
 
                 assetBuilder.Property(a => a.AltText)
                     .HasColumnName("BackgroundAssetAltText")
-                    .HasMaxLength(200);
+                    .HasMaxLength(200)
+                    .IsRequired(false); // Make nullable
 
                 assetBuilder.Property(a => a.Content)
                     .HasColumnName("BackgroundAssetContent")
-                    .HasColumnType("TEXT");
+                    .HasColumnType("TEXT")
+                    .IsRequired(false); // Make nullable
 
                 // Configure Metadata with JSON converter
                 var metadataConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<Dictionary<string, string>, string>(
@@ -92,7 +100,8 @@ namespace Persistence.Page.Configurations
                 assetBuilder.Property(a => a.Metadata)
                     .HasColumnName("BackgroundAssetMetadata")
                     .HasConversion(metadataConverter)
-                    .HasColumnType("TEXT");
+                    .HasColumnType("TEXT")
+                    .IsRequired(false); // Make nullable
             });
 
             // Configure Elements as an owned collection
@@ -162,6 +171,15 @@ namespace Persistence.Page.Configurations
                 });
 
             });
+
+            // Configure Entity base properties to be nullable or have default values
+            builder.Property<string>("CreatedBy")
+                .HasDefaultValue("System")
+                .IsRequired();
+
+            builder.Property<string>("UpdatedBy")
+                .HasDefaultValue("System")
+                .IsRequired();
         }
     }
 }

@@ -36,6 +36,7 @@ public abstract class Entity : object, IEntity
         Id = System.Guid.NewGuid();
         CreatedAt = System.DateTime.UtcNow;
         CreatedBy = "System";
+        UpdatedBy = "System"; // Initialize UpdatedBy to avoid null issues
     }
 
     // **********
@@ -145,5 +146,5 @@ public abstract class Entity : object, IEntity
     public System.DateTime CreatedAt { get; protected set; }
     public string CreatedBy { get; protected set; }
     public System.DateTime? UpdatedAt { get; protected set; }
-    public string UpdatedBy { get; protected set; }
+    public string UpdatedBy { get; protected set; } = "System"; // Default value to avoid nulls
 }

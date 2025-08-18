@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Newtonsoft.Json;
 
-namespace Persistence.Tools.Configuration
+namespace Monitoring.Infrastructure.Configuration.Tools
 {
     internal class ToolConfiguration : IEntityTypeConfiguration<Monitoring.Domain.Aggregates.Tools.Tool>
     {

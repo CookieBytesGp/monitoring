@@ -1,4 +1,4 @@
-@model DTOs.Pagebuilder.PageDTO
+@model Monitoring.Ui.Models.Page.PageViewModel
 @{
     ViewData["Title"] = "جزئیات صفحه";
 }
@@ -109,7 +109,7 @@
                                 </tr>
                                 <tr>
                                     <td class="fw-bold text-gray-600">آخرین تغییر:</td>
-                                    <td>@Model.UpdatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                    <td>@(Model.UpdatedAt?.ToString("yyyy/MM/dd HH:mm") ?? "Never")</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold text-gray-600">تعداد المنت:</td>

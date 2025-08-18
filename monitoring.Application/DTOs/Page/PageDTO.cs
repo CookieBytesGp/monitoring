@@ -11,18 +11,18 @@ namespace DTOs.Pagebuilder
         
         [Required]
         [StringLength(200)]
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
         
         public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
         
         // Page Status
         [Required]
-        public string Status { get; set; }
+        public string Status { get; set; } = "Draft";
         
         // Display Configuration
         [Required]
-        public DisplayConfigurationDTO DisplayConfig { get; set; }
+        public DisplayConfigurationDTO DisplayConfig { get; set; } = new DisplayConfigurationDTO();
         
         // Background Asset (اختیاری)
         public AssetDTO? BackgroundAsset { get; set; }
@@ -50,11 +50,11 @@ namespace DTOs.Pagebuilder
         public string? ThumbnailUrl { get; set; }
         
         [Required]
-        public string Orientation { get; set; }
+        public string Orientation { get; set; } = "Landscape";
         
         // Computed Properties
         public double AspectRatio => Height > 0 ? Math.Round((double)Width / Height, 2) : 0;
-        public string CommonAspectRatio { get; set; }
+        public string CommonAspectRatio { get; set; } = "0";
         public bool IsWidescreen => AspectRatio >= 1.77;
         public bool IsUltraWide => AspectRatio >= 2.35;
         public string Resolution => $"{Width}x{Height}";

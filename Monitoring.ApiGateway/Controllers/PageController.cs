@@ -36,17 +36,42 @@ public class PageController : ControllerBase
             if (result.IsFailed)
             {
                 _logger.LogError("Failed to get all pages: {Errors}", string.Join(", ", result.Errors.Select(e => e.Message)));
-                return BadRequest(result.Errors.Select(e => e.Message));
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Failed to get pages", 
+                    errors = result.Errors.Select(e => e.Message) 
+                });
             }
             
             _logger.LogInformation("Retrieved {Count} pages successfully", result.Value.Count());
-            return Ok(result.Value);
+            return Ok(new { 
+                success = true, 
+                data = result.Value,
+                count = result.Value.Count()
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred while getting all pages");
-            return StatusCode(500, "Internal server error");
+            return StatusCode(500, new { 
+                success = false, 
+                message = "Internal server error", 
+                error = ex.Message 
+            });
         }
+    }
+
+    /// <summary>
+    /// تست ساده برای بررسی API
+    /// </summary>
+    [HttpGet("test")]
+    public IActionResult TestEndpoint()
+    {
+        return Ok(new { 
+            message = "API is working", 
+            timestamp = DateTime.UtcNow,
+            success = true 
+        });
     }
 
     /// <summary>
@@ -64,16 +89,27 @@ public class PageController : ControllerBase
             if (result.IsFailed)
             {
                 _logger.LogWarning("Page not found with ID: {PageId}", id);
-                return NotFound(result.Errors.Select(e => e.Message));
+                return NotFound(new { 
+                    success = false, 
+                    message = "Page not found", 
+                    errors = result.Errors.Select(e => e.Message) 
+                });
             }
             
             _logger.LogInformation("Page retrieved successfully: {PageId}", id);
-            return Ok(result.Value);
+            return Ok(new { 
+                success = true, 
+                data = result.Value 
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred while getting page {PageId}", id);
-            return StatusCode(500, "Internal server error");
+            return StatusCode(500, new { 
+                success = false, 
+                message = "Internal server error", 
+                error = ex.Message 
+            });
         }
     }
 
@@ -88,7 +124,11 @@ public class PageController : ControllerBase
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Invalid model state for creating page");
-                return BadRequest(ModelState);
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Invalid input data", 
+                    errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)) 
+                });
             }
 
             _logger.LogInformation("Creating page with Title: {Title}, DisplaySize: {Width}x{Height}, Orientation: {Orientation}", 
@@ -99,7 +139,10 @@ public class PageController : ControllerBase
             {
                 _logger.LogWarning("Invalid orientation value: {Orientation}", request.Orientation);
                 var validOrientations = new[] { "Portrait", "Landscape", "Square" };
-                return BadRequest($"Invalid orientation. Valid values are: {string.Join(", ", validOrientations)}");
+                return BadRequest(new { 
+                    success = false, 
+                    message = $"Invalid orientation. Valid values are: {string.Join(", ", validOrientations)}" 
+                });
             }
 
             var result = await _pageService.CreatePageAsync(
@@ -112,16 +155,35 @@ public class PageController : ControllerBase
             if (result.IsFailed)
             {
                 _logger.LogError("Failed to create page: {Errors}", string.Join(", ", result.Errors.Select(e => e.Message)));
-                return BadRequest(result.Errors.Select(e => e.Message));
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Failed to create page", 
+                    errors = result.Errors.Select(e => e.Message) 
+                });
             }
             
             _logger.LogInformation("Page created successfully with Id: {PageId}", result.Value.Id);
-            return CreatedAtAction(nameof(GetPageById), new { id = result.Value.Id }, result.Value);
+            
+            // Add additional debugging info
+            _logger.LogInformation("Page DTO data: Title='{Title}', Status='{Status}', DisplayConfig='{DisplayConfig}'", 
+                result.Value.Title, 
+                result.Value.Status, 
+                result.Value.DisplayConfig?.Orientation);
+            
+            return CreatedAtAction(nameof(GetPageById), new { id = result.Value.Id }, new { 
+                success = true, 
+                message = "Page created successfully", 
+                data = result.Value 
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred while creating page");
-            return StatusCode(500, "Internal server error");
+            return StatusCode(500, new { 
+                success = false, 
+                message = "Internal server error", 
+                error = ex.Message 
+            });
         }
     }
 
@@ -136,7 +198,11 @@ public class PageController : ControllerBase
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Invalid model state for updating page {PageId}", id);
-                return BadRequest(ModelState);
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Invalid input data", 
+                    errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)) 
+                });
             }
 
             _logger.LogInformation("Updating page {PageId} with Title: {Title}", id, request.Title);
@@ -146,16 +212,27 @@ public class PageController : ControllerBase
             if (result.IsFailed)
             {
                 _logger.LogError("Failed to update page {PageId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Message)));
-                return BadRequest(result.Errors.Select(e => e.Message));
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Failed to update page", 
+                    errors = result.Errors.Select(e => e.Message) 
+                });
             }
             
             _logger.LogInformation("Page {PageId} updated successfully", id);
-            return NoContent();
+            return Ok(new { 
+                success = true, 
+                message = "Page updated successfully" 
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred while updating page {PageId}", id);
-            return StatusCode(500, "Internal server error");
+            return StatusCode(500, new { 
+                success = false, 
+                message = "Internal server error", 
+                error = ex.Message 
+            });
         }
     }
 
@@ -174,16 +251,27 @@ public class PageController : ControllerBase
             if (result.IsFailed)
             {
                 _logger.LogError("Failed to delete page {PageId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Message)));
-                return BadRequest(result.Errors.Select(e => e.Message));
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Failed to delete page", 
+                    errors = result.Errors.Select(e => e.Message) 
+                });
             }
             
             _logger.LogInformation("Page {PageId} deleted successfully", id);
-            return NoContent();
+            return Ok(new { 
+                success = true, 
+                message = "Page deleted successfully" 
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred while deleting page {PageId}", id);
-            return StatusCode(500, "Internal server error");
+            return StatusCode(500, new { 
+                success = false, 
+                message = "Internal server error", 
+                error = ex.Message 
+            });
         }
     }
 
@@ -198,7 +286,11 @@ public class PageController : ControllerBase
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Invalid model state for setting page status {PageId}", id);
-                return BadRequest(ModelState);
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Invalid input data", 
+                    errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)) 
+                });
             }
 
             _logger.LogInformation("Setting page {PageId} status to {Status}", id, request.Status);
@@ -208,7 +300,10 @@ public class PageController : ControllerBase
             {
                 _logger.LogWarning("Invalid status value: {Status}", request.Status);
                 var validStatuses = new[] { "Draft", "Published", "Archived", "Scheduled" };
-                return BadRequest($"Invalid status. Valid values are: {string.Join(", ", validStatuses)}");
+                return BadRequest(new { 
+                    success = false, 
+                    message = $"Invalid status. Valid values are: {string.Join(", ", validStatuses)}" 
+                });
             }
 
             var result = await _pageService.SetPageStatusAsync(id, status);
@@ -216,16 +311,27 @@ public class PageController : ControllerBase
             if (result.IsFailed)
             {
                 _logger.LogError("Failed to set page status {PageId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Message)));
-                return BadRequest(result.Errors.Select(e => e.Message));
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Failed to set page status", 
+                    errors = result.Errors.Select(e => e.Message) 
+                });
             }
             
             _logger.LogInformation("Page {PageId} status set to {Status} successfully", id, request.Status);
-            return NoContent();
+            return Ok(new { 
+                success = true, 
+                message = "Page status updated successfully" 
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred while setting page status {PageId}", id);
-            return StatusCode(500, "Internal server error");
+            return StatusCode(500, new { 
+                success = false, 
+                message = "Internal server error", 
+                error = ex.Message 
+            });
         }
     }
 

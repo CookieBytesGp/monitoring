@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Monitoring.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class init1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -46,6 +46,55 @@ namespace Monitoring.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Cameras", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Pages",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    StatusName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    DisplayWidth = table.Column<int>(type: "int", nullable: false),
+                    DisplayHeight = table.Column<int>(type: "int", nullable: false),
+                    ThumbnailUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    DisplayOrientation = table.Column<int>(type: "int", nullable: false),
+                    DisplayOrientationName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    BackgroundAssetUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    BackgroundAssetType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    BackgroundAssetAltText = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    BackgroundAssetContent = table.Column<string>(type: "TEXT", nullable: true),
+                    BackgroundAssetMetadata = table.Column<string>(type: "TEXT", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Pages", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Tools",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    DefaultJs = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ElementType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    DefaultAssets = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Tools", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -156,6 +205,68 @@ namespace Monitoring.Infrastructure.Migrations
                         principalColumn: "Id");
                 });
 
+            migrationBuilder.CreateTable(
+                name: "BaseElement",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ToolId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Order = table.Column<int>(type: "int", nullable: false),
+                    TemplateBody_HtmlTemplate = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TemplateBody_DefaultCssClasses = table.Column<string>(type: "TEXT", nullable: false),
+                    TemplateBody_CustomCss = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TemplateBody_CustomJs = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TemplateBody_IsFloating = table.Column<bool>(type: "bit", nullable: false),
+                    Asset_Url = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Asset_Type = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Asset_AltText = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Asset_Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Asset_Metadata = table.Column<string>(type: "TEXT", nullable: false),
+                    PageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BaseElement", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_BaseElement_Pages_PageId",
+                        column: x => x.PageId,
+                        principalTable: "Pages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Template",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    HtmlStructure = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DefaultCssClasses = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DefaultCss = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ToolId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Template", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Template_Tools_ToolId",
+                        column: x => x.ToolId,
+                        principalTable: "Tools",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BaseElement_PageId",
+                table: "BaseElement",
+                column: "PageId");
+
             migrationBuilder.CreateIndex(
                 name: "IX_CameraCapabilities_CameraId",
                 table: "CameraCapabilities",
@@ -219,11 +330,19 @@ namespace Monitoring.Infrastructure.Migrations
                 name: "IX_CameraStreams_Quality",
                 table: "CameraStreams",
                 column: "Quality");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Template_ToolId",
+                table: "Template",
+                column: "ToolId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "BaseElement");
+
             migrationBuilder.DropTable(
                 name: "CameraCapabilities");
 
@@ -234,7 +353,16 @@ namespace Monitoring.Infrastructure.Migrations
                 name: "CameraStreams");
 
             migrationBuilder.DropTable(
+                name: "Template");
+
+            migrationBuilder.DropTable(
+                name: "Pages");
+
+            migrationBuilder.DropTable(
                 name: "Cameras");
+
+            migrationBuilder.DropTable(
+                name: "Tools");
         }
     }
 }

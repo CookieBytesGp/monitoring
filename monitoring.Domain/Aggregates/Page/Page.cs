@@ -16,7 +16,7 @@ namespace Monitoring.Domain.Aggregates.Page
 
         public string Title { get; private set; }
         public DateTime CreatedAt { get; private set; }
-        public DateTime UpdatedAt { get; private set; }
+        public DateTime? UpdatedAt { get; private set; }
         
         // فیلدهای جدید
         public PageStatus Status { get; private set; }
@@ -42,7 +42,7 @@ namespace Monitoring.Domain.Aggregates.Page
             DisplayConfig = displayConfig;
             Status = PageStatus.Draft;
             CreatedAt = DateTime.UtcNow;
-            UpdatedAt = DateTime.UtcNow;
+            UpdatedAt = null; // Initial creation, no update yet
             _elements = new List<BaseElement>();
         }
 
