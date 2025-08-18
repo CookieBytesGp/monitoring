@@ -1,4 +1,5 @@
 using Monitoring.Ui.Services;
+using Monitoring.Ui.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,11 +8,26 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
 
 // Add HttpClient
-builder.Services.AddHttpClient();
-
-// Add API Services
-builder.Services.AddScoped<ICameraApiService, CameraApiService>();
-builder.Services.AddScoped<IPageApiService, PageApiService>();
+if (builder.Environment.IsDevelopment())
+{
+    // Configure HttpClient to ignore SSL certificate errors in development
+    builder.Services.AddHttpClient<ICameraApiService, CameraApiService>()
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
+        {
+            ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+        });
+    
+    builder.Services.AddHttpClient<IPageApiService, PageApiService>()
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
+        {
+            ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+        });
+}
+else
+{
+    builder.Services.AddHttpClient<ICameraApiService, CameraApiService>();
+    builder.Services.AddHttpClient<IPageApiService, PageApiService>();
+}
 
 // Register SignalR adapters
 //builder.Services.AddScoped<Monitoring.Application.Interfaces.Realtime.ICameraNotifications, App.Hubs.Adapters.SignalRCameraNotifications>();

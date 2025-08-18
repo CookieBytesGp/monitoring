@@ -6,6 +6,10 @@ namespace Monitoring.Application.DTOs.Camera
     {
         public string Resolution { get; set; }
         public int FrameRate { get; set; }
+        public string Quality { get; set; }
+        public bool RecordingEnabled { get; set; }
+        public bool MotionDetectionEnabled { get; set; }
+        public bool NightVisionEnabled { get; set; }
         public string VideoCodec { get; set; }
         public int Bitrate { get; set; }
         public bool AudioEnabled { get; set; }

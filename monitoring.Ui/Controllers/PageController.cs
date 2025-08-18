@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Monitoring.Ui.Services;
+using Monitoring.Ui.Interfaces;
+using Monitoring.Ui.Models.Page;
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using System.ComponentModel.DataAnnotations;
 using System.Collections.Generic;
 
 namespace Monitoring.Ui.Controllers
@@ -31,7 +31,7 @@ namespace Monitoring.Ui.Controllers
             {
                 _logger.LogError(ex, "Error getting pages list");
                 TempData["Error"] = "خطای غیرمنتظره در دریافت لیست صفحات";
-                return View(new List<PageDTO>());
+                return View(new List<PageViewModel>());
             }
         }
 
@@ -80,11 +80,13 @@ namespace Monitoring.Ui.Controllers
                     return View(model);
                 }
 
-                var result = await _pageApiService.CreatePageAsync(
-                    model.Title,
-                    model.DisplayWidth,
-                    model.DisplayHeight,
-                    model.Orientation);
+                var result = await _pageApiService.CreatePageAsync(new CreatePageRequest
+                {
+                    Title = model.Title,
+                    DisplayWidth = model.DisplayWidth,
+                    DisplayHeight = model.DisplayHeight,
+                    Orientation = model.Orientation
+                });
 
                 if (result != null)
                 {
@@ -148,22 +150,53 @@ namespace Monitoring.Ui.Controllers
                     return View(model);
                 }
 
-                var success = await _pageApiService.UpdatePageAsync(
-                    model.Id, 
-                    model.Title, 
-                    model.DisplayWidth, 
-                    model.DisplayHeight, 
-                    model.Orientation, 
-                    model.ThumbnailUrl);
-
-                if (success)
+                // Update basic page info
+                var updateRequest = new UpdatePageRequest
                 {
-                    TempData["Success"] = "جزئیات صفحه با موفقیت به‌روزرسانی شد";
-                    return RedirectToAction(nameof(Details), new { id = model.Id });
+                    Id = model.Id,
+                    Title = model.Title
+                };
+
+                var basicUpdateSuccess = await _pageApiService.UpdatePageAsync(model.Id, updateRequest);
+                if (!basicUpdateSuccess)
+                {
+                    ModelState.AddModelError("", "خطا در به‌روزرسانی اطلاعات پایه صفحه");
+                    return View(model);
                 }
 
-                ModelState.AddModelError("", "خطا در به‌روزرسانی صفحه");
-                return View(model);
+                // Update display configuration
+                var displayRequest = new UpdateDisplaySizeRequest
+                {
+                    Width = model.DisplayWidth,
+                    Height = model.DisplayHeight,
+                    Orientation = model.Orientation
+                };
+
+                var displayUpdateSuccess = await _pageApiService.UpdateDisplaySizeAsync(model.Id, displayRequest);
+                if (!displayUpdateSuccess)
+                {
+                    ModelState.AddModelError("", "خطا در به‌روزرسانی تنظیمات نمایش");
+                    return View(model);
+                }
+
+                // Update thumbnail if provided
+                if (!string.IsNullOrEmpty(model.ThumbnailUrl))
+                {
+                    var thumbnailRequest = new UpdateThumbnailRequest
+                    {
+                        ThumbnailUrl = model.ThumbnailUrl
+                    };
+
+                    var thumbnailUpdateSuccess = await _pageApiService.UpdateThumbnailAsync(model.Id, thumbnailRequest);
+                    if (!thumbnailUpdateSuccess)
+                    {
+                        ModelState.AddModelError("", "خطا در به‌روزرسانی تصویر بندانگشتی");
+                        return View(model);
+                    }
+                }
+
+                TempData["Success"] = "جزئیات صفحه با موفقیت به‌روزرسانی شد";
+                return RedirectToAction(nameof(Details), new { id = model.Id });
             }
             catch (Exception ex)
             {
@@ -205,7 +238,8 @@ namespace Monitoring.Ui.Controllers
         {
             try
             {
-                var success = await _pageApiService.TogglePageStatusAsync(id, status);
+                var request = new UpdateStatusRequest { Status = status };
+                var success = await _pageApiService.UpdateStatusAsync(id, request);
                 if (success)
                 {
                     return Json(new { success = true, message = "وضعیت با موفقیت تغییر کرد" });
@@ -219,36 +253,5 @@ namespace Monitoring.Ui.Controllers
                 return Json(new { success = false, message = "خطا در تغییر وضعیت" });
             }
         }
-    }
-
-    // ViewModels
-    public class CreatePageViewModel
-    {
-        [Required(ErrorMessage = "عنوان اجباری است")]
-        [StringLength(200, ErrorMessage = "عنوان نباید بیش از 200 کاراکتر باشد")]
-        public string Title { get; set; }
-
-        [Required]
-        [Range(1, 7680, ErrorMessage = "عرض باید بین 1 تا 7680 پیکسل باشد")]
-        public int DisplayWidth { get; set; }
-
-        [Required]
-        [Range(1, 4320, ErrorMessage = "ارتفاع باید بین 1 تا 4320 پیکسل باشد")]
-        public int DisplayHeight { get; set; }
-
-        [Required]
-        public string Orientation { get; set; }
-    }
-
-    public class EditPageViewModel : CreatePageViewModel
-    {
-        public Guid Id { get; set; }
-        
-        [Url(ErrorMessage = "آدرس تصویر بندانگشتی معتبر نیست")]
-        public string ThumbnailUrl { get; set; }
-        
-        public string Status { get; set; }
-        public int ElementsCount { get; set; }
-        public bool HasBackgroundAsset { get; set; }
     }
 }

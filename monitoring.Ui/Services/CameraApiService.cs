@@ -27,7 +27,7 @@ public class CameraApiService : ICameraApiService
     {
         _httpClient = httpClient;
         _logger = logger;
-        _baseUrl = configuration["ApiGateway:BaseUrl"] ?? "https://localhost:7001";
+        _baseUrl = configuration["ApiGateway:BaseUrl"] ?? "http://localhost:7001";
     }
 
     public async Task<List<CameraViewModel>> GetAllCamerasAsync()

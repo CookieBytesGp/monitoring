@@ -1,4 +1,4 @@
-@model IEnumerable<DTOs.Pagebuilder.PageDTO>
+@model IEnumerable<Monitoring.Ui.Models.Page.PageViewModel>
 @{
     ViewData["Title"] = "مدیریت صفحات";
 }
@@ -138,7 +138,7 @@
                                                 <i class="fas fa-image text-success me-2" title="دارای تصویر پس‌زمینه"></i>
                                             }
                                             <div>
-                                                <strong>@page.Title</strong>
+                                                <strong>@(page.Title)</strong>
                                                 @if (!string.IsNullOrEmpty(page.DisplayConfig.ThumbnailUrl))
                                                 {
                                                     <br><small class="text-muted">دارای تصویر بندانگشتی</small>
@@ -147,9 +147,9 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-secondary">@page.DisplayConfig.Resolution</span>
+                                        <span class="badge bg-secondary">@(page.DisplayConfig.Resolution)</span>
                                         <br>
-                                        <small class="text-muted">@page.DisplayConfig.Orientation</small>
+                                        <small class="text-muted">@(page.DisplayConfig.Orientation)</small>
                                     </td>
                                     <td>
                                         @{
@@ -173,7 +173,7 @@
                                     <td>
                                         @if (page.ElementsCount > 0)
                                         {
-                                            <span class="badge bg-primary">@page.ElementsCount المنت</span>
+                                            <span class="badge bg-primary">@(page.ElementsCount) المنت</span>
                                         }
                                         else
                                         {
@@ -181,10 +181,10 @@
                                         }
                                     </td>
                                     <td>
-                                        <small>@page.CreatedAt.ToString("yyyy/MM/dd HH:mm")</small>
+                                        <small>@(page.CreatedAt.ToString("yyyy/MM/dd HH:mm"))</small>
                                     </td>
                                     <td>
-                                        <small>@page.UpdatedAt.ToString("yyyy/MM/dd HH:mm")</small>
+                                        <small>@(page.UpdatedAt.ToString("yyyy/MM/dd HH:mm"))</small>
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
@@ -197,7 +197,7 @@
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                    onclick="confirmDelete('@page.Id', '@page.Title')" title="حذف">
+                                                    onclick="confirmDelete('@(page.Id)', '@(page.Title)')" title="حذف">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>

@@ -45,7 +45,7 @@ builder.Services.AddScoped<Monitoring.Domain.Services.Camera.ICameraStrategyFact
 builder.Services.AddScoped<ICameraNotifications, ApiCameraNotifications>();
 
 // Add services
-builder.Services.AddScoped<ICameraService, CameraService>();
+//builder.Services.AddScoped<ICameraService, CameraService>();
 builder.Services.AddScoped<IPageService, PageService>();
 builder.Services.AddScoped<Monitoring.Application.Interfaces.Camera.ICameraStreamService, Monitoring.Application.Services.Camera.CameraStreamService>();
 

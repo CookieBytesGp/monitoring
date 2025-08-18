@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 using Monitoring.Infrastructure.Persistence;
 using FluentResults;
 using Monitoring.Application.DTOs.Camera;
+using AutoMapper;
+using System;
 using System;
 using System.Linq;
 using Domain.Aggregates.Camera.ValueObjects;
@@ -25,50 +27,23 @@ namespace Monitoring.Application.Services.Camera
         private readonly ICameraNotifications _cameraNotifications;
         private readonly ILogger<CameraService> _logger;
         private readonly ICameraStreamService _cameraStreamService;
+        private readonly IMapper _mapper;
         private readonly Monitoring.Domain.Services.Camera.ICameraStrategyFactory _strategyFactory;
 
         public CameraService(
             ICameraNotifications cameraNotifications,
             Monitoring.Infrastructure.Persistence.IUnitOfWork unitOfWork,
             ILogger<CameraService> logger,
+            IMapper mapper,
             ICameraStreamService cameraStreamService,
             Monitoring.Domain.Services.Camera.ICameraStrategyFactory strategyFactory)
         {
             _cameraNotifications = cameraNotifications;
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
             _cameraStreamService = cameraStreamService;
             _strategyFactory = strategyFactory ?? throw new ArgumentNullException(nameof(strategyFactory));
-        }
-        
-        // Manual mapping methods
-        private CameraDto MapToDto(Monitoring.Domain.Aggregates.Camera.Camera camera)
-        {
-            if (camera == null) return null;
-            
-            return new CameraDto
-            {
-                Id = camera.Id,
-                Name = camera.Name,
-                Location = camera.Location?.ToString(),
-                IpAddress = camera.Network.IpAddress?.ToString(),
-                Port = camera.Network.Port,
-                Username = camera.Network.Username,
-                Password = camera.Network.Password,
-                Type = camera.Type?.Name,
-                Status = camera.Status?.Name,
-                UpdatedAt = camera.UpdatedAt,
-                LastActiveAt = camera.LastActiveAt,
-                // Configuration, Streams, Capabilities can be mapped if needed
-                Configuration = null, // TODO: Implement if needed
-                Streams = new List<CameraStreamDto>(),
-                Capabilities = new List<CameraCapabilityDto>()
-            };
-        }
-        
-        private List<CameraDto> MapToDtoList(IEnumerable<Monitoring.Domain.Aggregates.Camera.Camera> cameras)
-        {
-            return cameras?.Select(MapToDto).ToList() ?? new List<CameraDto>();
         }
         private Monitoring.Domain.Aggregates.Camera.Camera CreateCameraFromDto(CameraDto dto)
         {
@@ -112,7 +87,7 @@ namespace Monitoring.Application.Services.Camera
             try
             {
                 var cameras = await _unitOfWork.CameraRepository.GetAllAsync();
-                var dtos = MapToDtoList(cameras);
+                var dtos = _mapper.Map<List<CameraDto>>(cameras);
                 return Result.Ok(dtos);
             }
             catch (Exception ex)
@@ -130,7 +105,7 @@ namespace Monitoring.Application.Services.Camera
                 var camera = await _unitOfWork.CameraRepository.FindAsync(id);
                 if (camera == null)
                     return Result.Fail<CameraDto>("Camera not found");
-                var dto = MapToDto(camera);
+                var dto = _mapper.Map<CameraDto>(camera);
                 return Result.Ok(dto);
             }
             catch (Exception ex)
@@ -145,12 +120,12 @@ namespace Monitoring.Application.Services.Camera
         {
             try
             {
-                var entity = CreateCameraFromDto(cameraDto);
+                var entity = _mapper.Map<Domain.Aggregates.Camera.Camera>(cameraDto);
                 if (entity == null)
                     return Result.Fail<CameraDto>("Invalid camera data");
                 await _unitOfWork.CameraRepository.AddAsync(entity);
                 await _unitOfWork.SaveAsync();
-                var resultDto = MapToDto(entity);
+                var resultDto = _mapper.Map<CameraDto>(entity);
                 return Result.Ok(resultDto);
             }
             catch (Exception ex)
@@ -170,7 +145,7 @@ namespace Monitoring.Application.Services.Camera
                     return Result.Fail<CameraDto>("Invalid camera data");
                 await _unitOfWork.CameraRepository.UpdateAsync(entity);
                 await _unitOfWork.SaveAsync();
-                var resultDto = MapToDto(entity);
+                var resultDto = _mapper.Map<CameraDto>(entity);
                 return Result.Ok(resultDto);
             }
             catch (Exception ex)
