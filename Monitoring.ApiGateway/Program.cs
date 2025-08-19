@@ -10,6 +10,8 @@ using Monitoring.ApiGateway.Services;
 using Monitoring.Application.Interfaces.Page;
 using Monitoring.Application.Services.Page;
 using Monitoring.Infrastructure.Repositories.Page;
+using Persistence.Tool;
+using monitoring.Infrastructure.Seeds;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +34,7 @@ builder.Services.AddHttpClient();
 // Add repositories
 builder.Services.AddScoped<ICameraRepository, CameraRepository>();
 builder.Services.AddScoped<IPageRepository, PageRepository>();
+builder.Services.AddScoped<IToolRepository, ToolRepository>();
 builder.Services.AddScoped<Monitoring.Infrastructure.Persistence.IUnitOfWork, Monitoring.Infrastructure.Persistence.UnitOfWork>();
 
 // Add camera strategies (Infrastructure layer)
@@ -50,6 +53,27 @@ builder.Services.AddScoped<IPageService, PageService>();
 builder.Services.AddScoped<Monitoring.Application.Interfaces.Camera.ICameraStreamService, Monitoring.Application.Services.Camera.CameraStreamService>();
 
 var app = builder.Build();
+
+// Seed database
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<ToolSeederReal>>();
+    
+    try
+    {
+        // Ensure database is created
+        await context.Database.EnsureCreatedAsync();
+        
+        // Seed tools
+        var toolSeeder = new ToolSeederReal(context, logger);
+        await toolSeeder.SeedAsync();
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred while seeding the database");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

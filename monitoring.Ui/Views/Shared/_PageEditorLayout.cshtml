@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ویرایش صفحه</title>
+    
+    <!-- Bootstrap RTL -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="~/css/page-editor.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/page-editor-layout.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="page-editor-container">
+        <!-- Sidebar -->
+        <div class="editor-sidebar">
+            <div class="sidebar-content">
+                <!-- Sidebar Tabs -->
+                <div class="sidebar-tabs">
+                    <button class="sidebar-tab active" data-tab="elements">
+                        <i class="fas fa-layer-group me-2"></i>
+                        المنت‌ها
+                    </button>
+                    <button class="sidebar-tab" data-tab="properties">
+                        <i class="fas fa-cog me-2"></i>
+                        تنظیمات
+                    </button>
+                </div>
+
+                <!-- Elements Panel -->
+                <div class="sidebar-panel active" id="elements-panel">
+                    <div class="elements-list">
+                        @await Html.PartialAsync("_ElementsList")
+                    </div>
+                </div>
+
+                <!-- Properties Panel -->
+                <div class="sidebar-panel" id="properties-panel">
+                    <div class="element-properties">
+                        @await Html.PartialAsync("_ElementProperties")
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Settings -->
+            <div class="page-settings">
+                <div class="page-settings-title">
+                    <i class="fas fa-file-alt me-2"></i>
+                    تنظیمات صفحه
+                </div>
+                <button class="btn btn-outline-primary btn-sm w-100" id="page-settings-btn">
+                    <i class="fas fa-paint-brush me-2"></i>
+                    پس‌زمینه و صدا
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="editor-main">
+            <!-- Header -->
+            <div class="editor-header">
+                <!-- Left section - Action buttons -->
+                <div class="header-left">
+                    <div class="action-buttons">
+                        <button class="btn-save" id="save-btn">
+                            <i class="fas fa-save me-2"></i>
+                            ذخیره
+                        </button>
+                        <button class="btn-cancel" id="cancel-btn">
+                            <i class="fas fa-times me-2"></i>
+                            انصراف
+                        </button>
+                    </div>
+                    <div class="save-indicator saved" id="save-indicator">
+                        <i class="fas fa-check me-1"></i>
+                        ذخیره شده
+                    </div>
+                </div>
+
+                <!-- Center section - Size controls -->
+                <div class="header-center">
+                    <div class="size-controls">
+                        <label for="page-width" class="form-label mb-0">عرض:</label>
+                        <input type="number" id="page-width" class="size-input" value="1920" min="1" max="9999">
+                        <span class="mx-2">×</span>
+                        <label for="page-height" class="form-label mb-0">ارتفاع:</label>
+                        <input type="number" id="page-height" class="size-input" value="1080" min="1" max="9999">
+                        <button class="btn btn-outline-primary btn-sm" id="apply-size-btn">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right section - Logo -->
+                <div class="header-right">
+                    <div class="editor-logo">
+                        <i class="fas fa-desktop me-2"></i>
+                        نمایشگر
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="editor-content">
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/page-editor.js" asp-append-version="true"></script>
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

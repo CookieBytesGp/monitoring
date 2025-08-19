@@ -1,0 +1,225 @@
+/* Page Edit Specific Styles */
+
+.preview-container {
+    border: 2px dashed #dee2e6;
+    padding: 20px;
+    background: #f8f9fc;
+    border-radius: 8px;
+}
+
+.preview-display {
+    background: white;
+    border: 1px solid #e3e6f0;
+    margin: 0 auto;
+    position: relative;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.preview-display:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.preview-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #858796;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Page Statistics Card Enhancements */
+.card .border-end {
+    border-right: 1px solid #e3e6f0 !important;
+}
+
+.card .h4 {
+    font-weight: 700;
+}
+
+.small.text-muted {
+    font-size: 12px;
+}
+
+/* Badge styling */
+.badge {
+    font-size: 11px;
+    padding: 4px 8px;
+}
+
+/* Quick Actions Button Styling */
+.d-grid .btn {
+    text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.d-grid .btn i {
+    margin-left: 8px;
+}
+
+/* Modal Delete Confirmation */
+#deleteModal .modal-body {
+    text-align: center;
+}
+
+#deleteModal .text-danger {
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+/* Form Controls */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Alert Messages */
+.alert {
+    border-radius: 8px;
+    border: none;
+}
+
+.alert-success {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.alert-info {
+    background-color: #cff4fc;
+    color: #055160;
+}
+
+/* Card Shadow Enhancement */
+.card.shadow {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+    border: 1px solid #e3e6f0;
+}
+
+.card-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+/* Button Group Styling */
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+
+.btn-group .btn:last-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+/* Responsive Enhancements */
+@media (max-width: 992px) {
+    .col-xl-8,
+    .col-xl-4 {
+        margin-bottom: 1rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        border-radius: 0.375rem !important;
+        margin-bottom: 0.25rem;
+    }
+    
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 0.75rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .h3 {
+        font-size: 1.5rem;
+    }
+    
+    .preview-container {
+        padding: 15px;
+    }
+    
+    .row.text-center .col-6 {
+        margin-bottom: 1rem;
+    }
+    
+    .border-end {
+        border-right: none !important;
+        border-bottom: 1px solid #e3e6f0 !important;
+        padding-bottom: 1rem;
+    }
+}
+
+/* Loading states for async operations */
+.btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Form validation styling */
+.is-invalid {
+    border-color: #dc3545;
+}
+
+.invalid-feedback,
+.text-danger {
+    color: #dc3545;
+    font-size: 0.875rem;
+}
+
+/* Success state styling */
+.is-valid {
+    border-color: #198754;
+}
+
+.valid-feedback {
+    color: #198754;
+    font-size: 0.875rem;
+}

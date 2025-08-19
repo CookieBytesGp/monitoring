@@ -120,7 +120,7 @@ namespace Monitoring.Ui.Controllers
                         DisplayWidth = page.DisplayConfig.Width,
                         DisplayHeight = page.DisplayConfig.Height,
                         Orientation = page.DisplayConfig.Orientation,
-                        ThumbnailUrl = page.DisplayConfig.ThumbnailUrl,
+                        ThumbnailUrl = page.DisplayConfig.ThumbnailUrl, // Can be null
                         Status = page.Status,
                         ElementsCount = page.ElementsCount,
                         HasBackgroundAsset = page.HasBackgroundAsset
@@ -139,6 +139,40 @@ namespace Monitoring.Ui.Controllers
             }
         }
 
+        // صفحه ویرایشگر بصری المنت‌ها
+        public async Task<IActionResult> Editor(Guid id)
+        {
+            try
+            {
+                var page = await _pageApiService.GetPageByIdAsync(id);
+                if (page != null)
+                {
+                    var model = new EditPageViewModel
+                    {
+                        Id = page.Id,
+                        Title = page.Title,
+                        DisplayWidth = page.DisplayConfig.Width,
+                        DisplayHeight = page.DisplayConfig.Height,
+                        Orientation = page.DisplayConfig.Orientation,
+                        ThumbnailUrl = page.DisplayConfig.ThumbnailUrl,
+                        Status = page.Status,
+                        ElementsCount = page.ElementsCount,
+                        HasBackgroundAsset = page.HasBackgroundAsset
+                    };
+                    return View(model);
+                }
+                
+                TempData["Error"] = "صفحه مورد نظر یافت نشد";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting page for editor {PageId}", id);
+                TempData["Error"] = "خطا در دریافت اطلاعات صفحه";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(EditPageViewModel model)
@@ -150,6 +184,12 @@ namespace Monitoring.Ui.Controllers
                     return View(model);
                 }
 
+                // Force status to be Draft for edits (status changes should be done through settings)
+                model.Status = "Draft";
+                
+                // Remove ThumbnailUrl from model to avoid issues (will be handled systematically later)
+                model.ThumbnailUrl = null;
+
                 // Update basic page info
                 var updateRequest = new UpdatePageRequest
                 {
@@ -160,22 +200,23 @@ namespace Monitoring.Ui.Controllers
                 var basicUpdateSuccess = await _pageApiService.UpdatePageAsync(model.Id, updateRequest);
                 if (!basicUpdateSuccess)
                 {
-                    ModelState.AddModelError("", "خطا در به‌روزرسانی اطلاعات پایه صفحه");
+                    TempData["ErrorMessage"] = "خطا در به‌روزرسانی اطلاعات پایه صفحه";
                     return View(model);
                 }
 
-                // Update display configuration
+                // Update display configuration (without thumbnail for now)
                 var displayRequest = new UpdateDisplaySizeRequest
                 {
                     Width = model.DisplayWidth,
                     Height = model.DisplayHeight,
                     Orientation = model.Orientation
+                    // ThumbnailUrl will be handled systematically later
                 };
 
                 var displayUpdateSuccess = await _pageApiService.UpdateDisplaySizeAsync(model.Id, displayRequest);
                 if (!displayUpdateSuccess)
                 {
-                    ModelState.AddModelError("", "خطا در به‌روزرسانی تنظیمات نمایش");
+                    TempData["ErrorMessage"] = "خطا در به‌روزرسانی تنظیمات نمایش";
                     return View(model);
                 }
 
@@ -190,18 +231,18 @@ namespace Monitoring.Ui.Controllers
                     var thumbnailUpdateSuccess = await _pageApiService.UpdateThumbnailAsync(model.Id, thumbnailRequest);
                     if (!thumbnailUpdateSuccess)
                     {
-                        ModelState.AddModelError("", "خطا در به‌روزرسانی تصویر بندانگشتی");
+                        TempData["ErrorMessage"] = "خطا در به‌روزرسانی تصویر بندانگشتی";
                         return View(model);
                     }
                 }
 
-                TempData["Success"] = "جزئیات صفحه با موفقیت به‌روزرسانی شد";
-                return RedirectToAction(nameof(Details), new { id = model.Id });
+                TempData["SuccessMessage"] = "جزئیات صفحه با موفقیت به‌روزرسانی شد";
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating page {PageId}", model.Id);
-                ModelState.AddModelError("", "خطا در به‌روزرسانی صفحه");
+                TempData["ErrorMessage"] = "خطا در به‌روزرسانی صفحه. لطفاً دوباره تلاش کنید";
                 return View(model);
             }
         }

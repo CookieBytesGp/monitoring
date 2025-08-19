@@ -1,0 +1,194 @@
+@model Monitoring.Ui.Models.Page.EditPageViewModel
+@{
+    ViewData["Title"] = "ویرایش صفحه - " + Model.Title;
+    Layout = "_PageEditorLayout";
+}
+
+<!-- Main Canvas Area -->
+<div class="editor-workspace" data-page-id="@Model.Id">
+    <!-- Canvas Container -->
+    <div class="canvas-container">
+        <!-- Canvas will be created by JavaScript -->
+    </div>
+    
+    <!-- Toolbar -->
+    <div class="editor-toolbar">
+        <div class="toolbar-group">
+            <button class="toolbar-btn" id="select-tool" title="انتخاب">
+                <i class="fas fa-mouse-pointer"></i>
+            </button>
+            <button class="toolbar-btn" id="pan-tool" title="جابجایی صفحه">
+                <i class="fas fa-hand-paper"></i>
+            </button>
+        </div>
+        
+        <div class="toolbar-group">
+            <button class="toolbar-btn" id="undo-btn" title="بازگردانی">
+                <i class="fas fa-undo"></i>
+            </button>
+            <button class="toolbar-btn" id="redo-btn" title="تکرار">
+                <i class="fas fa-redo"></i>
+            </button>
+        </div>
+        
+        <div class="toolbar-group">
+            <button class="toolbar-btn" id="copy-btn" title="کپی">
+                <i class="fas fa-copy"></i>
+            </button>
+            <button class="toolbar-btn" id="paste-btn" title="چسباندن">
+                <i class="fas fa-paste"></i>
+            </button>
+        </div>
+        
+        <div class="toolbar-group">
+            <button class="toolbar-btn" id="grid-toggle" title="نمایش/مخفی کردن شبکه">
+                <i class="fas fa-th"></i>
+            </button>
+            <button class="toolbar-btn" id="snap-toggle" title="چسباندن به شبکه">
+                <i class="fas fa-magnet"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Zoom Controls -->
+    <div class="zoom-controls">
+        <button class="zoom-btn" id="zoom-out" title="کوچک کردن">
+            <i class="fas fa-minus"></i>
+        </button>
+        <div class="zoom-level" id="zoom-level">100%</div>
+        <button class="zoom-btn" id="zoom-in" title="بزرگ کردن">
+            <i class="fas fa-plus"></i>
+        </button>
+        <button class="zoom-btn" id="zoom-fit" title="تنظیم به اندازه صفحه">
+            <i class="fas fa-compress-arrows-alt"></i>
+        </button>
+    </div>
+    
+    <!-- Context Menu -->
+    <div class="context-menu" id="context-menu">
+        <button class="context-menu-item" id="ctx-copy">
+            <i class="fas fa-copy"></i>
+            کپی
+        </button>
+        <button class="context-menu-item" id="ctx-paste">
+            <i class="fas fa-paste"></i>
+            چسباندن
+        </button>
+        <div class="context-menu-divider"></div>
+        <button class="context-menu-item" id="ctx-bring-forward">
+            <i class="fas fa-arrow-up"></i>
+            آوردن به جلو
+        </button>
+        <button class="context-menu-item" id="ctx-send-backward">
+            <i class="fas fa-arrow-down"></i>
+            فرستادن به عقب
+        </button>
+        <div class="context-menu-divider"></div>
+        <button class="context-menu-item" id="ctx-delete">
+            <i class="fas fa-trash"></i>
+            حذف
+        </button>
+    </div>
+    
+    <!-- Selection Box -->
+    <div class="selection-box" id="selection-box"></div>
+    
+    <!-- Alignment Guides -->
+    <div class="alignment-guide horizontal" id="h-guide"></div>
+    <div class="alignment-guide vertical" id="v-guide"></div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+    </div>
+</div>
+
+<!-- Page Settings Modal -->
+<div class="modal fade" id="pageSettingsModal" tabindex="-1" aria-labelledby="pageSettingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pageSettingsModalLabel">
+                    <i class="fas fa-paint-brush me-2"></i>
+                    تنظیمات صفحه
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="mb-3">
+                            <i class="fas fa-image me-2"></i>
+                            تصویر پس‌زمینه
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <input type="file" class="form-control" id="background-image" accept="image/*">
+                            <div class="form-text">فرمت‌های مجاز: JPG, PNG, GIF</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small">حالت نمایش</label>
+                            <select class="form-select form-select-sm" id="background-mode">
+                                <option value="cover">پوشش کامل</option>
+                                <option value="contain">تناسب حفظ شده</option>
+                                <option value="stretch">کشیده شده</option>
+                                <option value="center">وسط صفحه</option>
+                                <option value="tile">کاشی‌کاری</option>
+                            </select>
+                        </div>
+                        
+                        <div class="background-preview"></div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="mb-3">
+                            <i class="fas fa-volume-up me-2"></i>
+                            صدای پس‌زمینه
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <input type="file" class="form-control" id="background-audio" accept="audio/*">
+                            <div class="form-text">فرمت‌های مجاز: MP3, WAV, OGG</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small">حجم صدا (%)</label>
+                            <input type="range" class="form-range" id="audio-volume" min="0" max="100" value="50">
+                            <div class="text-center small">
+                                <span id="volume-value">50%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="audio-loop" checked>
+                            <label class="form-check-label" for="audio-loop">
+                                تکرار خودکار
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="audio-autoplay">
+                            <label class="form-check-label" for="audio-autoplay">
+                                پخش خودکار
+                            </label>
+                        </div>
+                        
+                        <div class="audio-controls" style="display: none;">
+                            <audio controls style="width: 100%;" id="audio-preview">
+                                صدای پیش‌نمایش
+                            </audio>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary" id="save-page-settings">
+                    <i class="fas fa-save me-2"></i>
+                    ذخیره تنظیمات
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

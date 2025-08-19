@@ -3,6 +3,14 @@
     ViewData["Title"] = "ویرایش صفحه";
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/page-edit.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/page-edit.js" asp-append-version="true"></script>
+}
+
 <div class="container-fluid">
     <!-- Header Section -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,6 +19,9 @@
             <p class="text-muted">ویرایش جزئیات و تنظیمات صفحه نمایش</p>
         </div>
         <div class="btn-group">
+            <a href="@Url.Action("Editor", new { id = Model.Id })" class="btn btn-primary">
+                <i class="fas fa-edit me-2"></i>ویرایش المنت‌ها
+            </a>
             <a href="@Url.Action("Details", new { id = Model.Id })" class="btn btn-info">
                 <i class="fas fa-eye me-2"></i>مشاهده جزئیات
             </a>
@@ -21,11 +32,30 @@
     </div>
 
     <!-- Alert Messages -->
-    @if (TempData["Success"] != null)
+    @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (ViewData.ModelState.ErrorCount > 0)
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <ul class="mb-0">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            </ul>
         </div>
     }
 
@@ -79,13 +109,10 @@
                             <span asp-validation-for="Orientation" class="text-danger"></span>
                         </div>
 
-                        <!-- Thumbnail URL -->
-                        <div class="mb-3">
-                            <label asp-for="ThumbnailUrl" class="form-label">آدرس تصویر بندانگشتی</label>
-                            <input asp-for="ThumbnailUrl" type="url" class="form-control" 
-                                   placeholder="https://example.com/thumbnail.jpg">
-                            <span asp-validation-for="ThumbnailUrl" class="text-danger"></span>
-                            <div class="form-text">آدرس تصویر برای نمایش در لیست صفحات</div>
+                        <!-- Status Notice -->
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>نکته:</strong> وضعیت صفحه به صورت خودکار روی "پیش‌نویس" تنظیم می‌شود. برای تغییر وضعیت از بخش "عملیات سریع" استفاده کنید.
                         </div>
 
                         <!-- Submit Buttons -->
@@ -110,9 +137,9 @@
                 </div>
                 <div class="card-body">
                     <div class="text-center mb-3">
-                        <div id="previewContainer" style="border: 2px dashed #dee2e6; padding: 20px; background: #f8f9fc;">
-                            <div id="previewDisplay" style="background: white; border: 1px solid #e3e6f0; margin: 0 auto; position: relative;">
-                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #858796;">
+                        <div id="previewContainer" class="preview-container">
+                            <div id="previewDisplay" class="preview-display">
+                                <div class="preview-placeholder">
                                     پیش‌نمایش صفحه
                                 </div>
                             </div>
@@ -138,16 +165,6 @@
                             <span id="typeText"></span>
                         </div>
                     </div>
-
-                    @if (!string.IsNullOrEmpty(Model.ThumbnailUrl))
-                    {
-                        <hr>
-                        <div class="text-center">
-                            <label class="form-label small">تصویر بندانگشتی فعلی:</label>
-                            <img src="@Model.ThumbnailUrl" alt="Thumbnail" class="img-fluid rounded" 
-                                 style="max-height: 100px;" onerror="this.style.display='none'">
-                        </div>
-                    }
                 </div>
             </div>
 
@@ -206,6 +223,10 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
+                        <a href="@Url.Action("Editor", new { id = Model.Id })" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit me-2"></i>ویرایش المنت‌ها
+                        </a>
+                        
                         @if (Model.Status == "Draft")
                         {
                             <button class="btn btn-success btn-sm" onclick="changeStatus('@Model.Id', 'Published')">
@@ -255,102 +276,3 @@
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        function updatePreview() {
-            const width = document.getElementById('DisplayWidth').value || @Model.DisplayWidth;
-            const height = document.getElementById('DisplayHeight').value || @Model.DisplayHeight;
-            
-            updateDisplayInfo(width, height);
-            updatePreviewSize(width, height);
-        }
-
-        function updateOrientation() {
-            const orientation = document.getElementById('Orientation').value;
-            const orientationText = {
-                'Landscape': 'افقی',
-                'Portrait': 'عمودی',
-                'Square': 'مربعی'
-            };
-            document.getElementById('orientationText').textContent = orientationText[orientation] || orientation;
-        }
-
-        function updateDisplayInfo(width, height) {
-            const aspectRatio = calculateAspectRatio(width, height);
-            const type = getDisplayType(width / height);
-            
-            document.getElementById('resolutionText').textContent = `${width} × ${height}`;
-            document.getElementById('aspectRatioText').textContent = aspectRatio;
-            document.getElementById('typeText').textContent = type;
-        }
-
-        function updatePreviewSize(width, height) {
-            const maxWidth = 200;
-            const maxHeight = 150;
-            
-            let previewWidth, previewHeight;
-            
-            if (width / height > maxWidth / maxHeight) {
-                previewWidth = maxWidth;
-                previewHeight = (height * maxWidth) / width;
-            } else {
-                previewHeight = maxHeight;
-                previewWidth = (width * maxHeight) / height;
-            }
-            
-            const previewDisplay = document.getElementById('previewDisplay');
-            previewDisplay.style.width = previewWidth + 'px';
-            previewDisplay.style.height = previewHeight + 'px';
-        }
-
-        function calculateAspectRatio(width, height) {
-            const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-            const divisor = gcd(width, height);
-            return `${width / divisor}:${height / divisor}`;
-        }
-
-        function getDisplayType(ratio) {
-            if (ratio >= 2.35) return 'Ultra Wide';
-            if (ratio >= 1.77) return 'Widescreen';
-            if (ratio >= 1.5) return 'Wide';
-            if (ratio >= 0.9 && ratio <= 1.1) return 'Square';
-            if (ratio < 0.9) return 'Portrait';
-            return 'Standard';
-        }
-
-        function changeStatus(pageId, newStatus) {
-            fetch('@Url.Action("ToggleStatus")', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                },
-                body: `id=${pageId}&status=${newStatus}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('خطا: ' + data.message);
-                }
-            })
-            .catch(error => {
-                alert('خطا در ارتباط با سرور');
-            });
-        }
-
-        function confirmDelete(pageId, pageTitle) {
-            document.getElementById('deletePageTitle').textContent = pageTitle;
-            document.getElementById('deleteForm').action = '@Url.Action("Delete")/' + pageId;
-            new bootstrap.Modal(document.getElementById('deleteModal')).show();
-        }
-
-        // Initialize preview
-        document.addEventListener('DOMContentLoaded', function() {
-            updatePreview();
-            updateOrientation();
-        });
-    </script>
-}

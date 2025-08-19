@@ -96,9 +96,9 @@ namespace Monitoring.Ui.Models.Page
         public Guid Id { get; set; }
         
         [Url(ErrorMessage = "آدرس تصویر بندانگشتی معتبر نیست")]
-        public string ThumbnailUrl { get; set; }
+        public string? ThumbnailUrl { get; set; } // Made nullable to avoid issues when not provided
         
-        public string Status { get; set; }
+        public string? Status { get; set; }
         public int ElementsCount { get; set; }
         public bool HasBackgroundAsset { get; set; }
     }
