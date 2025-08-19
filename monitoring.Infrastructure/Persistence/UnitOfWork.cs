@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Monitoring.Infrastructure.Persistence;
 using Monitoring.Infrastructure.Repositories.Camera;
 using Monitoring.Infrastructure.Repositories.Page;
+using Monitoring.Infrastructure.Repositories.Tools;
 
 namespace Monitoring.Infrastructure.Persistence;
 
@@ -52,8 +53,26 @@ public class UnitOfWork : Monitoring.Common.Utilities.UnitOfWork<DatabaseContext
         }
     }
 
+    #endregion
 
-#endregion
+    #region Tool
+
+    private IToolRepository _toolRepository;
+
+    public IToolRepository ToolRepository
+    {
+        get
+        {
+            if (_toolRepository == null)
+            {
+                _toolRepository = new ToolRepository(databaseContext: DatabaseContext);
+            }
+
+            return _toolRepository;
+        }
+    }
+
+    #endregion
 
 
 

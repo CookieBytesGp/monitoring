@@ -1,51 +1,22 @@
-﻿using Domain.Aggregates.Tools;
-using Domain.Aggregates.Tools.ValueObjects;
+﻿using Monitoring.Domain.Aggregates.Tools;
 using Microsoft.EntityFrameworkCore;
 using Monitoring.Common.Repositories;
 using Monitoring.Infrastructure.Persistence;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Monitoring.Infrastructure.Repositories.Tools;
 
-namespace Persistence.Tool
+namespace Monitoring.Infrastructure.Repositories.Tools
 {
-    public class ToolRepository : Repository<Monitoring.Domain.Aggregates.Tools.Tool>, IToolRepository
+    public class ToolRepository : Repository<Tool>, IToolRepository
     {
         public ToolRepository(DatabaseContext databaseContext) : base(databaseContext: databaseContext)
         {
         }
 
-        //public async Task<ToolDTO> GetByNameAsync(string name, CancellationToken cancellationToken)
-        //{
-        //    var result =
-        //        await
-        //        DbSet
-        //        .Where(current => current.Name == name)
-        //        .Select(current => new ToolDTO
-        //        {
-        //            Id = current.Id,
-        //            Name = current.Name,
-        //            DefaultJs = current.DefaultJs,
-        //            ElementType = current.ElementType,
-        //            Templates = current.Templates.Select(t => new TemplateDTO
-        //            {
-        //                HtmlTemplate = t.HtmlStructure,
-        //                DefaultCssClasses = t.DefaultCssClasses,
-        //                CustomCss = t.DefaultCss
-        //            }).ToList(),
-        //            DefaultAssets = current.DefaultAssets.Select(a => new AssetDTO
-        //            {
-        //                Url = a.Url,
-        //                Type = a.Type,
-        //                AltText = a.AltText,
-        //                Content = a.Content,
-        //                Metadata = a.Metadata
-        //            }).ToList()
-        //        })
-        //        .FirstOrDefaultAsync(cancellationToken: cancellationToken);
-
-        //    return result;
-        //}
+        public async Task<List<Tool>> GetByElementTypeAsync(string elementType)
+        {
+            return await DbSet
+                .Where(t => t.ElementType == elementType)
+                .ToListAsync();
+        }
     }
 }

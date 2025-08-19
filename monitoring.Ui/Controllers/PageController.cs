@@ -4,19 +4,30 @@ using Monitoring.Ui.Models.Page;
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 
 namespace Monitoring.Ui.Controllers
 {
+    public class ApiResponse<T>
+    {
+        public bool Success { get; set; }
+        public T Data { get; set; }
+        public string Message { get; set; }
+        public IEnumerable<string> Errors { get; set; }
+    }
+
     public class PageController : Controller
     {
         private readonly IPageApiService _pageApiService;
         private readonly ILogger<PageController> _logger;
+        private readonly IConfiguration _configuration;
 
-        public PageController(IPageApiService pageApiService, ILogger<PageController> logger)
+        public PageController(IPageApiService pageApiService, ILogger<PageController> logger, IConfiguration configuration)
         {
             _pageApiService = pageApiService;
             _logger = logger;
+            _configuration = configuration;
         }
 
         // صفحه لیست Pages
@@ -147,6 +158,9 @@ namespace Monitoring.Ui.Controllers
                 var page = await _pageApiService.GetPageByIdAsync(id);
                 if (page != null)
                 {
+                    // Get tools from API Gateway
+                    var tools = await GetToolsFromApi();
+                    
                     var model = new EditPageViewModel
                     {
                         Id = page.Id,
@@ -157,7 +171,8 @@ namespace Monitoring.Ui.Controllers
                         ThumbnailUrl = page.DisplayConfig.ThumbnailUrl,
                         Status = page.Status,
                         ElementsCount = page.ElementsCount,
-                        HasBackgroundAsset = page.HasBackgroundAsset
+                        HasBackgroundAsset = page.HasBackgroundAsset,
+                        AvailableTools = tools
                     };
                     return View(model);
                 }
@@ -170,6 +185,37 @@ namespace Monitoring.Ui.Controllers
                 _logger.LogError(ex, "Error getting page for editor {PageId}", id);
                 TempData["Error"] = "خطا در دریافت اطلاعات صفحه";
                 return RedirectToAction(nameof(Index));
+            }
+        }
+
+        private async Task<List<ToolViewModel>> GetToolsFromApi()
+        {
+            try
+            {
+                using var httpClient = new HttpClient();
+                var apiBaseUrl = _configuration["ApiGateway:BaseUrl"] ?? "http://localhost:7001";
+                var response = await httpClient.GetAsync($"{apiBaseUrl}/api/page/tools");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var result = System.Text.Json.JsonSerializer.Deserialize<ApiResponse<List<ToolViewModel>>>(json, new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    
+                    return result?.Data ?? new List<ToolViewModel>();
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to get tools from API Gateway. Status: {StatusCode}", response.StatusCode);
+                    return new List<ToolViewModel>();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting tools from API Gateway");
+                return new List<ToolViewModel>();
             }
         }
 

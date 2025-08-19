@@ -6,15 +6,21 @@
 
 <!-- Main Canvas Area -->
 <div class="editor-workspace" data-page-id="@Model.Id">
-    <!-- Canvas Container -->
-    <div class="canvas-container">
-        <!-- Canvas will be created by JavaScript -->
+    <!-- Canvas Viewport - Fixed container -->
+    <div class="canvas-viewport" id="canvas-viewport">
+        <!-- Canvas Container - Scalable content -->
+        <div class="canvas-container" id="canvas-container">
+            <!-- Canvas content will be created by JavaScript -->
+            <div class="page-content" id="page-content">
+                <!-- Page elements go here -->
+            </div>
+        </div>
     </div>
     
     <!-- Toolbar -->
     <div class="editor-toolbar">
         <div class="toolbar-group">
-            <button class="toolbar-btn" id="select-tool" title="انتخاب">
+            <button class="toolbar-btn active" id="select-tool" title="انتخاب">
                 <i class="fas fa-mouse-pointer"></i>
             </button>
             <button class="toolbar-btn" id="pan-tool" title="جابجایی صفحه">
@@ -50,7 +56,7 @@
         </div>
     </div>
     
-    <!-- Zoom Controls -->
+    <!-- Zoom Controls - Enhanced -->
     <div class="zoom-controls">
         <button class="zoom-btn" id="zoom-out" title="کوچک کردن">
             <i class="fas fa-minus"></i>
@@ -59,8 +65,11 @@
         <button class="zoom-btn" id="zoom-in" title="بزرگ کردن">
             <i class="fas fa-plus"></i>
         </button>
-        <button class="zoom-btn" id="zoom-fit" title="تنظیم به اندازه صفحه">
+        <button class="zoom-fit-btn" id="zoom-fit" title="تنظیم به اندازه صفحه">
             <i class="fas fa-compress-arrows-alt"></i>
+        </button>
+        <button class="zoom-fit-btn" id="actual-size" title="اندازه واقعی">
+            <i class="fas fa-expand-arrows-alt"></i>
         </button>
     </div>
     

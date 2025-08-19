@@ -1,6 +1,7 @@
 
 using Monitoring.Infrastructure.Repositories.Camera;
 using Monitoring.Infrastructure.Repositories.Page;
+using Monitoring.Infrastructure.Repositories.Tools;
 
 namespace Monitoring.Infrastructure.Persistence;
 
@@ -9,6 +10,7 @@ public interface IUnitOfWork : Monitoring.Common.Utilities.IUnitOfWork
 
     ICameraRepository CameraRepository { get; }
     IPageRepository PageRepository { get; }
+    IToolRepository ToolRepository { get; }
 
     /// <summary>
     /// Clears the EF Core change tracker to resolve concurrency conflicts

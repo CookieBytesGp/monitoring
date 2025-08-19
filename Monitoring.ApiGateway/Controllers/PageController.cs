@@ -5,6 +5,7 @@ using Domain.Aggregates.Page.ValueObjects;
 using Monitoring.Domain.SeedWork;
 using FluentResults;
 using Monitoring.Application.Interfaces.Page;
+using Monitoring.Application.Interfaces.Tool;
 
 namespace Monitoring.ApiGateway.Controllers;
 
@@ -13,11 +14,13 @@ namespace Monitoring.ApiGateway.Controllers;
 public class PageController : ControllerBase
 {
     private readonly IPageService _pageService;
+    private readonly IToolService _toolService;
     private readonly ILogger<PageController> _logger;
 
-    public PageController(IPageService pageService, ILogger<PageController> logger)
+    public PageController(IPageService pageService, IToolService toolService, ILogger<PageController> logger)
     {
         _pageService = pageService;
+        _toolService = toolService;
         _logger = logger;
     }
 
@@ -611,6 +614,43 @@ public class PageController : ControllerBase
         {
             _logger.LogError(ex, "Error occurred while reordering elements in page {PageId}", id);
             return StatusCode(500, "Internal server error");
+        }
+    }
+
+    /// <summary>
+    /// دریافت لیست ابزارها برای ادیتور
+    /// </summary>
+    [HttpGet("tools")]
+    public async Task<IActionResult> GetTools()
+    {
+        try
+        {
+            var result = await _toolService.GetAllToolsAsync();
+            
+            if (result.IsFailed)
+            {
+                _logger.LogError("Failed to get tools: {Errors}", string.Join(", ", result.Errors.Select(e => e.Message)));
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Failed to get tools", 
+                    errors = result.Errors.Select(e => e.Message) 
+                });
+            }
+            
+            return Ok(new { 
+                success = true, 
+                data = result.Value,
+                message = "Tools retrieved successfully" 
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while getting tools");
+            return StatusCode(500, new { 
+                success = false, 
+                message = "Internal server error", 
+                error = ex.Message 
+            });
         }
     }
 }

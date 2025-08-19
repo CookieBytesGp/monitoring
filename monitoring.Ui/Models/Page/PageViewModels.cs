@@ -101,6 +101,36 @@ namespace Monitoring.Ui.Models.Page
         public string? Status { get; set; }
         public int ElementsCount { get; set; }
         public bool HasBackgroundAsset { get; set; }
+        
+        // Tools available for this page editor
+        public List<ToolViewModel> AvailableTools { get; set; } = new List<ToolViewModel>();
+    }
+
+    // ViewModel برای Tools
+    public class ToolViewModel
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string ElementType { get; set; }
+        public string Description { get; set; }
+        public string Category { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public TemplateViewModel Template { get; set; }
+        public List<AssetViewModel> Assets { get; set; } = new List<AssetViewModel>();
+    }
+
+    // ViewModel برای Template
+    public class TemplateViewModel
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string HtmlTemplate { get; set; }
+        public string CustomCss { get; set; }
+        public string CustomJs { get; set; }
+        public bool IsDefault { get; set; }
+        public string PreviewImageUrl { get; set; }
+        public string ConfigSchema { get; set; }
     }
 
     // Request Model برای ارسال به API

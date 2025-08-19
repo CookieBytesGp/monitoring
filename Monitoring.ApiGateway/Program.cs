@@ -10,8 +10,10 @@ using Monitoring.ApiGateway.Services;
 using Monitoring.Application.Interfaces.Page;
 using Monitoring.Application.Services.Page;
 using Monitoring.Infrastructure.Repositories.Page;
-using Persistence.Tool;
 using monitoring.Infrastructure.Seeds;
+using Monitoring.Infrastructure.Repositories.Tools;
+using Monitoring.Application.Interfaces.Tool;
+using Monitoring.Application.Services.Tool;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +52,7 @@ builder.Services.AddScoped<ICameraNotifications, ApiCameraNotifications>();
 // Add services
 //builder.Services.AddScoped<ICameraService, CameraService>();
 builder.Services.AddScoped<IPageService, PageService>();
+builder.Services.AddScoped<IToolService, ToolService>();
 builder.Services.AddScoped<Monitoring.Application.Interfaces.Camera.ICameraStreamService, Monitoring.Application.Services.Camera.CameraStreamService>();
 
 var app = builder.Build();

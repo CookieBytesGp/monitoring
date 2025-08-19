@@ -1,10 +1,10 @@
-﻿using Domain.Aggregates.Tools;
+﻿using Monitoring.Domain.Aggregates.Tools;
 using Monitoring.Common.Interfaces;
 
-namespace Persistence.Tool
+namespace Monitoring.Infrastructure.Repositories.Tools
 {
-    public interface IToolRepository : IRepository<Monitoring.Domain.Aggregates.Tools.Tool>
+    public interface IToolRepository : IRepository<Tool>
     {
-        // Add any additional methods specific to ToolRepository if needed
+        Task<List<Tool>> GetByElementTypeAsync(string elementType);
     }
 }
