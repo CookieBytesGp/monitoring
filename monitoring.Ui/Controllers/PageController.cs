@@ -340,5 +340,52 @@ namespace Monitoring.Ui.Controllers
                 return Json(new { success = false, message = "خطا در تغییر وضعیت" });
             }
         }
+
+        /// <summary>
+        /// ذخیره المنت‌های صفحه از کش
+        /// </summary>
+        [HttpPost("{id}/elements")]
+        public async Task<IActionResult> SavePageElements(Guid id, [FromBody] SaveElementsRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Saving elements for page {PageId}", id);
+                
+                if (request?.Elements == null || !request.Elements.Any())
+                {
+                    return Json(new { success = false, message = "هیچ المنتی برای ذخیره یافت نشد" });
+                }
+
+                // Call API Gateway to save elements
+                using var httpClient = new HttpClient();
+                var apiBaseUrl = _configuration["ApiGateway:BaseUrl"] ?? "http://localhost:7001";
+                
+                var json = System.Text.Json.JsonSerializer.Serialize(request);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                var response = await httpClient.PostAsync($"{apiBaseUrl}/api/page/{id}/elements", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("Elements saved successfully for page {PageId}", id);
+                    return Json(new { 
+                        success = true, 
+                        message = "المنت‌ها با موفقیت ذخیره شدند",
+                        count = request.Elements.Count()
+                    });
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Failed to save elements for page {PageId}: {Error}", id, errorContent);
+                    return Json(new { success = false, message = "خطا در ذخیره المنت‌ها" });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving elements for page {PageId}", id);
+                return Json(new { success = false, message = "خطای غیرمنتظره در ذخیره المنت‌ها" });
+            }
+        }
     }
 }

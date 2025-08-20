@@ -1259,7 +1259,7 @@ class PageEditor {
             pageSettingsBtn.addEventListener('click', () => this.showPageSettings());
         }
     }
-    }
+    
 
     setupPageSettings() {
         // Page settings modal events
@@ -1545,7 +1545,7 @@ class PageEditor {
             return this.viewportManager.canvasToViewport(canvasX, canvasY);
         }
         return { x: canvasX, y: canvasY };
-    }
+    
         const widthInput = document.getElementById('page-width');
         const heightInput = document.getElementById('page-height');
         

@@ -84,7 +84,9 @@ class ElementManager {
         // Click to select
         domElement.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.editor.selectionManager.selectElement(element);
+            if (this.editor && this.editor.selectionManager) {
+                this.editor.selectionManager.selectElement(element);
+            }
         });
         
         // Drag functionality - need to account for viewport transformation
@@ -104,6 +106,11 @@ class ElementManager {
         
         this.editor.isDragging = true;
         this.editor.draggedElement = element;
+        
+        // Start coordinate tracking
+        if (this.editor.viewportManager) {
+            this.editor.viewportManager.startCoordinateTracking();
+        }
         
         // Convert viewport coordinates to canvas coordinates
         const rect = this.editor.viewport.getBoundingClientRect();
@@ -144,6 +151,11 @@ class ElementManager {
         if (this.editor.draggedElement) {
             this.editor.draggedElement.domElement.style.zIndex = '';
             this.editor.draggedElement.domElement.classList.remove('dragging');
+        }
+        
+        // Stop coordinate tracking
+        if (this.editor.viewportManager) {
+            this.editor.viewportManager.stopCoordinateTracking();
         }
         
         this.editor.isDragging = false;
@@ -236,6 +248,7 @@ class PageEditor {
         
         // Managers
         this.elementManager = new ElementManager(this);
+        this.cacheManager = new CacheManager(this);
         
         this.init();
     }
@@ -274,26 +287,6 @@ class PageEditor {
             pageContent.id = 'page-content';
             pageContent.className = 'page-content';
             this.canvas.appendChild(pageContent);
-        }
-        
-        // Add grid overlay if it doesn't exist
-        if (!this.canvas.querySelector('.canvas-grid')) {
-            const grid = document.createElement('div');
-            grid.className = 'canvas-grid';
-            grid.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-image: 
-                    linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
-                background-size: ${this.options.gridSize}px ${this.options.gridSize}px;
-                pointer-events: none;
-                z-index: 1;
-            `;
-            this.canvas.appendChild(grid);
         }
         
         // Update size inputs if they exist
@@ -336,6 +329,13 @@ class PageEditor {
         if (cancelBtn) cancelBtn.addEventListener('click', () => this.cancel());
         if (applySizeBtn) applySizeBtn.addEventListener('click', () => this.applyCanvasSize());
         
+        // Toolbar controls
+        const selectTool = document.getElementById('select-tool');
+        const panTool = document.getElementById('pan-tool');
+        
+        if (selectTool) selectTool.addEventListener('click', () => this.setTool('select'));
+        if (panTool) panTool.addEventListener('click', () => this.setTool('pan'));
+        
         // Zoom controls
         const zoomInBtn = document.getElementById('zoom-in');
         const zoomOutBtn = document.getElementById('zoom-out');
@@ -369,6 +369,45 @@ class PageEditor {
     handleContextMenu(e) {
         e.preventDefault();
         // Show context menu (implementation can be added later)
+    }
+    
+    setTool(toolName) {
+        // Remove active class from all toolbar buttons
+        document.querySelectorAll('.toolbar-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Add active class to selected tool
+        const selectedTool = document.getElementById(`${toolName}-tool`);
+        if (selectedTool) {
+            selectedTool.classList.add('active');
+        }
+        
+        // Set viewport mode
+        if (this.viewport) {
+            this.viewport.classList.remove('pan-mode', 'select-mode');
+            this.viewport.classList.add(`${toolName}-mode`);
+        }
+        
+        // Update cursor
+        this.updateCursor(toolName);
+        
+        console.log(`Tool changed to: ${toolName}`);
+    }
+    
+    updateCursor(toolName) {
+        if (!this.viewport) return;
+        
+        switch(toolName) {
+            case 'select':
+                this.viewport.style.cursor = 'default';
+                break;
+            case 'pan':
+                this.viewport.style.cursor = 'grab';
+                break;
+            default:
+                this.viewport.style.cursor = 'default';
+        }
     }
 
     handleKeyDown(e) {
@@ -484,12 +523,103 @@ class PageEditor {
     }
 
     // Placeholder methods for core functionality
-    save() {
-        console.log('Save functionality - to be implemented');
+    async save() {
+        if (!this.cacheManager.hasChanges()) {
+            console.log('No changes to save');
+            return;
+        }
+        
+        try {
+            // Show loading state
+            const saveBtn = document.getElementById('save-btn');
+            if (saveBtn) {
+                const originalContent = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال ذخیره...';
+                saveBtn.disabled = true;
+            }
+            
+            // Save to database via cache manager
+            const success = await this.cacheManager.saveToDatabase();
+            
+            if (success) {
+                // Clear cache after successful save
+                this.cacheManager.clearCache();
+                
+                // Show success message
+                this.showToast('تغییرات با موفقیت ذخیره شد', 'success');
+                console.log('Page saved successfully');
+            } else {
+                // Show error message
+                this.showToast('خطا در ذخیره تغییرات', 'error');
+                console.error('Failed to save page');
+            }
+            
+            // Restore button state
+            if (saveBtn) {
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>ذخیره</span>';
+                saveBtn.disabled = false;
+            }
+            
+        } catch (error) {
+            console.error('Error during save:', error);
+            this.showToast('خطای غیرمنتظره در ذخیره', 'error');
+        }
     }
 
     cancel() {
-        console.log('Cancel functionality - to be implemented');
+        if (!this.cacheManager.hasChanges()) {
+            console.log('No changes to cancel');
+            this.showToast('هیچ تغییری برای لغو وجود ندارد', 'info');
+            return;
+        }
+        
+        // Show confirmation dialog
+        if (confirm('آیا مطمئن هستید که می‌خواهید تغییرات لغو شوند؟')) {
+            // Use cache manager's cancel method
+            const cancelled = this.cacheManager.cancelChanges();
+            
+            if (cancelled) {
+                this.showToast('تغییرات لغو شد', 'info');
+                console.log('Changes cancelled, restored to original state');
+                
+                // Optionally reload the page to reset state
+                // window.location.reload();
+            }
+        }
+    }
+    
+    showToast(message, type = 'info') {
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <i class="fas fa-${this.getToastIcon(type)}"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        // Add to page
+        document.body.appendChild(toast);
+        
+        // Show with animation
+        setTimeout(() => toast.classList.add('show'), 100);
+        
+        // Remove after delay
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+    }
+    
+    getToastIcon(type) {
+        const icons = {
+            success: 'check-circle',
+            error: 'exclamation-circle',
+            warning: 'exclamation-triangle',
+            info: 'info-circle'
+        };
+        return icons[type] || 'info-circle';
     }
 
     copy() {
@@ -567,22 +697,204 @@ class PageEditor {
         
         return configs[type] || {};
     }
+    
+    // Helper method to convert viewport coordinates to canvas coordinates
+    viewportToCanvas(viewportX, viewportY) {
+        if (this.viewportManager) {
+            return this.viewportManager.viewportToCanvas(viewportX, viewportY);
+        }
+        return { x: viewportX, y: viewportY };
+    }
+    
+    // Helper method to convert canvas coordinates to viewport coordinates
+    canvasToViewport(canvasX, canvasY) {
+        if (this.viewportManager) {
+            return this.viewportManager.canvasToViewport(canvasX, canvasY);
+        }
+        return { x: canvasX, y: canvasY };
+    }
 }
 
-// Selection Manager placeholder
+// Selection Manager
 class SelectionManager {
     constructor(editor) {
         this.editor = editor;
+        this.selectedElement = null;
     }
 
     selectElement(element) {
-        this.editor.clearSelection();
+        // Clear previous selection
+        this.clearSelection();
+        
+        // Set new selection
+        this.selectedElement = element;
         this.editor.selectedElement = element;
+        
+        // Add visual feedback
         element.domElement.classList.add('selected');
+        
+        // Update properties panel
+        this.updatePropertiesPanel(element);
+        
+        console.log('Element selected:', element);
     }
 
     clearSelection() {
-        this.editor.clearSelection();
+        if (this.selectedElement) {
+            this.selectedElement.domElement.classList.remove('selected');
+        }
+        
+        this.selectedElement = null;
+        this.editor.selectedElement = null;
+        
+        // Clear properties panel
+        this.clearPropertiesPanel();
+    }
+    
+    updatePropertiesPanel(element) {
+        // Show properties content and hide no-selection
+        const noSelection = document.getElementById('no-selection');
+        const propertiesContent = document.getElementById('properties-content');
+        
+        if (noSelection) noSelection.style.display = 'none';
+        if (propertiesContent) propertiesContent.style.display = 'block';
+        
+        // Update basic properties
+        const positionX = document.getElementById('element-x');
+        const positionY = document.getElementById('element-y');
+        const elementWidth = document.getElementById('element-width');
+        const elementHeight = document.getElementById('element-height');
+        
+        if (positionX) positionX.value = Math.round(element.config.x);
+        if (positionY) positionY.value = Math.round(element.config.y);
+        if (elementWidth) elementWidth.value = Math.round(element.config.width);
+        if (elementHeight) elementHeight.value = Math.round(element.config.height);
+        
+        // Show/hide text properties based on element type
+        const textProperties = document.getElementById('text-properties');
+        if (textProperties) {
+            textProperties.style.display = (element.type === 'text') ? 'block' : 'none';
+        }
+        
+        // Update text properties if it's a text element
+        if (element.type === 'text') {
+            const textColor = document.getElementById('element-text-color');
+            const fontSize = document.getElementById('element-font-size');
+            const bgColor = document.getElementById('element-bg-color');
+            
+            if (textColor) textColor.value = element.config.color || '#000000';
+            if (fontSize) fontSize.value = element.config.fontSize || 16;
+            if (bgColor) bgColor.value = element.config.backgroundColor || '#ffffff';
+        }
+        
+        // Setup property change listeners
+        this.setupPropertyChangeListeners(element);
+    }
+    
+    setupPropertyChangeListeners(element) {
+        // Position and size listeners
+        const positionX = document.getElementById('element-x');
+        const positionY = document.getElementById('element-y');
+        const elementWidth = document.getElementById('element-width');
+        const elementHeight = document.getElementById('element-height');
+        
+        if (positionX) {
+            positionX.oninput = () => {
+                element.config.x = parseInt(positionX.value) || 0;
+                this.updateElementVisualPosition(element);
+            };
+        }
+        
+        if (positionY) {
+            positionY.oninput = () => {
+                element.config.y = parseInt(positionY.value) || 0;
+                this.updateElementVisualPosition(element);
+            };
+        }
+        
+        if (elementWidth) {
+            elementWidth.oninput = () => {
+                element.config.width = parseInt(elementWidth.value) || 100;
+                this.updateElementVisualSize(element);
+            };
+        }
+        
+        if (elementHeight) {
+            elementHeight.oninput = () => {
+                element.config.height = parseInt(elementHeight.value) || 100;
+                this.updateElementVisualSize(element);
+            };
+        }
+    }
+    
+    updateElementVisualPosition(element) {
+        element.domElement.style.left = element.config.x + 'px';
+        element.domElement.style.top = element.config.y + 'px';
+    }
+    
+    updateElementVisualSize(element) {
+        element.domElement.style.width = element.config.width + 'px';
+        element.domElement.style.height = element.config.height + 'px';
+    }
+    
+    showTypeSpecificProperties(element) {
+        // Hide all type-specific panels first
+        const panels = document.querySelectorAll('.type-specific-properties');
+        panels.forEach(panel => panel.style.display = 'none');
+        
+        // Show relevant panel
+        const typePanel = document.querySelector(`#${element.type}-properties`);
+        if (typePanel) {
+            typePanel.style.display = 'block';
+            
+            // Populate type-specific fields
+            this.populateTypeSpecificFields(element, typePanel);
+        }
+    }
+    
+    populateTypeSpecificFields(element, panel) {
+        const config = element.config;
+        
+        switch (element.type) {
+            case 'text':
+                const textContent = panel.querySelector('#text-content');
+                const fontSize = panel.querySelector('#text-font-size');
+                const textColor = panel.querySelector('#text-color');
+                const bgColor = panel.querySelector('#text-bg-color');
+                
+                if (textContent) textContent.value = config.content || '';
+                if (fontSize) fontSize.value = config.fontSize || 16;
+                if (textColor) textColor.value = config.color || '#000000';
+                if (bgColor) bgColor.value = config.backgroundColor || '#ffffff';
+                break;
+                
+            case 'image':
+                const imageSrc = panel.querySelector('#image-src');
+                const imageAlt = panel.querySelector('#image-alt');
+                
+                if (imageSrc) imageSrc.value = config.src || '';
+                if (imageAlt) imageAlt.value = config.alt || '';
+                break;
+        }
+    }
+    
+    clearPropertiesPanel() {
+        // Hide properties content and show no-selection
+        const noSelection = document.getElementById('no-selection');
+        const propertiesContent = document.getElementById('properties-content');
+        
+        if (noSelection) noSelection.style.display = 'block';
+        if (propertiesContent) propertiesContent.style.display = 'none';
+        
+        // Clear all input values
+        const inputs = document.querySelectorAll('#properties-panel input, #properties-panel textarea, #properties-panel select');
+        inputs.forEach(input => {
+            if (input.type === 'checkbox') {
+                input.checked = false;
+            } else {
+                input.value = '';
+            }
+        });
     }
 }
 
@@ -637,24 +949,362 @@ function setupSidebarDragDrop() {
             viewport.classList.remove('drag-over');
             
             try {
-                const data = JSON.parse(e.dataTransfer.getData('application/json'));
-                if (data.type && pageEditor) {
-                    // Convert drop coordinates to canvas coordinates
-                    const rect = viewport.getBoundingClientRect();
-                    const viewportX = e.clientX - rect.left;
-                    const viewportY = e.clientY - rect.top;
-                    const canvasCoords = pageEditor.viewportToCanvas(viewportX, viewportY);
+                // Try different data transfer formats
+                let data = null;
+                const jsonData = e.dataTransfer.getData('application/json');
+                const textData = e.dataTransfer.getData('text/plain');
+                
+                if (jsonData) {
+                    data = JSON.parse(jsonData);
+                } else if (textData) {
+                    try {
+                        data = JSON.parse(textData);
+                    } catch {
+                        // If not JSON, treat as plain text
+                        data = { type: 'text', content: textData };
+                    }
+                }
+                
+                if (data && pageEditor) {
+                    // Check if it has elementType (from tools list) or type (from other sources)
+                    const elementType = data.elementType || data.type;
                     
-                    // Create element at drop position
-                    const config = pageEditor.getDefaultElementConfig(data.type);
-                    config.x = canvasCoords.x - (config.width / 2);
-                    config.y = canvasCoords.y - (config.height / 2);
-                    
-                    pageEditor.elementManager.createElement(data.type, config);
+                    if (elementType) {
+                        // Convert drop coordinates to canvas coordinates
+                        const rect = viewport.getBoundingClientRect();
+                        const viewportX = e.clientX - rect.left;
+                        const viewportY = e.clientY - rect.top;
+                        const canvasCoords = pageEditor.viewportToCanvas(viewportX, viewportY);
+                        
+                        // Create element at drop position
+                        const config = pageEditor.getDefaultElementConfig(elementType);
+                        config.x = canvasCoords.x - (config.width / 2);
+                        config.y = canvasCoords.y - (config.height / 2);
+                        
+                        const element = pageEditor.elementManager.createElement(elementType, config);
+                        if (pageEditor.selectionManager) {
+                            pageEditor.selectionManager.selectElement(element);
+                        }
+                        
+                        console.log('Element created:', elementType, config);
+                    }
                 }
             } catch (error) {
                 console.error('Error handling drop:', error);
             }
         });
+    }
+}
+
+/**
+ * Cache Manager - Handles auto-save and page state caching
+ */
+class CacheManager {
+    constructor(editor) {
+        this.editor = editor;
+        this.pageId = this.editor.pageId;
+        this.cacheKey = `page_elements_${this.pageId}`;
+        this.originalCacheKey = `page_original_${this.pageId}`;
+        this.hasUnsavedChanges = false;
+        
+        this.init();
+    }
+    
+    init() {
+        // Store original state on page load
+        this.storeOriginalState();
+        
+        // Set up auto-save on changes
+        this.setupChangeDetection();
+        
+        // Set up page unload warning
+        this.setupUnloadWarning();
+    }
+    
+    storeOriginalState() {
+        // Store original page state to compare later
+        const originalState = this.serializeElements();
+        localStorage.setItem(this.originalCacheKey, JSON.stringify({
+            elements: originalState,
+            timestamp: Date.now()
+        }));
+    }
+    
+    setupChangeDetection() {
+        // Listen for element changes
+        const observer = new MutationObserver(() => {
+            this.markAsChanged();
+            this.saveToCache();
+        });
+        
+        const pageContent = document.getElementById('page-content');
+        if (pageContent) {
+            observer.observe(pageContent, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeOldValue: true
+            });
+        }
+    }
+    
+    setupUnloadWarning() {
+        window.addEventListener('beforeunload', (e) => {
+            if (this.hasUnsavedChanges) {
+                const message = 'شما تغییرات ذخیره نشده‌ای دارید. آیا مطمئن هستید که می‌خواهید صفحه را ترک کنید؟';
+                e.preventDefault();
+                e.returnValue = message;
+                return message;
+            }
+        });
+    }
+    
+    markAsChanged() {
+        this.hasUnsavedChanges = true;
+        this.updateSaveButtonState();
+    }
+    
+    markAsSaved() {
+        this.hasUnsavedChanges = false;
+        this.updateSaveButtonState();
+    }
+    
+    updateSaveButtonState() {
+        const saveBtn = document.getElementById('save-btn');
+        if (saveBtn) {
+            if (this.hasUnsavedChanges) {
+                saveBtn.classList.add('has-changes');
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> ذخیره تغییرات';
+            } else {
+                saveBtn.classList.remove('has-changes');
+                saveBtn.innerHTML = '<i class="fas fa-check"></i> ذخیره شده';
+            }
+        }
+    }
+    
+    saveToCache() {
+        try {
+            const elementsData = this.serializeElements();
+            const cacheData = {
+                elements: elementsData,
+                timestamp: Date.now(),
+                version: '1.0',
+                pageId: this.pageId
+            };
+            
+            localStorage.setItem(this.cacheKey, JSON.stringify(cacheData));
+            console.log('Elements saved to cache:', elementsData.length, 'elements');
+        } catch (error) {
+            console.error('Failed to save to cache:', error);
+        }
+    }
+    
+    loadFromCache() {
+        try {
+            const cached = localStorage.getItem(this.cacheKey);
+            if (cached) {
+                const cacheData = JSON.parse(cached);
+                
+                // Check if cache is valid and for same page
+                if (cacheData.pageId === this.pageId && cacheData.elements) {
+                    this.deserializeElements(cacheData.elements);
+                    this.markAsChanged(); // Mark as having unsaved changes
+                    console.log('Loaded elements from cache:', cacheData.elements.length, 'elements');
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load from cache:', error);
+        }
+        return false;
+    }
+    
+    serializeElements() {
+        const elements = [];
+        this.editor.elements.forEach((element, id) => {
+            // Get complete element data including styles and content
+            const domElement = element.domElement;
+            const computedStyle = window.getComputedStyle(domElement);
+            
+            const elementData = {
+                id: id,
+                type: element.type,
+                config: { ...element.config },
+                position: {
+                    x: element.config.x,
+                    y: element.config.y,
+                    width: element.config.width,
+                    height: element.config.height
+                },
+                styles: {
+                    backgroundColor: computedStyle.backgroundColor,
+                    color: computedStyle.color,
+                    fontSize: computedStyle.fontSize,
+                    fontFamily: computedStyle.fontFamily,
+                    fontWeight: computedStyle.fontWeight,
+                    textAlign: computedStyle.textAlign,
+                    border: computedStyle.border,
+                    borderRadius: computedStyle.borderRadius,
+                    boxShadow: computedStyle.boxShadow,
+                    opacity: computedStyle.opacity,
+                    zIndex: computedStyle.zIndex
+                },
+                content: {
+                    innerHTML: domElement.innerHTML,
+                    textContent: domElement.textContent,
+                    attributes: this.getElementAttributes(domElement)
+                },
+                timestamp: Date.now()
+            };
+            
+            elements.push(elementData);
+        });
+        
+        return elements;
+    }
+    
+    getElementAttributes(domElement) {
+        const attrs = {};
+        for (let attr of domElement.attributes) {
+            attrs[attr.name] = attr.value;
+        }
+        return attrs;
+    }
+    
+    deserializeElements(elements) {
+        // Clear existing elements
+        this.editor.elements.clear();
+        const pageContent = document.getElementById('page-content');
+        if (pageContent) {
+            pageContent.innerHTML = '';
+        }
+        
+        // Recreate elements with full data
+        elements.forEach(elementData => {
+            const element = this.editor.elementManager.createElement(
+                elementData.type, 
+                elementData.config
+            );
+            
+            // Restore position and size
+            if (elementData.position) {
+                element.config.x = elementData.position.x;
+                element.config.y = elementData.position.y;
+                element.config.width = elementData.position.width;
+                element.config.height = elementData.position.height;
+            }
+            
+            // Restore content
+            if (elementData.content) {
+                element.domElement.innerHTML = elementData.content.innerHTML;
+            }
+            
+            // Restore styles
+            if (elementData.styles) {
+                Object.assign(element.domElement.style, elementData.styles);
+            }
+            
+            // Restore attributes
+            if (elementData.content.attributes) {
+                Object.entries(elementData.content.attributes).forEach(([name, value]) => {
+                    if (name !== 'style') { // Don't override style attribute
+                        element.domElement.setAttribute(name, value);
+                    }
+                });
+            }
+            
+            element.id = elementData.id; // Preserve original ID
+        });
+    }
+    
+    // Get cached data for saving to database
+    getCachedDataForSave() {
+        try {
+            const cached = localStorage.getItem(this.cacheKey);
+            if (cached) {
+                const cacheData = JSON.parse(cached);
+                return {
+                    pageId: this.pageId,
+                    elements: cacheData.elements,
+                    timestamp: cacheData.timestamp,
+                    totalElements: cacheData.elements.length
+                };
+            }
+        } catch (error) {
+            console.error('Failed to get cached data:', error);
+        }
+        return null;
+    }
+    
+    // Save elements to database
+    async saveToDatabase() {
+        const cachedData = this.getCachedDataForSave();
+        if (!cachedData) {
+            console.warn('No cached data to save');
+            return false;
+        }
+        
+        try {
+            const response = await fetch(`/Page/${this.pageId}/elements`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    pageId: this.pageId,
+                    elements: cachedData.elements
+                })
+            });
+            
+            if (response.ok) {
+                this.markAsSaved();
+                console.log('Elements saved to database successfully');
+                return true;
+            } else {
+                console.error('Failed to save to database:', response.statusText);
+                return false;
+            }
+        } catch (error) {
+            console.error('Error saving to database:', error);
+            return false;
+        }
+    }
+    
+    clearCache() {
+        localStorage.removeItem(this.cacheKey);
+        localStorage.removeItem(this.originalCacheKey);
+        this.hasUnsavedChanges = false;
+        console.log('Cache cleared');
+    }
+    
+    // Cancel changes and restore original state
+    cancelChanges() {
+        const confirmCancel = confirm('آیا مطمئن هستید که می‌خواهید تمام تغییرات را لغو کنید؟ این عمل قابل بازگشت نیست.');
+        
+        if (confirmCancel) {
+            try {
+                const original = localStorage.getItem(this.originalCacheKey);
+                if (original) {
+                    const originalData = JSON.parse(original);
+                    this.deserializeElements(originalData.elements);
+                }
+                this.clearCache();
+                this.markAsSaved();
+                return true;
+            } catch (error) {
+                console.error('Failed to restore original state:', error);
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    hasCache() {
+        return localStorage.getItem(this.cacheKey) !== null;
+    }
+    
+    hasChanges() {
+        return this.hasUnsavedChanges;
     }
 }

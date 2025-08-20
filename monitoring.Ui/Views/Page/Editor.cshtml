@@ -17,47 +17,33 @@
         </div>
     </div>
     
-    <!-- Toolbar -->
+    <!-- Toolbar - Simplified -->
     <div class="editor-toolbar">
         <div class="toolbar-group">
-            <button class="toolbar-btn active" id="select-tool" title="انتخاب">
+            <button class="toolbar-btn active" id="select-tool" title="انتخاب و ویرایش المنت‌ها">
                 <i class="fas fa-mouse-pointer"></i>
+                <span>انتخاب</span>
             </button>
-            <button class="toolbar-btn" id="pan-tool" title="جابجایی صفحه">
+            <button class="toolbar-btn" id="pan-tool" title="جابجایی و پیمایش صفحه">
                 <i class="fas fa-hand-paper"></i>
+                <span>جابجایی</span>
             </button>
         </div>
         
         <div class="toolbar-group">
-            <button class="toolbar-btn" id="undo-btn" title="بازگردانی">
-                <i class="fas fa-undo"></i>
+            <button class="toolbar-btn save-btn" id="save-btn" title="ذخیره تغییرات در دیتابیس">
+                <i class="fas fa-save"></i>
+                <span>ذخیره</span>
             </button>
-            <button class="toolbar-btn" id="redo-btn" title="تکرار">
-                <i class="fas fa-redo"></i>
-            </button>
-        </div>
-        
-        <div class="toolbar-group">
-            <button class="toolbar-btn" id="copy-btn" title="کپی">
-                <i class="fas fa-copy"></i>
-            </button>
-            <button class="toolbar-btn" id="paste-btn" title="چسباندن">
-                <i class="fas fa-paste"></i>
-            </button>
-        </div>
-        
-        <div class="toolbar-group">
-            <button class="toolbar-btn" id="grid-toggle" title="نمایش/مخفی کردن شبکه">
-                <i class="fas fa-th"></i>
-            </button>
-            <button class="toolbar-btn" id="snap-toggle" title="چسباندن به شبکه">
-                <i class="fas fa-magnet"></i>
+            <button class="toolbar-btn cancel-btn" id="cancel-btn" title="لغو تغییرات و بازگشت به حالت اولیه">
+                <i class="fas fa-times"></i>
+                <span>انصراف</span>
             </button>
         </div>
     </div>
     
     <!-- Zoom Controls - Enhanced -->
-    <div class="zoom-controls">
+    <div class="zoom-controls" id="zoom-controls">
         <button class="zoom-btn" id="zoom-out" title="کوچک کردن">
             <i class="fas fa-minus"></i>
         </button>
@@ -71,6 +57,12 @@
         <button class="zoom-fit-btn" id="actual-size" title="اندازه واقعی">
             <i class="fas fa-expand-arrows-alt"></i>
         </button>
+    </div>
+    
+    <!-- Coordinate Display -->
+    <div class="coordinate-display" id="coordinate-display">
+        <span class="coord-label">X:</span><span id="coord-x">0</span>
+        <span class="coord-label">Y:</span><span id="coord-y">0</span>
     </div>
     
     <!-- Context Menu -->

@@ -27,6 +27,17 @@ class ViewportManager {
         this.viewportWidth = 0;
         this.viewportHeight = 0;
         
+        // Coordinate tracking
+        this.coordinateDisplay = document.getElementById('coordinate-display');
+        this.coordX = document.getElementById('coord-x');
+        this.coordY = document.getElementById('coord-y');
+        this.isTrackingCoordinates = false;
+        
+        // Zoom controls dragging
+        this.zoomControls = document.getElementById('zoom-controls');
+        this.isZoomControlsDragging = false;
+        this.zoomControlsOffset = { x: 0, y: 0 };
+        
         this.init();
     }
     
@@ -34,6 +45,7 @@ class ViewportManager {
         this.updateViewportDimensions();
         this.calculateFitToViewport();
         this.setupEventListeners();
+        this.setupZoomControlsDragging();
         this.updateTransform();
         
         // Listen for window resize
@@ -54,7 +66,7 @@ class ViewportManager {
         
         const scaleX = this.viewportWidth / this.canvasWidth;
         const scaleY = this.viewportHeight / this.canvasHeight;
-        this.fitZoom = Math.min(scaleX, scaleY) * 0.9; // 90% to leave some margin
+        this.fitZoom = Math.min(scaleX, scaleY) * 0.8; // 80% to leave margin
         
         // Set initial zoom to fit
         if (this.currentZoom === 1) {
@@ -91,10 +103,16 @@ class ViewportManager {
             if (this.isPanning) {
                 this.updatePan(e);
             }
+            
+            // Update coordinates when dragging elements
+            if (this.isTrackingCoordinates) {
+                this.updateCoordinateDisplay(e);
+            }
         });
         
         document.addEventListener('mouseup', () => {
             this.endPan();
+            this.hideCoordinateDisplay();
         });
         
         // Pan with space key + drag
@@ -224,21 +242,38 @@ class ViewportManager {
     }
     
     updateTransform() {
-        const transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.currentZoom})`;
+        // Apply transform while preserving CSS centering
+        const transform = `translate(-50%, -50%) translate(${this.panX}px, ${this.panY}px) scale(${this.currentZoom})`;
         this.canvas.style.transform = transform;
     }
     
     // Convert viewport coordinates to canvas coordinates
     viewportToCanvas(viewportX, viewportY) {
-        const canvasX = (viewportX - this.panX) / this.currentZoom;
-        const canvasY = (viewportY - this.panY) / this.currentZoom;
+        // Get canvas position relative to viewport
+        const rect = this.canvas.getBoundingClientRect();
+        const viewportRect = this.viewport.getBoundingClientRect();
+        
+        // Calculate relative position within canvas
+        const relativeX = viewportX - (rect.left - viewportRect.left);
+        const relativeY = viewportY - (rect.top - viewportRect.top);
+        
+        // Convert to canvas coordinates accounting for scale
+        const canvasX = relativeX / this.currentZoom;
+        const canvasY = relativeY / this.currentZoom;
+        
         return { x: canvasX, y: canvasY };
     }
     
     // Convert canvas coordinates to viewport coordinates
     canvasToViewport(canvasX, canvasY) {
-        const viewportX = canvasX * this.currentZoom + this.panX;
-        const viewportY = canvasY * this.currentZoom + this.panY;
+        // Get canvas position relative to viewport
+        const rect = this.canvas.getBoundingClientRect();
+        const viewportRect = this.viewport.getBoundingClientRect();
+        
+        // Convert to viewport coordinates
+        const viewportX = (canvasX * this.currentZoom) + (rect.left - viewportRect.left);
+        const viewportY = (canvasY * this.currentZoom) + (rect.top - viewportRect.top);
+        
         return { x: viewportX, y: viewportY };
     }
     
@@ -268,5 +303,103 @@ class ViewportManager {
     // Set zoom change callback
     setZoomChangeCallback(callback) {
         this.onZoomChangeCallback = callback;
+    }
+    
+    // Coordinate tracking methods
+    startCoordinateTracking() {
+        this.isTrackingCoordinates = true;
+        this.showCoordinateDisplay();
+    }
+    
+    stopCoordinateTracking() {
+        this.isTrackingCoordinates = false;
+        this.hideCoordinateDisplay();
+    }
+    
+    updateCoordinateDisplay(event) {
+        if (!this.coordinateDisplay) return;
+        
+        const rect = this.viewport.getBoundingClientRect();
+        const viewportX = event.clientX - rect.left;
+        const viewportY = event.clientY - rect.top;
+        
+        // Convert to canvas coordinates
+        const canvasCoords = this.viewportToCanvas(viewportX, viewportY);
+        
+        // Update display elements
+        if (this.coordX) this.coordX.textContent = Math.round(canvasCoords.x);
+        if (this.coordY) this.coordY.textContent = Math.round(canvasCoords.y);
+    }
+    
+    showCoordinateDisplay() {
+        if (this.coordinateDisplay) {
+            this.coordinateDisplay.classList.add('visible');
+        }
+    }
+    
+    hideCoordinateDisplay() {
+        if (this.coordinateDisplay) {
+            this.coordinateDisplay.classList.remove('visible');
+        }
+    }
+    
+    // Zoom controls dragging
+    setupZoomControlsDragging() {
+        if (!this.zoomControls) return;
+        
+        this.zoomControls.addEventListener('mousedown', (e) => {
+            // Only start dragging if clicking on the drag handle (left area)
+            const rect = this.zoomControls.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            
+            if (clickX <= 20) { // Click on drag handle area
+                e.preventDefault();
+                this.startZoomControlsDrag(e);
+            }
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (this.isZoomControlsDragging) {
+                this.updateZoomControlsDrag(e);
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            this.endZoomControlsDrag();
+        });
+    }
+    
+    startZoomControlsDrag(event) {
+        this.isZoomControlsDragging = true;
+        this.zoomControls.classList.add('dragging');
+        
+        const rect = this.zoomControls.getBoundingClientRect();
+        this.zoomControlsOffset.x = event.clientX - rect.left;
+        this.zoomControlsOffset.y = event.clientY - rect.top;
+        
+        document.body.style.userSelect = 'none';
+    }
+    
+    updateZoomControlsDrag(event) {
+        const x = event.clientX - this.zoomControlsOffset.x;
+        const y = event.clientY - this.zoomControlsOffset.y;
+        
+        // Keep within viewport bounds
+        const maxX = window.innerWidth - this.zoomControls.offsetWidth;
+        const maxY = window.innerHeight - this.zoomControls.offsetHeight;
+        
+        const constrainedX = Math.max(0, Math.min(maxX, x));
+        const constrainedY = Math.max(0, Math.min(maxY, y));
+        
+        this.zoomControls.style.left = constrainedX + 'px';
+        this.zoomControls.style.top = constrainedY + 'px';
+        this.zoomControls.style.right = 'auto';
+        this.zoomControls.style.bottom = 'auto';
+    }
+    
+    endZoomControlsDrag() {
+        this.isZoomControlsDragging = false;
+        this.zoomControls.classList.remove('dragging');
+        document.body.style.userSelect = '';
     }
 }
