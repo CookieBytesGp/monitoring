@@ -618,6 +618,271 @@ public class PageController : ControllerBase
     }
 
     /// <summary>
+    /// ذخیره bulk elements از cache
+    /// </summary>
+    [HttpPost("{id}/elements/bulk")]
+    public async Task<IActionResult> SaveElementsFromCache(Guid id, [FromBody] SaveElementsFromCacheRequest request)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for saving elements from cache for page {PageId}", id);
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Invalid input data", 
+                    errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)) 
+                });
+            }
+
+            _logger.LogInformation("Saving {ElementCount} elements from cache for page {PageId}", 
+                request.Elements?.Count ?? 0, id);
+
+            // Transform cache elements to domain structure
+            var domainElements = new List<BaseElementDTO>();
+            
+            if (request.Elements != null && request.Elements.Any())
+            {
+                foreach (var (cacheElement, index) in request.Elements.Select((e, i) => (e, i)))
+                {
+                    var domainElement = TransformCacheElementToDomain(cacheElement, index);
+                    if (domainElement != null)
+                    {
+                        domainElements.Add(domainElement);
+                    }
+                }
+            }
+
+            // Update page with new elements
+            var updateRequest = new UpdatePageRequestDTO
+            {
+                Title = request.PageTitle ?? "Page", // Use provided title or default
+                Elements = domainElements
+            };
+
+            var result = await _pageService.UpdatePageAsync(id, updateRequest.Title, updateRequest.Elements);
+            
+            if (result.IsFailed)
+            {
+                _logger.LogError("Failed to save elements from cache for page {PageId}: {Errors}", 
+                    id, string.Join(", ", result.Errors.Select(e => e.Message)));
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Failed to save elements from cache", 
+                    errors = result.Errors.Select(e => e.Message) 
+                });
+            }
+            
+            _logger.LogInformation("Successfully saved {ElementCount} elements from cache for page {PageId}", 
+                domainElements.Count, id);
+                
+            return Ok(new { 
+                success = true, 
+                message = "Elements saved successfully from cache",
+                elementCount = domainElements.Count,
+                pageId = id
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while saving elements from cache for page {PageId}", id);
+            return StatusCode(500, new { 
+                success = false, 
+                message = "Internal server error", 
+                error = ex.Message 
+            });
+        }
+    }
+
+    private BaseElementDTO TransformCacheElementToDomain(CacheElementData cacheElement, int order)
+    {
+        try
+        {
+            // Map element type to ToolId
+            var toolId = GetToolIdForElementType(cacheElement.Type);
+            
+            // Create TemplateBody from cache data
+            var templateBody = new TemplateBodyDTO
+            {
+                HtmlTemplate = GenerateHtmlTemplateForType(cacheElement.Type),
+                DefaultCssClasses = GenerateDefaultCssClassesForType(cacheElement.Type),
+                CustomCss = GenerateCustomCssFromCache(cacheElement),
+                CustomJs = "",
+                IsFloating = false
+            };
+            
+            // Create Asset from cache data
+            var asset = CreateAssetFromCacheElement(cacheElement);
+            
+            return new BaseElementDTO
+            {
+                Id = Guid.TryParse(cacheElement.Id, out var parsedId) ? parsedId : Guid.NewGuid(),
+                ToolId = toolId,
+                Order = order,
+                TemplateBody = templateBody,
+                Asset = asset
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error transforming cache element {ElementId} to domain", cacheElement.Id);
+            return null;
+        }
+    }
+
+    private Guid GetToolIdForElementType(string elementType)
+    {
+        // این نقشه باید از یک service یا configuration آمده باشد
+        var toolMap = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "text", Guid.Parse("11111111-1111-1111-1111-111111111111") },
+            { "image", Guid.Parse("22222222-2222-2222-2222-222222222222") },
+            { "video", Guid.Parse("33333333-3333-3333-3333-333333333333") },
+            { "camera", Guid.Parse("44444444-4444-4444-4444-444444444444") },
+            { "clock", Guid.Parse("55555555-5555-5555-5555-555555555555") },
+            { "weather", Guid.Parse("66666666-6666-6666-6666-666666666666") }
+        };
+
+        return toolMap.TryGetValue(elementType, out var toolId) 
+            ? toolId 
+            : Guid.Parse("11111111-1111-1111-1111-111111111111"); // Default to text
+    }
+
+    private string GenerateHtmlTemplateForType(string elementType)
+    {
+        return elementType.ToLower() switch
+        {
+            "text" => "<div class=\"text-element\">{{content}}</div>",
+            "image" => "<img class=\"image-element\" src=\"{{src}}\" alt=\"{{alt}}\" />",
+            "video" => "<video class=\"video-element\" src=\"{{src}}\" controls></video>",
+            "camera" => "<div class=\"camera-element\"><i class=\"fas fa-camera\"></i><span>{{title}}</span></div>",
+            "clock" => "<div class=\"clock-element\"><div class=\"clock-time\">{{time}}</div></div>",
+            "weather" => "<div class=\"weather-element\"><div class=\"weather-info\">{{location}}</div></div>",
+            _ => "<div class=\"unknown-element\">{{content}}</div>"
+        };
+    }
+
+    private Dictionary<string, string> GenerateDefaultCssClassesForType(string elementType)
+    {
+        var classes = new Dictionary<string, string>
+        {
+            { "container", $"element-{elementType}" },
+            { "position", "absolute" }
+        };
+
+        switch (elementType.ToLower())
+        {
+            case "text":
+                classes.Add("text", "text-content");
+                break;
+            case "image":
+                classes.Add("image", "image-content");
+                break;
+            case "video":
+                classes.Add("video", "video-content");
+                break;
+        }
+
+        return classes;
+    }
+
+    private string GenerateCustomCssFromCache(CacheElementData element)
+    {
+        var cssRules = new List<string>();
+
+        // Position and size
+        if (element.Position != null)
+        {
+            cssRules.Add($"left: {element.Position.X}px");
+            cssRules.Add($"top: {element.Position.Y}px");
+            cssRules.Add($"width: {element.Position.Width}px");
+            cssRules.Add($"height: {element.Position.Height}px");
+        }
+
+        // Styles from cache
+        if (element.Styles != null)
+        {
+            if (!string.IsNullOrEmpty(element.Styles.BackgroundColor))
+                cssRules.Add($"background-color: {element.Styles.BackgroundColor}");
+
+            if (!string.IsNullOrEmpty(element.Styles.Color))
+                cssRules.Add($"color: {element.Styles.Color}");
+
+            if (!string.IsNullOrEmpty(element.Styles.FontSize))
+                cssRules.Add($"font-size: {element.Styles.FontSize}");
+
+            if (!string.IsNullOrEmpty(element.Styles.FontFamily))
+                cssRules.Add($"font-family: {element.Styles.FontFamily}");
+
+            if (!string.IsNullOrEmpty(element.Styles.Border))
+                cssRules.Add($"border: {element.Styles.Border}");
+
+            if (!string.IsNullOrEmpty(element.Styles.BorderRadius))
+                cssRules.Add($"border-radius: {element.Styles.BorderRadius}");
+        }
+
+        return string.Join("; ", cssRules) + (cssRules.Count > 0 ? ";" : "");
+    }
+
+    private AssetDTO CreateAssetFromCacheElement(CacheElementData element)
+    {
+        var assetDto = new AssetDTO
+        {
+            Metadata = new Dictionary<string, string>()
+        };
+
+        switch (element.Type.ToLower())
+        {
+            case "text":
+                assetDto.Type = "text";
+                assetDto.Content = element.Config?.Content ?? element.Content?.TextContent ?? "";
+                assetDto.Url = null;
+                break;
+
+            case "image":
+                assetDto.Type = "image";
+                assetDto.Url = element.Config?.Src ?? "";
+                assetDto.AltText = element.Config?.Alt ?? "";
+                assetDto.Content = null;
+                break;
+
+            case "video":
+                assetDto.Type = "video";
+                assetDto.Url = element.Config?.Src ?? "";
+                assetDto.Content = null;
+                assetDto.Metadata["autoplay"] = element.Config?.Autoplay?.ToString() ?? "false";
+                assetDto.Metadata["loop"] = element.Config?.Loop?.ToString() ?? "false";
+                break;
+
+            case "camera":
+                assetDto.Type = "camera";
+                assetDto.Content = element.Config?.Title ?? "دوربین";
+                assetDto.Url = null;
+                break;
+
+            case "clock":
+                assetDto.Type = "clock";
+                assetDto.Content = "clock_widget";
+                assetDto.Metadata["format"] = element.Config?.Format ?? "24";
+                assetDto.Metadata["showSeconds"] = element.Config?.ShowSeconds?.ToString() ?? "true";
+                break;
+
+            case "weather":
+                assetDto.Type = "weather";
+                assetDto.Content = element.Config?.Location ?? "تهران";
+                assetDto.Metadata["location"] = element.Config?.Location ?? "تهران";
+                break;
+
+            default:
+                assetDto.Type = "unknown";
+                assetDto.Content = element.Content?.TextContent ?? "";
+                break;
+        }
+
+        return assetDto;
+    }
+
+    /// <summary>
     /// دریافت لیست ابزارها برای ادیتور
     /// </summary>
     [HttpGet("tools")]

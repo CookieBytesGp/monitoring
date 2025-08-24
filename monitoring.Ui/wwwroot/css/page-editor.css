@@ -49,17 +49,22 @@
 
 .page-element:hover {
     border-color: rgba(13, 110, 253, 0.5);
+    box-shadow: 0 0 10px rgba(13, 110, 253, 0.3);
 }
 
 .page-element.selected {
     border-color: var(--primary-color);
     z-index: 100;
+    box-shadow: 0 0 15px rgba(13, 110, 253, 0.5);
 }
 
 .page-element.dragging {
     z-index: 1000;
-    transform: rotate(2deg);
-    opacity: 0.8;
+    transform: rotate(1deg);
+    opacity: 0.9;
+    border-color: #28a745;
+    box-shadow: 0 0 20px rgba(40, 167, 69, 0.6);
+    cursor: grabbing;
 }
 
 /* Element types */
@@ -238,8 +243,8 @@
     opacity: 0.8;
 }
 
-/* Toolbar */
-.editor-toolbar {
+/* Editor Controls (Save/Cancel buttons only) */
+.editor-controls {
     position: absolute;
     top: 20px;
     left: 20px;
@@ -251,6 +256,58 @@
     display: flex;
     gap: 8px;
     z-index: 200;
+}
+
+/* Mouse Usage Guide */
+.mouse-guide {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(255, 255, 255, 0.95);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 200;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.mouse-guide h6 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #495057;
+}
+
+.mouse-guide .guide-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.mouse-guide .guide-item:last-child {
+    margin-bottom: 0;
+}
+
+.mouse-guide .mouse-icon {
+    width: 20px;
+    height: 20px;
+    margin-left: 8px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+}
+
+.mouse-guide .left-click {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.mouse-guide .right-click {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
 }
 
 .toolbar-group {

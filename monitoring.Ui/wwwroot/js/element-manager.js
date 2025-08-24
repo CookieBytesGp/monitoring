@@ -324,6 +324,203 @@ class ElementManager {
             newSize: { width: newWidth, height: newHeight }
         });
     }
+
+    /**
+     * نمایش تنظیمات المنت در سایدبار
+     */
+    showElementProperties(elementDiv) {
+        const elementId = elementDiv.id;
+        const element = this.editor.elements.get(elementId);
+        
+        if (!element) {
+            console.warn('Element not found:', elementId);
+            return;
+        }
+
+        // نمایش properties content و مخفی کردن no-selection
+        const noSelection = document.getElementById('no-selection');
+        const propertiesContent = document.getElementById('properties-content');
+        
+        if (noSelection) noSelection.style.display = 'none';
+        if (propertiesContent) propertiesContent.style.display = 'block';
+
+        // پر کردن فرم‌ها با مقادیر المنت
+        this.populatePropertiesForm(element);
+
+        console.log('Properties shown for element:', elementId);
+    }
+
+    /**
+     * پر کردن فرم تنظیمات با مقادیر المنت
+     */
+    populatePropertiesForm(element) {
+        // موقعیت و اندازه
+        const xInput = document.getElementById('element-x');
+        const yInput = document.getElementById('element-y');
+        const widthInput = document.getElementById('element-width');
+        const heightInput = document.getElementById('element-height');
+
+        if (xInput) xInput.value = element.config.x || 0;
+        if (yInput) yInput.value = element.config.y || 0;
+        if (widthInput) widthInput.value = element.config.width || 100;
+        if (heightInput) heightInput.value = element.config.height || 100;
+
+        // رنگ پس‌زمینه
+        const bgColorInput = document.getElementById('element-bg-color');
+        const bgColorTextInput = document.getElementById('element-bg-color-text');
+        const bgColor = element.config.backgroundColor || '#ffffff';
+        
+        if (bgColorInput) bgColorInput.value = bgColor;
+        if (bgColorTextInput) bgColorTextInput.value = bgColor;
+
+        // شفافیت
+        const opacityInput = document.getElementById('element-opacity');
+        const opacityValue = document.getElementById('opacity-value');
+        const opacity = (element.config.opacity || 1) * 100;
+        
+        if (opacityInput) opacityInput.value = opacity;
+        if (opacityValue) opacityValue.textContent = opacity + '%';
+
+        // تنظیمات خاص نوع المنت
+        this.populateTypeSpecificProperties(element);
+
+        // اضافه کردن event listeners
+        this.addPropertyEventListeners(element);
+    }
+
+    /**
+     * تنظیمات خاص نوع المنت
+     */
+    populateTypeSpecificProperties(element) {
+        const textProperties = document.getElementById('text-properties');
+        
+        if (element.type === 'text') {
+            // نمایش تنظیمات متن
+            if (textProperties) textProperties.style.display = 'block';
+            
+            // پر کردن فیلدهای متن
+            const fontSizeInput = document.getElementById('element-font-size');
+            const textColorInput = document.getElementById('element-text-color');
+            const textColorTextInput = document.getElementById('element-text-color-text');
+            
+            if (fontSizeInput) fontSizeInput.value = element.config.fontSize || 16;
+            
+            const textColor = element.config.color || '#000000';
+            if (textColorInput) textColorInput.value = textColor;
+            if (textColorTextInput) textColorTextInput.value = textColor;
+            
+        } else {
+            // مخفی کردن تنظیمات متن برای سایر انواع
+            if (textProperties) textProperties.style.display = 'none';
+        }
+    }
+
+    /**
+     * اضافه کردن event listeners برای تغییر خواص
+     */
+    addPropertyEventListeners(element) {
+        // موقعیت و اندازه
+        const xInput = document.getElementById('element-x');
+        const yInput = document.getElementById('element-y');
+        const widthInput = document.getElementById('element-width');
+        const heightInput = document.getElementById('element-height');
+
+        if (xInput) {
+            xInput.removeEventListener('change', this._xChangeHandler);
+            this._xChangeHandler = (e) => this.updateElementProperty(element.id, 'x', parseInt(e.target.value));
+            xInput.addEventListener('change', this._xChangeHandler);
+        }
+
+        if (yInput) {
+            yInput.removeEventListener('change', this._yChangeHandler);
+            this._yChangeHandler = (e) => this.updateElementProperty(element.id, 'y', parseInt(e.target.value));
+            yInput.addEventListener('change', this._yChangeHandler);
+        }
+
+        if (widthInput) {
+            widthInput.removeEventListener('change', this._widthChangeHandler);
+            this._widthChangeHandler = (e) => this.updateElementProperty(element.id, 'width', parseInt(e.target.value));
+            widthInput.addEventListener('change', this._widthChangeHandler);
+        }
+
+        if (heightInput) {
+            heightInput.removeEventListener('change', this._heightChangeHandler);
+            this._heightChangeHandler = (e) => this.updateElementProperty(element.id, 'height', parseInt(e.target.value));
+            heightInput.addEventListener('change', this._heightChangeHandler);
+        }
+
+        // رنگ پس‌زمینه
+        const bgColorInput = document.getElementById('element-bg-color');
+        if (bgColorInput) {
+            bgColorInput.removeEventListener('change', this._bgColorChangeHandler);
+            this._bgColorChangeHandler = (e) => this.updateElementProperty(element.id, 'backgroundColor', e.target.value);
+            bgColorInput.addEventListener('change', this._bgColorChangeHandler);
+        }
+
+        // دکمه حذف
+        const deleteBtn = document.getElementById('delete-element');
+        if (deleteBtn) {
+            deleteBtn.removeEventListener('click', this._deleteHandler);
+            this._deleteHandler = () => this.deleteElement(element.id);
+            deleteBtn.addEventListener('click', this._deleteHandler);
+        }
+    }
+
+    /**
+     * آپدیت خاصیت المنت
+     */
+    updateElementProperty(elementId, key, value) {
+        const element = this.editor.elements.get(elementId);
+        if (!element) return;
+
+        const oldValue = element.config[key];
+        element.config[key] = value;
+
+        // آپدیت نمایش المنت
+        const elementDiv = document.getElementById(elementId);
+        if (elementDiv) {
+            this.applyElementStyles(elementDiv, element);
+            this.setElementContent(elementDiv, element);
+        }
+
+        // ثبت تغییر در cache
+        this.editor.cacheManager.addChange('update-property', {
+            id: elementId,
+            key,
+            oldValue,
+            newValue: value
+        });
+
+        console.log(`Updated ${key} for element ${elementId}:`, oldValue, '->', value);
+    }
+
+    /**
+     * مخفی کردن تنظیمات المنت
+     */
+    hideElementProperties() {
+        const noSelection = document.getElementById('no-selection');
+        const propertiesContent = document.getElementById('properties-content');
+        
+        if (noSelection) noSelection.style.display = 'block';
+        if (propertiesContent) propertiesContent.style.display = 'none';
+
+        console.log('Properties hidden');
+    }
+
+    /**
+     * دریافت عنوان نوع المنت
+     */
+    getElementTypeTitle(type) {
+        const titles = {
+            'text': 'متن',
+            'image': 'تصویر',
+            'video': 'ویدیو',
+            'camera': 'دوربین',
+            'clock': 'ساعت',
+            'weather': 'آب و هوا'
+        };
+        return titles[type] || type;
+    }
 }
 
 /**

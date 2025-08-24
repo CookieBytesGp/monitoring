@@ -356,36 +356,112 @@ namespace Monitoring.Ui.Controllers
                     return Json(new { success = false, message = "هیچ المنتی برای ذخیره یافت نشد" });
                 }
 
-                // Call API Gateway to save elements
+                // Get current page info for title
+                var currentPage = await _pageApiService.GetPageByIdAsync(id);
+                var pageTitle = currentPage?.Title ?? "Page";
+
+                // Transform cache elements to the expected API structure
+                var cacheRequest = new
+                {
+                    pageId = id,
+                    pageTitle = pageTitle,
+                    elements = request.Elements.Select(element => new
+                    {
+                        id = element.Id,
+                        type = element.Type,
+                        config = new
+                        {
+                            x = element.Position?.X ?? element.Config?.X ?? 0,
+                            y = element.Position?.Y ?? element.Config?.Y ?? 0,
+                            width = element.Position?.Width ?? element.Config?.Width ?? 100,
+                            height = element.Position?.Height ?? element.Config?.Height ?? 100,
+                            content = element.Config?.Content ?? element.Content?.TextContent ?? "",
+                            fontSize = element.Config?.FontSize ?? "14px",
+                            color = element.Config?.Color ?? "#000000",
+                            backgroundColor = element.Config?.BackgroundColor ?? "transparent",
+                            src = element.Config?.Src ?? "",
+                            alt = element.Config?.Alt ?? "",
+                            autoplay = element.Config?.Autoplay ?? false,
+                            loop = element.Config?.Loop ?? false,
+                            title = element.Config?.Title ?? "",
+                            format = element.Config?.Format ?? "24",
+                            showSeconds = element.Config?.ShowSeconds ?? true,
+                            location = element.Config?.Location ?? "تهران"
+                        },
+                        position = new
+                        {
+                            x = element.Position?.X ?? 0,
+                            y = element.Position?.Y ?? 0,
+                            width = element.Position?.Width ?? 100,
+                            height = element.Position?.Height ?? 100
+                        },
+                        styles = new
+                        {
+                            backgroundColor = element.Styles?.BackgroundColor ?? "",
+                            color = element.Styles?.Color ?? "",
+                            fontSize = element.Styles?.FontSize ?? "",
+                            fontFamily = element.Styles?.FontFamily ?? "",
+                            fontWeight = element.Styles?.FontWeight ?? "",
+                            textAlign = element.Styles?.TextAlign ?? "",
+                            border = element.Styles?.Border ?? "",
+                            borderRadius = element.Styles?.BorderRadius ?? "",
+                            boxShadow = element.Styles?.BoxShadow ?? "",
+                            opacity = element.Styles?.Opacity ?? "",
+                            zIndex = element.Styles?.ZIndex ?? ""
+                        },
+                        content = new
+                        {
+                            innerHTML = element.Content?.InnerHTML ?? "",
+                            textContent = element.Content?.TextContent ?? "",
+                            attributes = element.Content?.Attributes ?? new Dictionary<string, string>()
+                        },
+                        timestamp = element.Timestamp
+                    }).ToList()
+                };
+
+                // Call the new bulk save endpoint in API Gateway
                 using var httpClient = new HttpClient();
                 var apiBaseUrl = _configuration["ApiGateway:BaseUrl"] ?? "http://localhost:7001";
                 
-                var json = System.Text.Json.JsonSerializer.Serialize(request);
+                var json = System.Text.Json.JsonSerializer.Serialize(cacheRequest);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
                 
-                var response = await httpClient.PostAsync($"{apiBaseUrl}/api/page/{id}/elements", content);
+                var response = await httpClient.PostAsync($"{apiBaseUrl}/api/page/{id}/elements/bulk", content);
                 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation("Elements saved successfully for page {PageId}", id);
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogInformation("Elements saved successfully for page {PageId}: {Response}", id, responseContent);
+                    
                     return Json(new { 
                         success = true, 
                         message = "المنت‌ها با موفقیت ذخیره شدند",
-                        count = request.Elements.Count()
+                        count = request.Elements.Count(),
+                        response = responseContent
                     });
                 }
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("Failed to save elements for page {PageId}: {Error}", id, errorContent);
-                    return Json(new { success = false, message = "خطا در ذخیره المنت‌ها" });
+                    _logger.LogWarning("Failed to save elements for page {PageId}: Status {StatusCode}, Error: {Error}", 
+                        id, response.StatusCode, errorContent);
+                    return Json(new { 
+                        success = false, 
+                        message = "خطا در ذخیره المنت‌ها",
+                        error = errorContent 
+                    });
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error saving elements for page {PageId}", id);
-                return Json(new { success = false, message = "خطای غیرمنتظره در ذخیره المنت‌ها" });
+                return Json(new { 
+                    success = false, 
+                    message = "خطای غیرمنتظره در ذخیره المنت‌ها",
+                    error = ex.Message 
+                });
             }
         }
+
     }
 }

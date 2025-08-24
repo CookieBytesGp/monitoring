@@ -38,8 +38,9 @@ class ElementManager {
     createDOMElement(type, config, id) {
         const element = document.createElement('div');
         element.className = `page-element element-${type}`;
+        element.id = id;
         element.dataset.elementId = id;
-        element.dataset.elementType = type;
+        element.dataset.type = type; // اصلاح شده: type به جای elementType
         
         // Set position and size
         element.style.position = 'absolute';
@@ -218,6 +219,677 @@ class ElementManager {
             this.editor.updateElementsList();
         }
     }
+
+    showElementProperties(element) {
+        // نمایش panel تنظیمات المنت
+        console.log('ElementManager.showElementProperties called for:', element.id);
+        
+        // پیدا کردن properties panel
+        const propertiesPanel = document.getElementById('properties-panel');
+        if (!propertiesPanel) {
+            console.error('Properties panel not found');
+            return;
+        }
+        
+        // پاک کردن محتوای قبلی
+        propertiesPanel.innerHTML = '';
+        
+        // ایجاد فرم تنظیمات بر اساس نوع المنت
+        const elementType = element.dataset.type || 'unknown';
+        const elementId = element.id;
+        
+        // عنوان panel
+        const title = document.createElement('h6');
+        title.className = 'mb-3';
+        title.innerHTML = `<i class="fas fa-cog me-2"></i>تنظیمات ${this.getElementTypeLabel(elementType)}`;
+        propertiesPanel.appendChild(title);
+        
+        // ایجاد تب‌ها
+        const tabsContainer = document.createElement('div');
+        tabsContainer.className = 'element-tabs mb-3';
+        tabsContainer.innerHTML = `
+            <ul class="nav nav-pills nav-fill" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="content-tab-${elementId}" 
+                            data-bs-toggle="pill" data-bs-target="#content-panel-${elementId}" 
+                            type="button" role="tab">
+                        <i class="fas fa-edit me-1"></i>محتوا
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="style-tab-${elementId}" 
+                            data-bs-toggle="pill" data-bs-target="#style-panel-${elementId}" 
+                            type="button" role="tab">
+                        <i class="fas fa-paint-brush me-1"></i>استایل
+                    </button>
+                </li>
+            </ul>
+        `;
+        propertiesPanel.appendChild(tabsContainer);
+        
+        // ایجاد محتوای تب‌ها
+        const tabContent = document.createElement('div');
+        tabContent.className = 'tab-content';
+        tabContent.innerHTML = `
+            <div class="tab-pane fade show active" id="content-panel-${elementId}" role="tabpanel">
+                <form class="element-content-form" data-element-id="${elementId}"></form>
+            </div>
+            <div class="tab-pane fade" id="style-panel-${elementId}" role="tabpanel">
+                <form class="element-style-form" data-element-id="${elementId}"></form>
+            </div>
+        `;
+        propertiesPanel.appendChild(tabContent);
+        
+        // پیدا کردن فرم‌ها
+        const contentForm = tabContent.querySelector('.element-content-form');
+        const styleForm = tabContent.querySelector('.element-style-form');
+        
+        // اضافه کردن تنظیمات محتوا
+        this.addContentProperties(contentForm, element, elementType);
+        
+        // اضافه کردن تنظیمات استایل
+        this.addStyleProperties(styleForm, element, elementType);
+        
+        // اضافه کردن event listeners برای تغییرات
+        this.attachPropertiesEventListeners(contentForm, element);
+        this.attachPropertiesEventListeners(styleForm, element);
+        
+        // اضافه کردن tab functionality
+        this.initializePropertyTabs(elementId);
+    }
+    
+    initializePropertyTabs(elementId) {
+        // Manual tab switching اضافه کردن
+        const contentTab = document.getElementById(`content-tab-${elementId}`);
+        const styleTab = document.getElementById(`style-tab-${elementId}`);
+        const contentPanel = document.getElementById(`content-panel-${elementId}`);
+        const stylePanel = document.getElementById(`style-panel-${elementId}`);
+        
+        if (contentTab && styleTab && contentPanel && stylePanel) {
+            contentTab.addEventListener('click', () => {
+                // Remove active from all tabs
+                contentTab.classList.add('active');
+                styleTab.classList.remove('active');
+                
+                // Show/hide panels
+                contentPanel.classList.add('show', 'active');
+                contentPanel.classList.remove('fade');
+                stylePanel.classList.remove('show', 'active');
+                stylePanel.classList.add('fade');
+            });
+            
+            styleTab.addEventListener('click', () => {
+                // Remove active from all tabs
+                styleTab.classList.add('active');
+                contentTab.classList.remove('active');
+                
+                // Show/hide panels
+                stylePanel.classList.add('show', 'active');
+                stylePanel.classList.remove('fade');
+                contentPanel.classList.remove('show', 'active');
+                contentPanel.classList.add('fade');
+            });
+        }
+    }
+    
+    getElementTypeLabel(type) {
+        const labels = {
+            'text': 'متن',
+            'image': 'تصویر', 
+            'video': 'ویدیو',
+            'camera': 'دوربین',
+            'clock': 'ساعت',
+            'weather': 'آب و هوا'
+        };
+        return labels[type] || type;
+    }
+    
+    addContentProperties(form, element, elementType) {
+        // تنظیمات محتوا بر اساس نوع المنت
+        switch (elementType) {
+            case 'text':
+                this.addTextContentProperties(form, element);
+                break;
+            case 'image':
+                this.addImageContentProperties(form, element);
+                break;
+            case 'video':
+                this.addVideoContentProperties(form, element);
+                break;
+            case 'camera':
+                this.addCameraContentProperties(form, element);
+                break;
+            case 'clock':
+                this.addClockContentProperties(form, element);
+                break;
+            case 'weather':
+                this.addWeatherContentProperties(form, element);
+                break;
+            default:
+                // پیام پیش‌فرض برای انواع ناشناخته
+                const defaultGroup = document.createElement('div');
+                defaultGroup.className = 'text-center text-muted p-3';
+                defaultGroup.innerHTML = `
+                    <i class="fas fa-question-circle mb-2"></i>
+                    <p class="small mb-0">نوع المنت ناشناخته: ${elementType}</p>
+                `;
+                form.appendChild(defaultGroup);
+        }
+    }
+    
+    addStyleProperties(form, element, elementType) {
+        // تنظیمات موقعیت و اندازه (مشترک)
+        const positionGroup = document.createElement('div');
+        positionGroup.className = 'mb-3';
+        positionGroup.innerHTML = `
+            <label class="form-label">موقعیت و اندازه</label>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="form-label small">X:</label>
+                    <input type="number" class="form-control form-control-sm" 
+                           name="x" value="${parseInt(element.style.left) || 0}">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small">Y:</label>
+                    <input type="number" class="form-control form-control-sm" 
+                           name="y" value="${parseInt(element.style.top) || 0}">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small">عرض:</label>
+                    <input type="number" class="form-control form-control-sm" 
+                           name="width" value="${parseInt(element.style.width) || 100}">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small">ارتفاع:</label>
+                    <input type="number" class="form-control form-control-sm" 
+                           name="height" value="${parseInt(element.style.height) || 100}">
+                </div>
+            </div>
+        `;
+        form.appendChild(positionGroup);
+        
+        // تنظیمات رنگ‌ها (مشترک)
+        const colorGroup = document.createElement('div');
+        colorGroup.className = 'mb-3';
+        colorGroup.innerHTML = `
+            <label class="form-label">رنگ‌ها</label>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="form-label small">رنگ متن:</label>
+                    <input type="color" class="form-control form-control-sm" 
+                           name="color" value="${element.style.color || '#000000'}">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small">رنگ پس‌زمینه:</label>
+                    <input type="color" class="form-control form-control-sm" 
+                           name="backgroundColor" value="${element.style.backgroundColor || '#ffffff'}">
+                </div>
+            </div>
+        `;
+        form.appendChild(colorGroup);
+        
+        // تنظیمات فونت (فقط برای text)
+        if (elementType === 'text') {
+            const fontGroup = document.createElement('div');
+            fontGroup.className = 'mb-3';
+            fontGroup.innerHTML = `
+                <label class="form-label">فونت</label>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label small">اندازه فونت:</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               name="fontSize" value="${parseInt(element.style.fontSize) || 14}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small">ضخامت فونت:</label>
+                        <select class="form-select form-select-sm" name="fontWeight">
+                            <option value="normal" ${element.style.fontWeight === 'normal' ? 'selected' : ''}>عادی</option>
+                            <option value="bold" ${element.style.fontWeight === 'bold' ? 'selected' : ''}>ضخیم</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            form.appendChild(fontGroup);
+        }
+        
+        // تنظیمات border و shadow (مشترک)
+        const decorationGroup = document.createElement('div');
+        decorationGroup.className = 'mb-3';
+        decorationGroup.innerHTML = `
+            <label class="form-label">حاشیه و سایه</label>
+            <div class="mb-2">
+                <label class="form-label small">حاشیه:</label>
+                <input type="text" class="form-control form-control-sm" 
+                       name="border" value="${element.style.border || ''}" 
+                       placeholder="1px solid #000">
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">گردی حاشیه:</label>
+                <input type="number" class="form-control form-control-sm" 
+                       name="borderRadius" value="${parseInt(element.style.borderRadius) || 0}">
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">سایه:</label>
+                <input type="text" class="form-control form-control-sm" 
+                       name="boxShadow" value="${element.style.boxShadow || ''}" 
+                       placeholder="2px 2px 4px rgba(0,0,0,0.3)">
+            </div>
+        `;
+        form.appendChild(decorationGroup);
+    }
+    
+    // متدهای تنظیمات محتوا
+    addTextContentProperties(form, element) {
+        const textGroup = document.createElement('div');
+        textGroup.className = 'mb-3';
+        textGroup.innerHTML = `
+            <label class="form-label">محتوای متن</label>
+            <div class="mb-2">
+                <textarea class="form-control" name="content" rows="4" 
+                          placeholder="متن خود را اینجا بنویسید...">${element.textContent || ''}</textarea>
+            </div>
+        `;
+        form.appendChild(textGroup);
+    }
+    
+    addImageContentProperties(form, element) {
+        const img = element.querySelector('img');
+        const imageGroup = document.createElement('div');
+        imageGroup.className = 'mb-3';
+        imageGroup.innerHTML = `
+            <label class="form-label">تنظیمات تصویر</label>
+            <div class="mb-2">
+                <label class="form-label small">آدرس تصویر:</label>
+                <input type="url" class="form-control" 
+                       name="src" value="${img?.src || ''}" 
+                       placeholder="https://example.com/image.jpg">
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">متن جایگزین:</label>
+                <input type="text" class="form-control" 
+                       name="alt" value="${img?.alt || ''}" 
+                       placeholder="توضیح تصویر">
+            </div>
+        `;
+        form.appendChild(imageGroup);
+    }
+    
+    addVideoContentProperties(form, element) {
+        const video = element.querySelector('video');
+        const videoGroup = document.createElement('div');
+        videoGroup.className = 'mb-3';
+        videoGroup.innerHTML = `
+            <label class="form-label">تنظیمات ویدیو</label>
+            <div class="mb-2">
+                <label class="form-label small">آدرس ویدیو:</label>
+                <input type="url" class="form-control" 
+                       name="src" value="${video?.src || ''}" 
+                       placeholder="https://example.com/video.mp4">
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="autoplay" 
+                       ${video?.autoplay ? 'checked' : ''}>
+                <label class="form-check-label">پخش خودکار</label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="loop" 
+                       ${video?.loop ? 'checked' : ''}>
+                <label class="form-check-label">تکرار</label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="controls" 
+                       ${video?.controls ? 'checked' : ''}>
+                <label class="form-check-label">نمایش کنترل‌ها</label>
+            </div>
+        `;
+        form.appendChild(videoGroup);
+    }
+    
+    addCameraContentProperties(form, element) {
+        const cameraGroup = document.createElement('div');
+        cameraGroup.className = 'mb-3';
+        cameraGroup.innerHTML = `
+            <label class="form-label">تنظیمات دوربین</label>
+            <div class="mb-2">
+                <label class="form-label small">عنوان دوربین:</label>
+                <input type="text" class="form-control" 
+                       name="title" value="${element.querySelector('span')?.textContent || 'دوربین'}" 
+                       placeholder="نام دوربین">
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">آدرس استریم:</label>
+                <input type="url" class="form-control" 
+                       name="streamUrl" value="" 
+                       placeholder="rtsp://camera-ip/stream">
+            </div>
+        `;
+        form.appendChild(cameraGroup);
+    }
+    
+    addClockContentProperties(form, element) {
+        const clockGroup = document.createElement('div');
+        clockGroup.className = 'mb-3';
+        clockGroup.innerHTML = `
+            <label class="form-label">تنظیمات ساعت</label>
+            <div class="mb-2">
+                <label class="form-label small">فرمت نمایش:</label>
+                <select class="form-select" name="format">
+                    <option value="24">24 ساعته</option>
+                    <option value="12">12 ساعته</option>
+                </select>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="showSeconds" checked>
+                <label class="form-check-label">نمایش ثانیه</label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="showDate">
+                <label class="form-check-label">نمایش تاریخ</label>
+            </div>
+        `;
+        form.appendChild(clockGroup);
+    }
+    
+    addWeatherContentProperties(form, element) {
+        const weatherGroup = document.createElement('div');
+        weatherGroup.className = 'mb-3';
+        weatherGroup.innerHTML = `
+            <label class="form-label">تنظیمات آب و هوا</label>
+            <div class="mb-2">
+                <label class="form-label small">شهر:</label>
+                <input type="text" class="form-control" 
+                       name="location" value="تهران" 
+                       placeholder="نام شهر">
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">واحد دما:</label>
+                <select class="form-select" name="tempUnit">
+                    <option value="celsius">سلسیوس</option>
+                    <option value="fahrenheit">فارنهایت</option>
+                </select>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="showIcon" checked>
+                <label class="form-check-label">نمایش آیکون</label>
+            </div>
+        `;
+        form.appendChild(weatherGroup);
+    }
+    
+    addGeneralProperties(form, element) {
+        // گروه موقعیت و اندازه
+        const positionGroup = document.createElement('div');
+        positionGroup.className = 'mb-3';
+        positionGroup.innerHTML = `
+            <label class="form-label">موقعیت و اندازه</label>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="form-label small">X:</label>
+                    <input type="number" class="form-control form-control-sm" 
+                           name="x" value="${parseInt(element.style.left) || 0}">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small">Y:</label>
+                    <input type="number" class="form-control form-control-sm" 
+                           name="y" value="${parseInt(element.style.top) || 0}">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small">عرض:</label>
+                    <input type="number" class="form-control form-control-sm" 
+                           name="width" value="${parseInt(element.style.width) || 100}">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small">ارتفاع:</label>
+                    <input type="number" class="form-control form-control-sm" 
+                           name="height" value="${parseInt(element.style.height) || 100}">
+                </div>
+            </div>
+        `;
+        form.appendChild(positionGroup);
+        
+        // گروه رنگ‌ها
+        const colorGroup = document.createElement('div');
+        colorGroup.className = 'mb-3';
+        colorGroup.innerHTML = `
+            <label class="form-label">رنگ‌ها</label>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="form-label small">رنگ متن:</label>
+                    <input type="color" class="form-control form-control-sm" 
+                           name="color" value="${element.style.color || '#000000'}">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small">رنگ پس‌زمینه:</label>
+                    <input type="color" class="form-control form-control-sm" 
+                           name="backgroundColor" value="${element.style.backgroundColor || '#ffffff'}">
+                </div>
+            </div>
+        `;
+        form.appendChild(colorGroup);
+    }
+    
+    addTextProperties(form, element) {
+        const textGroup = document.createElement('div');
+        textGroup.className = 'mb-3';
+        textGroup.innerHTML = `
+            <label class="form-label">تنظیمات متن</label>
+            <div class="mb-2">
+                <label class="form-label small">متن:</label>
+                <textarea class="form-control form-control-sm" name="content" rows="3">${element.textContent || ''}</textarea>
+            </div>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="form-label small">اندازه فونت:</label>
+                    <input type="number" class="form-control form-control-sm" 
+                           name="fontSize" value="${parseInt(element.style.fontSize) || 14}">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small">ضخامت فونت:</label>
+                    <select class="form-select form-select-sm" name="fontWeight">
+                        <option value="normal" ${element.style.fontWeight === 'normal' ? 'selected' : ''}>عادی</option>
+                        <option value="bold" ${element.style.fontWeight === 'bold' ? 'selected' : ''}>ضخیم</option>
+                    </select>
+                </div>
+            </div>
+        `;
+        form.appendChild(textGroup);
+    }
+    
+    addImageProperties(form, element) {
+        const img = element.querySelector('img');
+        const imageGroup = document.createElement('div');
+        imageGroup.className = 'mb-3';
+        imageGroup.innerHTML = `
+            <label class="form-label">تنظیمات تصویر</label>
+            <div class="mb-2">
+                <label class="form-label small">آدرس تصویر:</label>
+                <input type="url" class="form-control form-control-sm" 
+                       name="src" value="${img?.src || ''}" placeholder="https://example.com/image.jpg">
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">متن جایگزین:</label>
+                <input type="text" class="form-control form-control-sm" 
+                       name="alt" value="${img?.alt || ''}" placeholder="توضیح تصویر">
+            </div>
+        `;
+        form.appendChild(imageGroup);
+    }
+    
+    addVideoProperties(form, element) {
+        const video = element.querySelector('video');
+        const videoGroup = document.createElement('div');
+        videoGroup.className = 'mb-3';
+        videoGroup.innerHTML = `
+            <label class="form-label">تنظیمات ویدیو</label>
+            <div class="mb-2">
+                <label class="form-label small">آدرس ویدیو:</label>
+                <input type="url" class="form-control form-control-sm" 
+                       name="src" value="${video?.src || ''}" placeholder="https://example.com/video.mp4">
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="autoplay" 
+                       ${video?.autoplay ? 'checked' : ''}>
+                <label class="form-check-label small">پخش خودکار</label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="loop" 
+                       ${video?.loop ? 'checked' : ''}>
+                <label class="form-check-label small">تکرار</label>
+            </div>
+        `;
+        form.appendChild(videoGroup);
+    }
+    
+    addCameraProperties(form, element) {
+        const cameraGroup = document.createElement('div');
+        cameraGroup.className = 'mb-3';
+        cameraGroup.innerHTML = `
+            <label class="form-label">تنظیمات دوربین</label>
+            <div class="mb-2">
+                <label class="form-label small">عنوان:</label>
+                <input type="text" class="form-control form-control-sm" 
+                       name="title" value="${element.querySelector('span')?.textContent || 'دوربین'}" 
+                       placeholder="نام دوربین">
+            </div>
+        `;
+        form.appendChild(cameraGroup);
+    }
+    
+    addClockProperties(form, element) {
+        const clockGroup = document.createElement('div');
+        clockGroup.className = 'mb-3';
+        clockGroup.innerHTML = `
+            <label class="form-label">تنظیمات ساعت</label>
+            <div class="mb-2">
+                <label class="form-label small">فرمت:</label>
+                <select class="form-select form-select-sm" name="format">
+                    <option value="24">24 ساعته</option>
+                    <option value="12">12 ساعته</option>
+                </select>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="showSeconds" checked>
+                <label class="form-check-label small">نمایش ثانیه</label>
+            </div>
+        `;
+        form.appendChild(clockGroup);
+    }
+    
+    addWeatherProperties(form, element) {
+        const weatherGroup = document.createElement('div');
+        weatherGroup.className = 'mb-3';
+        weatherGroup.innerHTML = `
+            <label class="form-label">تنظیمات آب و هوا</label>
+            <div class="mb-2">
+                <label class="form-label small">شهر:</label>
+                <input type="text" class="form-control form-control-sm" 
+                       name="location" value="تهران" placeholder="نام شهر">
+            </div>
+        `;
+        form.appendChild(weatherGroup);
+    }
+    
+    attachPropertiesEventListeners(form, element) {
+        // اضافه کردن event listeners برای تغییرات فوری
+        form.addEventListener('input', (e) => {
+            this.updateElementProperty(element, e.target.name, e.target.value, e.target.type);
+        });
+        
+        form.addEventListener('change', (e) => {
+            this.updateElementProperty(element, e.target.name, e.target.value, e.target.type);
+        });
+    }
+    
+    updateElementProperty(element, propertyName, value, inputType) {
+        switch (propertyName) {
+            case 'x':
+                element.style.left = value + 'px';
+                break;
+            case 'y':
+                element.style.top = value + 'px';
+                break;
+            case 'width':
+                element.style.width = value + 'px';
+                break;
+            case 'height':
+                element.style.height = value + 'px';
+                break;
+            case 'color':
+                element.style.color = value;
+                break;
+            case 'backgroundColor':
+                element.style.backgroundColor = value;
+                break;
+            case 'fontSize':
+                element.style.fontSize = value + 'px';
+                break;
+            case 'fontWeight':
+                element.style.fontWeight = value;
+                break;
+            case 'content':
+                if (element.dataset.type === 'text') {
+                    element.textContent = value;
+                }
+                break;
+            case 'src':
+                const mediaElement = element.querySelector('img, video');
+                if (mediaElement) {
+                    mediaElement.src = value;
+                }
+                break;
+            case 'alt':
+                const img = element.querySelector('img');
+                if (img) {
+                    img.alt = value;
+                }
+                break;
+            case 'autoplay':
+                const video = element.querySelector('video');
+                if (video) {
+                    video.autoplay = inputType === 'checkbox' ? e.target.checked : value === 'true';
+                }
+                break;
+            case 'loop':
+                const videoLoop = element.querySelector('video');
+                if (videoLoop) {
+                    videoLoop.loop = inputType === 'checkbox' ? e.target.checked : value === 'true';
+                }
+                break;
+            case 'title':
+                const titleSpan = element.querySelector('span');
+                if (titleSpan) {
+                    titleSpan.textContent = value;
+                }
+                break;
+        }
+        
+        // آپدیت cache
+        if (this.editor && this.editor.cacheManager) {
+            this.editor.cacheManager.addChange('property-change', {
+                elementId: element.id,
+                property: propertyName,
+                value: value,
+                timestamp: Date.now()
+            });
+        }
+        
+        console.log(`Property updated: ${propertyName} = ${value} for element ${element.id}`);
+    }
+
+    hideElementProperties() {
+        // مخفی کردن panel تنظیمات المنت
+        console.log('ElementManager.hideElementProperties called');
+        
+        const propertiesPanel = document.getElementById('properties-panel');
+        if (propertiesPanel) {
+            propertiesPanel.innerHTML = `
+                <div class="text-center text-muted p-4">
+                    <i class="fas fa-mouse-pointer fa-2x mb-2"></i>
+                    <p class="small mb-0">برای مشاهده تنظیمات، روی یک المنت راست کلیک کنید</p>
+                </div>
+            `;
+        }
+    }
 }
 
 /**
@@ -242,13 +914,22 @@ class PageEditor {
         this.elements = new Map();
         this.selectedElement = null;
         this.clipboard = null;
+        
+        // Drag state
         this.isDragging = false;
         this.draggedElement = null;
+        this.dragElement = null;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
         this.dragOffset = { x: 0, y: 0 };
         
         // Managers
         this.elementManager = new ElementManager(this);
         this.cacheManager = new CacheManager(this);
+        
+        // Bind methods for event listeners
+        this.handleMouseMove = this.handleMouseMove.bind(this);
+        this.handleMouseUp = this.handleMouseUp.bind(this);
         
         this.init();
     }
@@ -313,14 +994,18 @@ class PageEditor {
     }
 
     setupEventListeners() {
-        // Canvas events
+        // Canvas events - using event delegation for better element interaction
         const pageContent = document.getElementById('page-content');
         if (pageContent) {
+            // Left click: move elements or pan viewport
             pageContent.addEventListener('click', (e) => this.handleCanvasClick(e));
+            // Right click: select element and show properties
             pageContent.addEventListener('contextmenu', (e) => this.handleContextMenu(e));
+            // Mouse down for dragging
+            pageContent.addEventListener('mousedown', (e) => this.handleMouseDown(e));
         }
         
-        // Header controls
+        // Header controls  
         const saveBtn = document.getElementById('save-btn');
         const cancelBtn = document.getElementById('cancel-btn');
         const applySizeBtn = document.getElementById('apply-size-btn');
@@ -329,12 +1014,9 @@ class PageEditor {
         if (cancelBtn) cancelBtn.addEventListener('click', () => this.cancel());
         if (applySizeBtn) applySizeBtn.addEventListener('click', () => this.applyCanvasSize());
         
-        // Toolbar controls
-        const selectTool = document.getElementById('select-tool');
-        const panTool = document.getElementById('pan-tool');
-        
-        if (selectTool) selectTool.addEventListener('click', () => this.setTool('select'));
-        if (panTool) panTool.addEventListener('click', () => this.setTool('pan'));
+        // Mouse-based interaction (removed toolbar)
+        // Left click: pan/move elements
+        // Right click: select element and show properties in sidebar
         
         // Zoom controls
         const zoomInBtn = document.getElementById('zoom-in');
@@ -360,53 +1042,159 @@ class PageEditor {
     }
 
     handleCanvasClick(e) {
-        // Clear selection if clicking on empty canvas
-        if (e.target === e.currentTarget) {
+        // Left click functionality: select for quick actions
+        const clickedElement = e.target.closest('.page-element');
+        
+        if (!clickedElement) {
+            // کلیک روی فضای خالی - انتخاب را پاک کن
             this.clearSelection();
+        }
+        // توجه: drag functionality در handleMouseDown پیاده‌سازی شده
+    }
+    
+    /**
+     * Handle mouse down - start dragging
+     */
+    handleMouseDown(e) {
+        // فقط برای کلیک چپ
+        if (e.button !== 0) return;
+        
+        const clickedElement = e.target.closest('.page-element');
+        
+        if (clickedElement) {
+            // آماده‌سازی برای جابجایی المنت
+            this.prepareElementMove(clickedElement, e);
+        }
+    }
+    
+    /**
+     * آماده‌سازی برای جابجایی المنت
+     */
+    prepareElementMove(element, e) {
+        // انتخاب المنت
+        this.selectElementForMove(element);
+        
+        // ذخیره موقعیت شروع برای drag
+        this.dragStartX = e.clientX;
+        this.dragStartY = e.clientY;
+        this.isDragging = true;
+        this.dragElement = element;
+        
+        // اضافه کردن event listeners برای drag
+        document.addEventListener('mousemove', this.handleMouseMove);
+        document.addEventListener('mouseup', this.handleMouseUp);
+        
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    /**
+     * انتخاب المنت برای جابجایی (بدون نمایش properties)
+     */
+    selectElementForMove(element) {
+        // پاک کردن انتخاب قبلی
+        this.clearSelection();
+        
+        // اضافه کردن کلاس dragging
+        element.classList.add('dragging');
+        
+        // ذخیره المنت انتخاب شده
+        this.selectedElement = element;
+    }
+    
+    /**
+     * handle mouse move for dragging
+     */
+    handleMouseMove(e) {
+        if (this.isDragging && this.dragElement) {
+            const deltaX = e.clientX - this.dragStartX;
+            const deltaY = e.clientY - this.dragStartY;
+            
+            // محاسبه موقعیت جدید
+            const rect = this.dragElement.getBoundingClientRect();
+            const newLeft = rect.left + deltaX;
+            const newTop = rect.top + deltaY;
+            
+            // اعمال موقعیت جدید
+            this.dragElement.style.left = newLeft + 'px';
+            this.dragElement.style.top = newTop + 'px';
+            
+            // آپدیت موقعیت شروع برای حرکت بعدی
+            this.dragStartX = e.clientX;
+            this.dragStartY = e.clientY;
+            
+            // آپدیت cache
+            if (this.cacheManager) {
+                this.cacheManager.addChange('element-move', {
+                    elementId: this.dragElement.id,
+                    position: { x: newLeft, y: newTop },
+                    timestamp: Date.now()
+                });
+            }
+        }
+    }
+    
+    /**
+     * Handle mouse up - end dragging
+     */
+    handleMouseUp(e) {
+        if (this.isDragging) {
+            this.isDragging = false;
+            
+            if (this.dragElement) {
+                this.dragElement.classList.remove('dragging');
+                this.dragElement = null;
+            }
+            
+            // حذف event listeners
+            document.removeEventListener('mousemove', this.handleMouseMove);
+            document.removeEventListener('mouseup', this.handleMouseUp);
+            
+            console.log('Dragging ended');
         }
     }
 
     handleContextMenu(e) {
         e.preventDefault();
-        // Show context menu (implementation can be added later)
+        
+        // اگر روی یک المنت کلیک شده، آن را انتخاب کن و سایدبار تنظیمات را نمایش بده
+        const clickedElement = e.target.closest('.page-element');
+        if (clickedElement) {
+            this.selectElement(clickedElement);
+            this.showElementProperties(clickedElement);
+        } else {
+            // اگر روی فضای خالی کلیک شده، انتخاب را پاک کن
+            this.clearSelection();
+        }
     }
     
-    setTool(toolName) {
-        // Remove active class from all toolbar buttons
-        document.querySelectorAll('.toolbar-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
+    /**
+     * انتخاب المنت و نمایش تنظیمات در سایدبار
+     */
+    selectElement(element) {
+        // پاک کردن انتخاب قبلی
+        this.clearSelection();
         
-        // Add active class to selected tool
-        const selectedTool = document.getElementById(`${toolName}-tool`);
-        if (selectedTool) {
-            selectedTool.classList.add('active');
-        }
+        // اضافه کردن کلاس selected
+        element.classList.add('selected');
         
-        // Set viewport mode
-        if (this.viewport) {
-            this.viewport.classList.remove('pan-mode', 'select-mode');
-            this.viewport.classList.add(`${toolName}-mode`);
-        }
+        // ذخیره المنت انتخاب شده
+        this.selectedElement = element;
         
-        // Update cursor
-        this.updateCursor(toolName);
-        
-        console.log(`Tool changed to: ${toolName}`);
+        console.log('Element selected:', element.id);
     }
     
-    updateCursor(toolName) {
-        if (!this.viewport) return;
+    /**
+     * نمایش تنظیمات المنت در سایدبار
+     */
+    showElementProperties(element) {
+        // تغییر سایدبار به تب Properties
+        this.switchSidebarTab('properties');
         
-        switch(toolName) {
-            case 'select':
-                this.viewport.style.cursor = 'default';
-                break;
-            case 'pan':
-                this.viewport.style.cursor = 'grab';
-                break;
-            default:
-                this.viewport.style.cursor = 'default';
+        // نمایش تنظیمات المنت در سایدبار
+        // این قسمت باید با کد سایدبار هماهنگ شود
+        if (this.elementManager) {
+            this.elementManager.showElementProperties(element);
         }
     }
 
@@ -511,14 +1299,53 @@ class PageEditor {
         document.querySelectorAll('.page-element.selected').forEach(el => {
             el.classList.remove('selected');
         });
+        
+        // مخفی کردن properties panel
+        if (this.elementManager) {
+            this.elementManager.hideElementProperties();
+        }
     }
 
     showPageSettings() {
-        // Show page settings modal
+        // Show page settings modal with cache information
         const modal = document.getElementById('pageSettingsModal');
         if (modal) {
+            // Update cache info before showing modal
+            this.updateCacheInfoDisplay();
+            
             const bootstrapModal = new bootstrap.Modal(modal);
             bootstrapModal.show();
+        }
+    }
+    
+    updateCacheInfoDisplay() {
+        // Update cache statistics in the modal
+        const cacheInfo = document.getElementById('cache-info');
+        if (cacheInfo) {
+            const stats = this.cacheManager.getCacheStats();
+            const changeInfo = this.cacheManager.getChangeInfo();
+            
+            cacheInfo.innerHTML = `
+                <div class="cache-stats">
+                    <h6>وضعیت Cache:</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>المنت‌ها:</strong> ${stats.elementCount} عدد</li>
+                        <li><strong>اندازه:</strong> ${stats.sizeKB} KB</li>
+                        <li><strong>سن Cache:</strong> ${stats.ageMinutes} دقیقه</li>
+                        <li><strong>تغییرات ذخیره نشده:</strong> ${changeInfo.changeCount} عدد</li>
+                        <li><strong>آخرین ذخیره:</strong> ${stats.lastSaveTime ? new Date(stats.lastSaveTime).toLocaleTimeString('fa-IR') : 'هرگز'}</li>
+                        <li><strong>وضعیت:</strong> ${changeInfo.hasChanges ? '<span class="text-warning">نیاز به ذخیره</span>' : '<span class="text-success">ذخیره شده</span>'}</li>
+                    </ul>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="pageEditor.cacheManager.forceSave()">
+                            <i class="fas fa-save"></i> ذخیره فوری
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="pageEditor.cacheManager.clearCache()">
+                            <i class="fas fa-trash"></i> پاک کردن Cache
+                        </button>
+                    </div>
+                </div>
+            `;
         }
     }
 
@@ -526,6 +1353,7 @@ class PageEditor {
     async save() {
         if (!this.cacheManager.hasChanges()) {
             console.log('No changes to save');
+            this.showToast('هیچ تغییری برای ذخیره وجود ندارد', 'info');
             return;
         }
         
@@ -538,6 +1366,9 @@ class PageEditor {
                 saveBtn.disabled = true;
             }
             
+            // Force save to cache first
+            this.cacheManager.forceSave();
+            
             // Save to database via cache manager
             const success = await this.cacheManager.saveToDatabase();
             
@@ -545,8 +1376,9 @@ class PageEditor {
                 // Clear cache after successful save
                 this.cacheManager.clearCache();
                 
-                // Show success message
-                this.showToast('تغییرات با موفقیت ذخیره شد', 'success');
+                // Show success message with stats
+                const stats = this.cacheManager.getCacheStats();
+                this.showToast(`تغییرات با موفقیت ذخیره شد (${stats.elementCount} المنت)`, 'success');
                 console.log('Page saved successfully');
             } else {
                 // Show error message
@@ -563,6 +1395,13 @@ class PageEditor {
         } catch (error) {
             console.error('Error during save:', error);
             this.showToast('خطای غیرمنتظره در ذخیره', 'error');
+            
+            // Restore button state on error
+            const saveBtn = document.getElementById('save-btn');
+            if (saveBtn) {
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>ذخیره</span>';
+                saveBtn.disabled = false;
+            }
         }
     }
 
@@ -1007,6 +1846,17 @@ class CacheManager {
         this.originalCacheKey = `page_original_${this.pageId}`;
         this.hasUnsavedChanges = false;
         
+        // Auto-save settings
+        this.autoSaveInterval = 30000; // 30 seconds
+        this.autoSaveTimer = null;
+        this.lastSaveTime = 0;
+        this.saveDelay = 2000; // 2 seconds delay after last change
+        this.saveTimeout = null;
+        
+        // Change tracking
+        this.changeBuffer = [];
+        this.isProcessingChanges = false;
+        
         this.init();
     }
     
@@ -1014,8 +1864,12 @@ class CacheManager {
         // Store original state on page load
         this.storeOriginalState();
         
-        // Set up auto-save on changes
-        this.setupChangeDetection();
+        // Set up change detection methods
+        this.setupManualChangeTracking();
+        this.setupMutationObserver();
+        
+        // Set up auto-save timer
+        this.setupAutoSave();
         
         // Set up page unload warning
         this.setupUnloadWarning();
@@ -1030,11 +1884,31 @@ class CacheManager {
         }));
     }
     
-    setupChangeDetection() {
-        // Listen for element changes
-        const observer = new MutationObserver(() => {
-            this.markAsChanged();
-            this.saveToCache();
+    setupManualChangeTracking() {
+        // This method will be called by element operations
+        // No additional setup needed - just enable the addChange method
+    }
+    
+    setupMutationObserver() {
+        // Listen for DOM changes with debouncing
+        let mutationTimer = null;
+        
+        const observer = new MutationObserver((mutations) => {
+            // Clear previous timer
+            if (mutationTimer) {
+                clearTimeout(mutationTimer);
+            }
+            
+            // Debounce mutations to avoid excessive saving
+            mutationTimer = setTimeout(() => {
+                // Only save if there are meaningful changes
+                if (this.hasMeaningfulChanges(mutations)) {
+                    this.addChange('dom-mutation', {
+                        mutations: mutations.length,
+                        timestamp: Date.now()
+                    });
+                }
+            }, 500); // 500ms debounce
         });
         
         const pageContent = document.getElementById('page-content');
@@ -1043,13 +1917,59 @@ class CacheManager {
                 childList: true,
                 subtree: true,
                 attributes: true,
+                attributeFilter: ['style', 'class', 'data-element-id'], // Only watch specific attributes
                 attributeOldValue: true
             });
         }
     }
     
+    hasMeaningfulChanges(mutations) {
+        // Filter out insignificant mutations
+        return mutations.some(mutation => {
+            // Ignore text changes in temporary elements
+            if (mutation.type === 'characterData') {
+                return false;
+            }
+            
+            // Ignore style changes for resize handles
+            if (mutation.type === 'attributes' && 
+                mutation.target.classList.contains('resize-handle')) {
+                return false;
+            }
+            
+            // Ignore temporary class changes
+            if (mutation.type === 'attributes' && 
+                mutation.attributeName === 'class' &&
+                (mutation.target.classList.contains('dragging') || 
+                 mutation.target.classList.contains('resizing'))) {
+                return false;
+            }
+            
+            return true;
+        });
+    }
+    
+    setupAutoSave() {
+        // Set up periodic auto-save
+        this.autoSaveTimer = setInterval(() => {
+            if (this.hasUnsavedChanges && !this.isProcessingChanges) {
+                console.log('Auto-saving due to timer...');
+                this.saveToCache();
+                this.processPendingChanges();
+            }
+        }, this.autoSaveInterval);
+    }
+    
     setupUnloadWarning() {
         window.addEventListener('beforeunload', (e) => {
+            // Clean up timers
+            if (this.autoSaveTimer) {
+                clearInterval(this.autoSaveTimer);
+            }
+            if (this.saveTimeout) {
+                clearTimeout(this.saveTimeout);
+            }
+            
             if (this.hasUnsavedChanges) {
                 const message = 'شما تغییرات ذخیره نشده‌ای دارید. آیا مطمئن هستید که می‌خواهید صفحه را ترک کنید؟';
                 e.preventDefault();
@@ -1057,6 +1977,72 @@ class CacheManager {
                 return message;
             }
         });
+    }
+    
+    // Manual change tracking method
+    addChange(changeType, changeData) {
+        const change = {
+            type: changeType,
+            data: changeData,
+            timestamp: Date.now()
+        };
+        
+        this.changeBuffer.push(change);
+        this.markAsChanged();
+        
+        // Debounced save
+        this.debouncedSave();
+        
+        console.log(`Change tracked: ${changeType}`, changeData);
+    }
+    
+    debouncedSave() {
+        // Clear previous timeout
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        
+        // Set new timeout
+        this.saveTimeout = setTimeout(() => {
+            if (!this.isProcessingChanges) {
+                this.saveToCache();
+                this.processPendingChanges();
+            }
+        }, this.saveDelay);
+    }
+    
+    processPendingChanges() {
+        if (this.changeBuffer.length === 0) return;
+        
+        this.isProcessingChanges = true;
+        
+        try {
+            // Group changes by type for optimization
+            const groupedChanges = this.groupChangesByType(this.changeBuffer);
+            console.log('Processing changes:', groupedChanges);
+            
+            // Clear processed changes
+            this.changeBuffer = [];
+            
+            // Update last save time
+            this.lastSaveTime = Date.now();
+            
+        } catch (error) {
+            console.error('Error processing changes:', error);
+        } finally {
+            this.isProcessingChanges = false;
+        }
+    }
+    
+    groupChangesByType(changes) {
+        const grouped = {};
+        changes.forEach(change => {
+            if (!grouped[change.type]) {
+                grouped[change.type] = [];
+            }
+            grouped[change.type].push(change);
+        });
+        return grouped;
     }
     
     markAsChanged() {
@@ -1067,6 +2053,9 @@ class CacheManager {
     markAsSaved() {
         this.hasUnsavedChanges = false;
         this.updateSaveButtonState();
+        
+        // Clear change buffer
+        this.changeBuffer = [];
     }
     
     updateSaveButtonState() {
@@ -1075,6 +2064,12 @@ class CacheManager {
             if (this.hasUnsavedChanges) {
                 saveBtn.classList.add('has-changes');
                 saveBtn.innerHTML = '<i class="fas fa-save"></i> ذخیره تغییرات';
+                
+                // Show change count if available
+                const changeCount = this.changeBuffer.length;
+                if (changeCount > 0) {
+                    saveBtn.innerHTML = `<i class="fas fa-save"></i> ذخیره تغییرات (${changeCount})`;
+                }
             } else {
                 saveBtn.classList.remove('has-changes');
                 saveBtn.innerHTML = '<i class="fas fa-check"></i> ذخیره شده';
@@ -1089,11 +2084,14 @@ class CacheManager {
                 elements: elementsData,
                 timestamp: Date.now(),
                 version: '1.0',
-                pageId: this.pageId
+                pageId: this.pageId,
+                changeCount: this.changeBuffer.length,
+                lastSaveTime: this.lastSaveTime
             };
             
             localStorage.setItem(this.cacheKey, JSON.stringify(cacheData));
-            console.log('Elements saved to cache:', elementsData.length, 'elements');
+            console.log('Elements saved to cache:', elementsData.length, 'elements', 
+                       this.changeBuffer.length, 'pending changes');
         } catch (error) {
             console.error('Failed to save to cache:', error);
         }
@@ -1107,16 +2105,77 @@ class CacheManager {
                 
                 // Check if cache is valid and for same page
                 if (cacheData.pageId === this.pageId && cacheData.elements) {
+                    // Check cache age (don't load very old cache)
+                    const cacheAge = Date.now() - (cacheData.timestamp || 0);
+                    const maxCacheAge = 24 * 60 * 60 * 1000; // 24 hours
+                    
+                    if (cacheAge > maxCacheAge) {
+                        console.log('Cache too old, clearing...');
+                        this.clearCache();
+                        return false;
+                    }
+                    
                     this.deserializeElements(cacheData.elements);
                     this.markAsChanged(); // Mark as having unsaved changes
+                    
                     console.log('Loaded elements from cache:', cacheData.elements.length, 'elements');
+                    console.log('Cache age:', Math.round(cacheAge / 1000 / 60), 'minutes');
+                    
                     return true;
                 }
             }
         } catch (error) {
             console.error('Failed to load from cache:', error);
+            // Clear corrupted cache
+            this.clearCache();
         }
         return false;
+    }
+    
+    // Get cache statistics
+    getCacheStats() {
+        try {
+            const cached = localStorage.getItem(this.cacheKey);
+            if (cached) {
+                const cacheData = JSON.parse(cached);
+                const cacheAge = Date.now() - (cacheData.timestamp || 0);
+                
+                return {
+                    exists: true,
+                    elementCount: cacheData.elements?.length || 0,
+                    ageMinutes: Math.round(cacheAge / 1000 / 60),
+                    sizeKB: Math.round(cached.length / 1024),
+                    lastSaveTime: cacheData.lastSaveTime || 0,
+                    changeCount: cacheData.changeCount || 0,
+                    version: cacheData.version || 'unknown'
+                };
+            }
+        } catch (error) {
+            console.error('Error getting cache stats:', error);
+        }
+        
+        return {
+            exists: false,
+            elementCount: 0,
+            ageMinutes: 0,
+            sizeKB: 0,
+            lastSaveTime: 0,
+            changeCount: 0,
+            version: 'none'
+        };
+    }
+    
+    // Force save (bypass debouncing)
+    forceSave() {
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+            this.saveTimeout = null;
+        }
+        
+        this.saveToCache();
+        this.processPendingChanges();
+        
+        console.log('Forced save completed');
     }
     
     serializeElements() {
@@ -1126,15 +2185,18 @@ class CacheManager {
             const domElement = element.domElement;
             const computedStyle = window.getComputedStyle(domElement);
             
+            // Extract configuration based on element type
+            const config = this.extractElementConfig(element, domElement);
+            
             const elementData = {
                 id: id,
                 type: element.type,
-                config: { ...element.config },
+                config: config,
                 position: {
-                    x: element.config.x,
-                    y: element.config.y,
-                    width: element.config.width,
-                    height: element.config.height
+                    x: element.config.x || 0,
+                    y: element.config.y || 0,
+                    width: element.config.width || 100,
+                    height: element.config.height || 100
                 },
                 styles: {
                     backgroundColor: computedStyle.backgroundColor,
@@ -1161,6 +2223,66 @@ class CacheManager {
         });
         
         return elements;
+    }
+    
+    extractElementConfig(element, domElement) {
+        const baseConfig = {
+            x: element.config.x || 0,
+            y: element.config.y || 0,
+            width: element.config.width || 100,
+            height: element.config.height || 100
+        };
+
+        // Add type-specific configuration
+        switch (element.type) {
+            case 'text':
+                return {
+                    ...baseConfig,
+                    content: element.config.content || domElement.textContent || '',
+                    fontSize: element.config.fontSize || '14px',
+                    color: element.config.color || '#000000',
+                    backgroundColor: element.config.backgroundColor || 'transparent'
+                };
+                
+            case 'image':
+                const img = domElement.querySelector('img');
+                return {
+                    ...baseConfig,
+                    src: element.config.src || (img ? img.src : ''),
+                    alt: element.config.alt || (img ? img.alt : '')
+                };
+                
+            case 'video':
+                const video = domElement.querySelector('video');
+                return {
+                    ...baseConfig,
+                    src: element.config.src || (video ? video.src : ''),
+                    autoplay: element.config.autoplay || (video ? video.autoplay : false),
+                    loop: element.config.loop || (video ? video.loop : false)
+                };
+                
+            case 'camera':
+                return {
+                    ...baseConfig,
+                    title: element.config.title || 'دوربین'
+                };
+                
+            case 'clock':
+                return {
+                    ...baseConfig,
+                    format: element.config.format || '24',
+                    showSeconds: element.config.showSeconds || true
+                };
+                
+            case 'weather':
+                return {
+                    ...baseConfig,
+                    location: element.config.location || 'تهران'
+                };
+                
+            default:
+                return baseConfig;
+        }
     }
     
     getElementAttributes(domElement) {
@@ -1245,6 +2367,17 @@ class CacheManager {
         }
         
         try {
+            // Transform elements to match expected API structure
+            const transformedElements = cachedData.elements.map(element => ({
+                id: element.id,
+                type: element.type,
+                config: element.config || {},
+                position: element.position || { x: 0, y: 0, width: 100, height: 100 },
+                styles: element.styles || {},
+                content: element.content || { innerHTML: '', textContent: '', attributes: {} },
+                timestamp: element.timestamp || Date.now()
+            }));
+
             const response = await fetch(`/Page/${this.pageId}/elements`, {
                 method: 'POST',
                 headers: {
@@ -1253,7 +2386,7 @@ class CacheManager {
                 },
                 body: JSON.stringify({
                     pageId: this.pageId,
-                    elements: cachedData.elements
+                    elements: transformedElements
                 })
             });
             
@@ -1262,7 +2395,8 @@ class CacheManager {
                 console.log('Elements saved to database successfully');
                 return true;
             } else {
-                console.error('Failed to save to database:', response.statusText);
+                const errorText = await response.text();
+                console.error('Failed to save to database:', response.statusText, errorText);
                 return false;
             }
         } catch (error) {
@@ -1305,6 +2439,36 @@ class CacheManager {
     }
     
     hasChanges() {
-        return this.hasUnsavedChanges;
+        return this.hasUnsavedChanges || this.changeBuffer.length > 0;
+    }
+    
+    // Get detailed change information
+    getChangeInfo() {
+        return {
+            hasChanges: this.hasChanges(),
+            changeCount: this.changeBuffer.length,
+            lastChangeTime: this.changeBuffer.length > 0 ? 
+                Math.max(...this.changeBuffer.map(c => c.timestamp)) : 0,
+            timeSinceLastSave: Date.now() - this.lastSaveTime
+        };
+    }
+    
+    // Clean up resources
+    destroy() {
+        // Clear timers
+        if (this.autoSaveTimer) {
+            clearInterval(this.autoSaveTimer);
+            this.autoSaveTimer = null;
+        }
+        
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+            this.saveTimeout = null;
+        }
+        
+        // Clear change buffer
+        this.changeBuffer = [];
+        
+        console.log('CacheManager destroyed');
     }
 }
