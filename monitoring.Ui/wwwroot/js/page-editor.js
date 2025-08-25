@@ -76,6 +76,31 @@ class ElementManager {
             case 'weather':
                 element.innerHTML = `<div class="weather-widget" data-location="${config.location}"><div class="weather-info">Weather Widget</div></div>`;
                 break;
+            case 'calendar':
+                element.innerHTML = `<div class="calendar-widget"><div class="calendar-header">تقویم</div><div class="calendar-body">📅</div></div>`;
+                break;
+            case 'gif':
+                element.innerHTML = `<img src="${config.src}" alt="${config.alt}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                break;
+            case 'digital-clock':
+                element.innerHTML = `<div class="digital-clock-widget" data-format="${config.format}" data-show-seconds="${config.showSeconds}" data-show-date="${config.showDate}"><div class="digital-time">00:00:00</div></div>`;
+                this.initializeDigitalClock(element);
+                break;
+            case 'countdown':
+                element.innerHTML = `<div class="countdown-widget" data-target="${config.targetDate}"><div class="countdown-title">${config.title}</div><div class="countdown-time">00:00:00</div></div>`;
+                break;
+            case 'webpage':
+                element.innerHTML = `<div class="webpage-widget"><div class="webpage-title">${config.title}</div><iframe src="${config.url}" style="width: 100%; height: calc(100% - 25px); border: none;"></iframe></div>`;
+                break;
+            case 'tv':
+                element.innerHTML = `<div class="tv-widget"><div class="tv-title">${config.title}</div><div class="tv-screen">📺</div></div>`;
+                break;
+            case 'day-counter':
+                element.innerHTML = `<div class="day-counter-widget" data-start="${config.startDate}"><div class="counter-title">${config.title}</div><div class="counter-days">0 روز</div></div>`;
+                break;
+            case 'title':
+                element.innerHTML = `<div class="title-content" style="font-size: ${config.fontSize}px; color: ${config.color}; background-color: ${config.backgroundColor}; text-align: center; line-height: 1.2;">${config.content}</div>`;
+                break;
         }
     }
 
@@ -92,6 +117,11 @@ class ElementManager {
         
         // Drag functionality - need to account for viewport transformation
         domElement.addEventListener('mousedown', (e) => {
+            // Check if the click is on a resize handle
+            if (e.target.classList.contains('resize-handle')) {
+                return; // Let resize handle its own event
+            }
+            
             if (e.button === 0) { // Left mouse button
                 this.startDrag(element, e);
             }
@@ -187,8 +217,178 @@ class ElementManager {
         handles.forEach(handle => {
             const resizeHandle = document.createElement('div');
             resizeHandle.className = `resize-handle resize-${handle}`;
+            resizeHandle.dataset.direction = handle;
+            
+            // Add resize event listeners
+            resizeHandle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.startResize(element, handle, e);
+            });
+            
             element.appendChild(resizeHandle);
         });
+    }
+
+    startResize(element, direction, e) {
+        // Prevent default drag behavior
+        e.preventDefault();
+        e.stopPropagation();
+
+        this.editor.isResizing = true;
+        this.editor.resizedElement = element;
+        this.editor.resizeDirection = direction;
+
+        // Get initial element dimensions and position relative to canvas
+        const elementRect = element.getBoundingClientRect();
+        const canvasRect = this.editor.viewport.getBoundingClientRect();
+        
+        // Calculate element position relative to canvas (accounting for zoom and pan)
+        const elementLeft = parseInt(element.style.left) || 0;
+        const elementTop = parseInt(element.style.top) || 0;
+        const elementWidth = parseInt(element.style.width) || elementRect.width;
+        const elementHeight = parseInt(element.style.height) || elementRect.height;
+        
+        this.editor.resizeStart = {
+            mouseX: e.clientX,
+            mouseY: e.clientY,
+            elementX: elementLeft,
+            elementY: elementTop,
+            elementWidth: elementWidth,
+            elementHeight: elementHeight
+        };
+
+        // Add global event listeners
+        document.addEventListener('mousemove', this.handleResizeMove.bind(this));
+        document.addEventListener('mouseup', this.handleResizeEnd.bind(this));
+
+        // Add visual feedback
+        element.classList.add('resizing');
+        
+        console.log('Resize started:', {
+            direction,
+            start: this.editor.resizeStart
+        });
+    }
+
+    handleResizeMove(e) {
+        if (!this.editor.isResizing || !this.editor.resizedElement) return;
+
+        const deltaX = e.clientX - this.editor.resizeStart.mouseX;
+        const deltaY = e.clientY - this.editor.resizeStart.mouseY;
+        const direction = this.editor.resizeDirection;
+        const start = this.editor.resizeStart;
+
+        let newX = start.elementX;
+        let newY = start.elementY;
+        let newWidth = start.elementWidth;
+        let newHeight = start.elementHeight;
+
+        // Calculate new dimensions based on resize direction
+        switch (direction) {
+            case 'n': // North (top)
+                newY = start.elementY + deltaY;
+                newHeight = start.elementHeight - deltaY;
+                break;
+            case 's': // South (bottom)
+                newHeight = start.elementHeight + deltaY;
+                break;
+            case 'w': // West (left)
+                newX = start.elementX + deltaX;
+                newWidth = start.elementWidth - deltaX;
+                break;
+            case 'e': // East (right)
+                newWidth = start.elementWidth + deltaX;
+                break;
+            case 'nw': // Northwest
+                newX = start.elementX + deltaX;
+                newY = start.elementY + deltaY;
+                newWidth = start.elementWidth - deltaX;
+                newHeight = start.elementHeight - deltaY;
+                break;
+            case 'ne': // Northeast
+                newY = start.elementY + deltaY;
+                newWidth = start.elementWidth + deltaX;
+                newHeight = start.elementHeight - deltaY;
+                break;
+            case 'sw': // Southwest
+                newX = start.elementX + deltaX;
+                newWidth = start.elementWidth - deltaX;
+                newHeight = start.elementHeight + deltaY;
+                break;
+            case 'se': // Southeast
+                newWidth = start.elementWidth + deltaX;
+                newHeight = start.elementHeight + deltaY;
+                break;
+        }
+
+        // Apply minimum size constraints
+        const minWidth = 20;
+        const minHeight = 20;
+        
+        // Handle minimum width
+        if (newWidth < minWidth) {
+            if (direction.includes('w')) {
+                // If resizing from left, adjust position
+                newX = start.elementX + start.elementWidth - minWidth;
+            }
+            newWidth = minWidth;
+        }
+        
+        // Handle minimum height
+        if (newHeight < minHeight) {
+            if (direction.includes('n')) {
+                // If resizing from top, adjust position
+                newY = start.elementY + start.elementHeight - minHeight;
+            }
+            newHeight = minHeight;
+        }
+
+        // Update element style directly (no viewport transformation needed)
+        this.editor.resizedElement.style.left = Math.round(newX) + 'px';
+        this.editor.resizedElement.style.top = Math.round(newY) + 'px';
+        this.editor.resizedElement.style.width = Math.round(newWidth) + 'px';
+        this.editor.resizedElement.style.height = Math.round(newHeight) + 'px';
+    }
+
+    handleResizeEnd(e) {
+        if (this.editor.resizedElement) {
+            this.editor.resizedElement.classList.remove('resizing');
+            
+            const finalDimensions = {
+                x: parseInt(this.editor.resizedElement.style.left),
+                y: parseInt(this.editor.resizedElement.style.top),
+                width: parseInt(this.editor.resizedElement.style.width),
+                height: parseInt(this.editor.resizedElement.style.height)
+            };
+            
+            console.log('Resize completed:', finalDimensions);
+            
+            // Update properties panel if this element is selected
+            if (this.editor.selectedElement && this.editor.selectedElement.id === this.editor.resizedElement.id) {
+                // Refresh properties panel to show updated size
+                this.showElementProperties(this.editor.selectedElement);
+            }
+            
+            // Update cache with final dimensions
+            if (this.editor && this.editor.cacheManager) {
+                this.editor.cacheManager.addChange('resize', {
+                    elementId: this.editor.resizedElement.id,
+                    ...finalDimensions,
+                    timestamp: Date.now()
+                });
+            }
+        }
+
+        // Cleanup
+        this.editor.isResizing = false;
+        this.editor.resizedElement = null;
+        this.editor.resizeDirection = null;
+        this.editor.resizeStart = null;
+
+        // Remove global event listeners
+        document.removeEventListener('mousemove', this.handleResizeMove.bind(this));
+        document.removeEventListener('mouseup', this.handleResizeEnd.bind(this));
     }
 
     initializeClock(element) {
@@ -203,6 +403,48 @@ class ElementManager {
         
         updateClock();
         setInterval(updateClock, 1000);
+    }
+
+    initializeDigitalClock(element) {
+        const updateDigitalClock = () => {
+            const now = new Date();
+            const widget = element.querySelector('.digital-clock-widget');
+            const showSeconds = widget?.dataset.showSeconds === 'true';
+            const showDate = widget?.dataset.showDate === 'true';
+            const format = widget?.dataset.format || '24';
+            
+            let timeString;
+            if (format === '12') {
+                timeString = now.toLocaleTimeString('en-US', { 
+                    hour12: true, 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    second: showSeconds ? '2-digit' : undefined 
+                });
+            } else {
+                timeString = now.toLocaleTimeString('fa-IR', {
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: showSeconds ? '2-digit' : undefined
+                });
+            }
+            
+            let displayText = timeString;
+            if (showDate) {
+                const dateString = now.toLocaleDateString('fa-IR');
+                displayText = `${dateString}\n${timeString}`;
+            }
+            
+            const timeElement = element.querySelector('.digital-time');
+            if (timeElement) {
+                timeElement.textContent = displayText;
+                timeElement.style.whiteSpace = 'pre-line';
+            }
+        };
+        
+        updateDigitalClock();
+        setInterval(updateDigitalClock, 1000);
     }
 
     deleteElement(elementId) {
@@ -364,6 +606,30 @@ class ElementManager {
                 break;
             case 'weather':
                 this.addWeatherContentProperties(form, element);
+                break;
+            case 'calendar':
+                this.addCalendarContentProperties(form, element);
+                break;
+            case 'gif':
+                this.addGifContentProperties(form, element);
+                break;
+            case 'digital-clock':
+                this.addDigitalClockContentProperties(form, element);
+                break;
+            case 'countdown':
+                this.addCountdownContentProperties(form, element);
+                break;
+            case 'webpage':
+                this.addWebpageContentProperties(form, element);
+                break;
+            case 'tv':
+                this.addTvContentProperties(form, element);
+                break;
+            case 'day-counter':
+                this.addDayCounterContentProperties(form, element);
+                break;
+            case 'title':
+                this.addTitleContentProperties(form, element);
                 break;
             default:
                 // پیام پیش‌فرض برای انواع ناشناخته
@@ -615,6 +881,160 @@ class ElementManager {
         `;
         form.appendChild(weatherGroup);
     }
+
+    addCalendarContentProperties(form, element) {
+        const calendarGroup = document.createElement('div');
+        calendarGroup.className = 'mb-3';
+        calendarGroup.innerHTML = `
+            <label class="form-label">تنظیمات تقویم</label>
+            <div class="text-center text-muted p-3">
+                <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                <p class="small mb-0">تقویم شمسی</p>
+            </div>
+        `;
+        form.appendChild(calendarGroup);
+    }
+
+    addGifContentProperties(form, element) {
+        const img = element.querySelector('img');
+        const gifGroup = document.createElement('div');
+        gifGroup.className = 'mb-3';
+        gifGroup.innerHTML = `
+            <label class="form-label">تنظیمات GIF</label>
+            <div class="mb-2">
+                <label class="form-label small">آدرس GIF:</label>
+                <input type="url" class="form-control" 
+                       name="src" value="${img?.src || ''}" 
+                       placeholder="https://example.com/animation.gif">
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">متن جایگزین:</label>
+                <input type="text" class="form-control" 
+                       name="alt" value="${img?.alt || ''}" 
+                       placeholder="توضیح GIF">
+            </div>
+        `;
+        form.appendChild(gifGroup);
+    }
+
+    addDigitalClockContentProperties(form, element) {
+        const digitalClockGroup = document.createElement('div');
+        digitalClockGroup.className = 'mb-3';
+        digitalClockGroup.innerHTML = `
+            <label class="form-label">تنظیمات ساعت دیجیتال</label>
+            <div class="mb-2">
+                <label class="form-label small">فرمت نمایش:</label>
+                <select class="form-select" name="format">
+                    <option value="24">24 ساعته</option>
+                    <option value="12">12 ساعته</option>
+                </select>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="showSeconds" checked>
+                <label class="form-check-label">نمایش ثانیه</label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="showDate">
+                <label class="form-check-label">نمایش تاریخ</label>
+            </div>
+        `;
+        form.appendChild(digitalClockGroup);
+    }
+
+    addCountdownContentProperties(form, element) {
+        const countdownGroup = document.createElement('div');
+        countdownGroup.className = 'mb-3';
+        countdownGroup.innerHTML = `
+            <label class="form-label">تنظیمات شمارش معکوس</label>
+            <div class="mb-2">
+                <label class="form-label small">عنوان:</label>
+                <input type="text" class="form-control" 
+                       name="title" value="شمارش معکوس" 
+                       placeholder="عنوان شمارش معکوس">
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">تاریخ هدف:</label>
+                <input type="datetime-local" class="form-control" 
+                       name="targetDate">
+            </div>
+        `;
+        form.appendChild(countdownGroup);
+    }
+
+    addWebpageContentProperties(form, element) {
+        const webpageGroup = document.createElement('div');
+        webpageGroup.className = 'mb-3';
+        webpageGroup.innerHTML = `
+            <label class="form-label">تنظیمات صفحه وب</label>
+            <div class="mb-2">
+                <label class="form-label small">عنوان:</label>
+                <input type="text" class="form-control" 
+                       name="title" value="صفحه وب" 
+                       placeholder="عنوان صفحه">
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">آدرس وب:</label>
+                <input type="url" class="form-control" 
+                       name="url" value="" 
+                       placeholder="https://example.com">
+            </div>
+        `;
+        form.appendChild(webpageGroup);
+    }
+
+    addTvContentProperties(form, element) {
+        const tvGroup = document.createElement('div');
+        tvGroup.className = 'mb-3';
+        tvGroup.innerHTML = `
+            <label class="form-label">تنظیمات تلوزیون</label>
+            <div class="mb-2">
+                <label class="form-label small">عنوان:</label>
+                <input type="text" class="form-control" 
+                       name="title" value="تلوزیون" 
+                       placeholder="نام کانال یا منبع">
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">کانال:</label>
+                <input type="text" class="form-control" 
+                       name="channel" value="" 
+                       placeholder="آدرس کانال">
+            </div>
+        `;
+        form.appendChild(tvGroup);
+    }
+
+    addDayCounterContentProperties(form, element) {
+        const dayCounterGroup = document.createElement('div');
+        dayCounterGroup.className = 'mb-3';
+        dayCounterGroup.innerHTML = `
+            <label class="form-label">تنظیمات روزشمار</label>
+            <div class="mb-2">
+                <label class="form-label small">عنوان:</label>
+                <input type="text" class="form-control" 
+                       name="title" value="روزشمار" 
+                       placeholder="عنوان روزشمار">
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">تاریخ شروع:</label>
+                <input type="date" class="form-control" 
+                       name="startDate">
+            </div>
+        `;
+        form.appendChild(dayCounterGroup);
+    }
+
+    addTitleContentProperties(form, element) {
+        const titleGroup = document.createElement('div');
+        titleGroup.className = 'mb-3';
+        titleGroup.innerHTML = `
+            <label class="form-label">محتوای عنوان</label>
+            <div class="mb-2">
+                <textarea class="form-control" name="content" rows="2" 
+                          placeholder="عنوان خود را اینجا بنویسید...">${element.textContent || ''}</textarea>
+            </div>
+        `;
+        form.appendChild(titleGroup);
+    }
     
     addGeneralProperties(form, element) {
         // گروه موقعیت و اندازه
@@ -792,88 +1212,304 @@ class ElementManager {
     attachPropertiesEventListeners(form, element) {
         // اضافه کردن event listeners برای تغییرات فوری
         form.addEventListener('input', (e) => {
-            this.updateElementProperty(element, e.target.name, e.target.value, e.target.type);
+            const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+            
+            // Determine if element is DOM element or element object
+            let elementToPass;
+            if (element.domElement) {
+                // element is element object
+                elementToPass = element;
+            } else if (element.dataset) {
+                // element is DOM element, find element object
+                const elementId = element.dataset.elementId;
+                elementToPass = this.editor.elements.get(elementId);
+            } else {
+                console.error('Invalid element in attachPropertiesEventListeners:', element);
+                return;
+            }
+            
+            this.updateElementProperty(elementToPass, e.target.name, value, e.target.type);
         });
         
         form.addEventListener('change', (e) => {
-            this.updateElementProperty(element, e.target.name, e.target.value, e.target.type);
+            const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+            
+            // Determine if element is DOM element or element object
+            let elementToPass;
+            if (element.domElement) {
+                // element is element object
+                elementToPass = element;
+            } else if (element.dataset) {
+                // element is DOM element, find element object
+                const elementId = element.dataset.elementId;
+                elementToPass = this.editor.elements.get(elementId);
+            } else {
+                console.error('Invalid element in attachPropertiesEventListeners:', element);
+                return;
+            }
+            
+            this.updateElementProperty(elementToPass, e.target.name, value, e.target.type);
         });
     }
     
     updateElementProperty(element, propertyName, value, inputType) {
+        console.log('UpdateElementProperty called with:', { element, propertyName, value, inputType });
+        
+        // Determine if element is a DOM element or element object
+        let domElement, elementObj;
+        if (element.domElement) {
+            // element is an element object with domElement property
+            elementObj = element;
+            domElement = element.domElement;
+        } else if (element.dataset) {
+            // element is a DOM element directly
+            domElement = element;
+            // Find the element object from the editor's elements map
+            const elementId = domElement.dataset.elementId;
+            elementObj = this.editor.elements.get(elementId);
+        } else {
+            console.error('Invalid element passed to updateElementProperty:', element);
+            return;
+        }
+        
+        // Update element config if elementObj exists
+        if (elementObj) {
+            if (!elementObj.config) {
+                elementObj.config = {};
+            }
+            elementObj.config[propertyName] = value;
+        }
+        
         switch (propertyName) {
             case 'x':
-                element.style.left = value + 'px';
+                domElement.style.left = value + 'px';
                 break;
             case 'y':
-                element.style.top = value + 'px';
+                domElement.style.top = value + 'px';
                 break;
             case 'width':
-                element.style.width = value + 'px';
+                domElement.style.width = value + 'px';
                 break;
             case 'height':
-                element.style.height = value + 'px';
+                domElement.style.height = value + 'px';
                 break;
             case 'color':
-                element.style.color = value;
+                // For text and title elements, update the content element style
+                if (domElement.dataset.type === 'text') {
+                    const textContent = domElement.querySelector('.text-content');
+                    if (textContent) {
+                        textContent.style.color = value;
+                    }
+                } else if (domElement.dataset.type === 'title') {
+                    const titleContent = domElement.querySelector('.title-content');
+                    if (titleContent) {
+                        titleContent.style.color = value;
+                    }
+                } else {
+                    domElement.style.color = value;
+                }
                 break;
             case 'backgroundColor':
-                element.style.backgroundColor = value;
+                // For text and title elements, update the content element style
+                if (domElement.dataset.type === 'text') {
+                    const textContent = domElement.querySelector('.text-content');
+                    if (textContent) {
+                        textContent.style.backgroundColor = value;
+                    }
+                } else if (domElement.dataset.type === 'title') {
+                    const titleContent = domElement.querySelector('.title-content');
+                    if (titleContent) {
+                        titleContent.style.backgroundColor = value;
+                    }
+                } else {
+                    domElement.style.backgroundColor = value;
+                }
                 break;
             case 'fontSize':
-                element.style.fontSize = value + 'px';
+                // For text and title elements, update the content element style
+                if (domElement.dataset.type === 'text') {
+                    const textContent = domElement.querySelector('.text-content');
+                    if (textContent) {
+                        textContent.style.fontSize = value + 'px';
+                    }
+                } else if (domElement.dataset.type === 'title') {
+                    const titleContent = domElement.querySelector('.title-content');
+                    if (titleContent) {
+                        titleContent.style.fontSize = value + 'px';
+                    }
+                } else {
+                    domElement.style.fontSize = value + 'px';
+                }
                 break;
             case 'fontWeight':
-                element.style.fontWeight = value;
+                // For text and title elements, update the content element style
+                if (domElement.dataset.type === 'text') {
+                    const textContent = domElement.querySelector('.text-content');
+                    if (textContent) {
+                        textContent.style.fontWeight = value;
+                    }
+                } else if (domElement.dataset.type === 'title') {
+                    const titleContent = domElement.querySelector('.title-content');
+                    if (titleContent) {
+                        titleContent.style.fontWeight = value;
+                    }
+                } else {
+                    domElement.style.fontWeight = value;
+                }
                 break;
             case 'content':
-                if (element.dataset.type === 'text') {
-                    element.textContent = value;
+                if (domElement.dataset.type === 'text') {
+                    const textContent = domElement.querySelector('.text-content');
+                    if (textContent) {
+                        textContent.textContent = value;
+                    }
+                } else if (domElement.dataset.type === 'title') {
+                    const titleContent = domElement.querySelector('.title-content');
+                    if (titleContent) {
+                        titleContent.textContent = value;
+                    }
                 }
                 break;
             case 'src':
-                const mediaElement = element.querySelector('img, video');
+                const mediaElement = domElement.querySelector('img, video');
                 if (mediaElement) {
                     mediaElement.src = value;
                 }
                 break;
             case 'alt':
-                const img = element.querySelector('img');
+                const img = domElement.querySelector('img');
                 if (img) {
                     img.alt = value;
                 }
                 break;
             case 'autoplay':
-                const video = element.querySelector('video');
+                const video = domElement.querySelector('video');
                 if (video) {
-                    video.autoplay = inputType === 'checkbox' ? e.target.checked : value === 'true';
+                    video.autoplay = inputType === 'checkbox' ? value : value === 'true';
                 }
                 break;
             case 'loop':
-                const videoLoop = element.querySelector('video');
+                const videoLoop = domElement.querySelector('video');
                 if (videoLoop) {
-                    videoLoop.loop = inputType === 'checkbox' ? e.target.checked : value === 'true';
+                    videoLoop.loop = inputType === 'checkbox' ? value : value === 'true';
+                }
+                break;
+            case 'controls':
+                const videoControls = domElement.querySelector('video');
+                if (videoControls) {
+                    videoControls.controls = inputType === 'checkbox' ? value : value === 'true';
                 }
                 break;
             case 'title':
-                const titleSpan = element.querySelector('span');
-                if (titleSpan) {
-                    titleSpan.textContent = value;
+                // Handle title for different element types without destroying innerHTML
+                const titleElement = domElement.querySelector('.camera-placeholder span, .countdown-title, .webpage-title, .tv-title, .counter-title, .title-content');
+                if (titleElement) {
+                    titleElement.textContent = value;
+                }
+                break;
+            case 'streamUrl':
+                // برای دوربین - آدرس استریم را در data attribute ذخیره می‌کنیم
+                domElement.dataset.streamUrl = value;
+                break;
+            case 'format':
+                // برای ساعت - فرمت نمایش
+                domElement.dataset.format = value;
+                // Update clock widget
+                if (domElement.dataset.type === 'clock' || domElement.dataset.type === 'digital-clock') {
+                    const widget = domElement.querySelector('.clock-widget, .digital-clock-widget');
+                    if (widget) {
+                        widget.dataset.format = value;
+                        // Re-initialize clock
+                        if (domElement.dataset.type === 'clock') {
+                            this.initializeClock(domElement);
+                        } else {
+                            this.initializeDigitalClock(domElement);
+                        }
+                    }
+                }
+                break;
+            case 'showSeconds':
+                // برای ساعت - نمایش ثانیه
+                domElement.dataset.showSeconds = inputType === 'checkbox' ? value : value === 'true';
+                // Update clock widget
+                if (domElement.dataset.type === 'clock' || domElement.dataset.type === 'digital-clock') {
+                    const widget = domElement.querySelector('.clock-widget, .digital-clock-widget');
+                    if (widget) {
+                        widget.dataset.showSeconds = value;
+                        // Re-initialize clock
+                        if (domElement.dataset.type === 'clock') {
+                            this.initializeClock(domElement);
+                        } else {
+                            this.initializeDigitalClock(domElement);
+                        }
+                    }
+                }
+                break;
+            case 'showDate':
+                // برای ساعت - نمایش تاریخ
+                domElement.dataset.showDate = inputType === 'checkbox' ? value : value === 'true';
+                // Update digital clock widget
+                if (domElement.dataset.type === 'digital-clock') {
+                    const widget = domElement.querySelector('.digital-clock-widget');
+                    if (widget) {
+                        widget.dataset.showDate = value;
+                        this.initializeDigitalClock(domElement);
+                    }
+                }
+                break;
+            case 'location':
+                // برای آب و هوا - شهر
+                domElement.dataset.location = value;
+                break;
+            case 'tempUnit':
+                // برای آب و هوا - واحد دما
+                domElement.dataset.tempUnit = value;
+                break;
+            case 'showIcon':
+                // برای آب و هوا - نمایش آیکون
+                domElement.dataset.showIcon = inputType === 'checkbox' ? value : value === 'true';
+                break;
+            case 'targetDate':
+                // برای countdown - تاریخ هدف
+                domElement.dataset.targetDate = value;
+                const countdownWidget = domElement.querySelector('.countdown-widget');
+                if (countdownWidget) {
+                    countdownWidget.dataset.target = value;
+                }
+                break;
+            case 'url':
+                // برای webpage - آدرس وب
+                domElement.dataset.url = value;
+                const iframe = domElement.querySelector('iframe');
+                if (iframe) {
+                    iframe.src = value;
+                }
+                break;
+            case 'channel':
+                // برای tv - کانال
+                domElement.dataset.channel = value;
+                break;
+            case 'startDate':
+                // برای day-counter - تاریخ شروع
+                domElement.dataset.startDate = value;
+                const dayCounterWidget = domElement.querySelector('.day-counter-widget');
+                if (dayCounterWidget) {
+                    dayCounterWidget.dataset.start = value;
                 }
                 break;
         }
         
         // آپدیت cache
-        if (this.editor && this.editor.cacheManager) {
+        if (this.editor && this.editor.cacheManager && elementObj) {
             this.editor.cacheManager.addChange('property-change', {
-                elementId: element.id,
+                elementId: elementObj.id,
                 property: propertyName,
                 value: value,
                 timestamp: Date.now()
             });
         }
         
-        console.log(`Property updated: ${propertyName} = ${value} for element ${element.id}`);
+        console.log(`Property updated: ${propertyName} = ${value} for element ${elementObj ? elementObj.id : domElement.id}`);
     }
 
     hideElementProperties() {
@@ -926,6 +1562,7 @@ class PageEditor {
         // Managers
         this.elementManager = new ElementManager(this);
         this.cacheManager = new CacheManager(this);
+        this.selectionManager = new SelectionManager(this);
         
         // Bind methods for event listeners
         this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -940,6 +1577,9 @@ class PageEditor {
             this.setupViewport();
             this.setupEventListeners();
             this.setupPageSettings();
+            
+            // Initialize background manager
+            backgroundManager = new BackgroundManager(this);
             
             console.log('Page Editor initialized successfully');
         } catch (error) {
@@ -1045,11 +1685,14 @@ class PageEditor {
         // Left click functionality: select for quick actions
         const clickedElement = e.target.closest('.page-element');
         
-        if (!clickedElement) {
+        if (clickedElement) {
+            // انتخاب المنت و نمایش تنظیمات
+            this.selectElement(clickedElement);
+            this.showElementProperties(clickedElement);
+        } else {
             // کلیک روی فضای خالی - انتخاب را پاک کن
             this.clearSelection();
         }
-        // توجه: drag functionality در handleMouseDown پیاده‌سازی شده
     }
     
     /**
@@ -1194,8 +1837,41 @@ class PageEditor {
         // نمایش تنظیمات المنت در سایدبار
         // این قسمت باید با کد سایدبار هماهنگ شود
         if (this.elementManager) {
-            this.elementManager.showElementProperties(element);
+            this.showElementProperties(element);
         }
+    }
+
+    /**
+     * نمایش تنظیمات المنت در پنل تنظیمات
+     */
+    showElementProperties(domElement) {
+        // پیدا کردن element object از DOM element
+        const elementId = domElement.dataset.elementId;
+        const elementObj = this.elements.get(elementId);
+        
+        if (elementObj && this.elementManager) {
+            this.elementManager.showElementProperties(domElement);
+        }
+    }
+
+    /**
+     * پاک کردن انتخاب و تنظیمات
+     */
+    clearSelection() {
+        // پاک کردن کلاس selected از همه المنت‌ها
+        document.querySelectorAll('.page-element.selected').forEach(el => {
+            el.classList.remove('selected');
+        });
+        
+        // پاک کردن انتخاب در editor
+        this.selectedElement = null;
+        
+        // پاک کردن تنظیمات در elementManager
+        if (this.elementManager) {
+            this.elementManager.hideElementProperties();
+        }
+        
+        console.log('Selection cleared');
     }
 
     handleKeyDown(e) {
@@ -1510,6 +2186,16 @@ class PageEditor {
                 src: 'https://via.placeholder.com/200x150',
                 alt: 'تصویر نمونه'
             },
+            video: {
+                width: 320,
+                height: 240,
+                x: 100,
+                y: 100,
+                src: '',
+                autoplay: false,
+                loop: false,
+                controls: true
+            },
             camera: {
                 width: 320,
                 height: 240,
@@ -1531,6 +2217,71 @@ class PageEditor {
                 x: 100,
                 y: 100,
                 location: 'Tehran'
+            },
+            calendar: {
+                width: 250,
+                height: 200,
+                x: 100,
+                y: 100
+            },
+            gif: {
+                width: 200,
+                height: 200,
+                x: 100,
+                y: 100,
+                src: '',
+                alt: 'GIF تصویر'
+            },
+            'digital-clock': {
+                width: 180,
+                height: 70,
+                x: 100,
+                y: 100,
+                format: '24',
+                showSeconds: true,
+                showDate: false
+            },
+            countdown: {
+                width: 200,
+                height: 80,
+                x: 100,
+                y: 100,
+                targetDate: '',
+                title: 'شمارش معکوس'
+            },
+            webpage: {
+                width: 400,
+                height: 300,
+                x: 100,
+                y: 100,
+                url: '',
+                title: 'صفحه وب'
+            },
+            tv: {
+                width: 320,
+                height: 240,
+                x: 100,
+                y: 100,
+                channel: '',
+                title: 'تلوزیون'
+            },
+            'day-counter': {
+                width: 200,
+                height: 100,
+                x: 100,
+                y: 100,
+                startDate: '',
+                title: 'روزشمار'
+            },
+            title: {
+                width: 300,
+                height: 60,
+                x: 100,
+                y: 100,
+                content: 'عنوان',
+                fontSize: 24,
+                color: '#333333',
+                backgroundColor: 'transparent'
             }
         };
         
@@ -1591,43 +2342,35 @@ class SelectionManager {
     }
     
     updatePropertiesPanel(element) {
-        // Show properties content and hide no-selection
-        const noSelection = document.getElementById('no-selection');
-        const propertiesContent = document.getElementById('properties-content');
-        
-        if (noSelection) noSelection.style.display = 'none';
-        if (propertiesContent) propertiesContent.style.display = 'block';
-        
-        // Update basic properties
-        const positionX = document.getElementById('element-x');
-        const positionY = document.getElementById('element-y');
-        const elementWidth = document.getElementById('element-width');
-        const elementHeight = document.getElementById('element-height');
-        
-        if (positionX) positionX.value = Math.round(element.config.x);
-        if (positionY) positionY.value = Math.round(element.config.y);
-        if (elementWidth) elementWidth.value = Math.round(element.config.width);
-        if (elementHeight) elementHeight.value = Math.round(element.config.height);
-        
-        // Show/hide text properties based on element type
-        const textProperties = document.getElementById('text-properties');
-        if (textProperties) {
-            textProperties.style.display = (element.type === 'text') ? 'block' : 'none';
+        // Use ElementManager to show properties instead of old UI
+        if (this.editor && this.editor.elementManager) {
+            this.editor.elementManager.showElementProperties(element.domElement);
         }
         
-        // Update text properties if it's a text element
-        if (element.type === 'text') {
-            const textColor = document.getElementById('element-text-color');
-            const fontSize = document.getElementById('element-font-size');
-            const bgColor = document.getElementById('element-bg-color');
+        // Also switch to properties tab if needed
+        this.switchToPropertiesTab();
+    }
+    
+    switchToPropertiesTab() {
+        // Switch to properties tab in sidebar
+        const propertiesTab = document.querySelector('[data-tab="properties"]');
+        const propertiesPanel = document.getElementById('properties-panel');
+        
+        if (propertiesTab && propertiesPanel) {
+            // Remove active from all tabs
+            document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
             
-            if (textColor) textColor.value = element.config.color || '#000000';
-            if (fontSize) fontSize.value = element.config.fontSize || 16;
-            if (bgColor) bgColor.value = element.config.backgroundColor || '#ffffff';
+            // Hide all panels
+            document.querySelectorAll('.sidebar-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            
+            // Activate properties tab and panel
+            propertiesTab.classList.add('active');
+            propertiesPanel.classList.add('active');
         }
-        
-        // Setup property change listeners
-        this.setupPropertyChangeListeners(element);
     }
     
     setupPropertyChangeListeners(element) {
@@ -1718,24 +2461,421 @@ class SelectionManager {
     }
     
     clearPropertiesPanel() {
-        // Hide properties content and show no-selection
-        const noSelection = document.getElementById('no-selection');
-        const propertiesContent = document.getElementById('properties-content');
-        
-        if (noSelection) noSelection.style.display = 'block';
-        if (propertiesContent) propertiesContent.style.display = 'none';
-        
-        // Clear all input values
-        const inputs = document.querySelectorAll('#properties-panel input, #properties-panel textarea, #properties-panel select');
-        inputs.forEach(input => {
-            if (input.type === 'checkbox') {
-                input.checked = false;
-            } else {
-                input.value = '';
-            }
-        });
+        // Use ElementManager to hide properties
+        if (this.editor && this.editor.elementManager) {
+            this.editor.elementManager.hideElementProperties();
+        }
     }
 }
+
+// Background Manager Class
+class BackgroundManager {
+    constructor(editor) {
+        this.editor = editor;
+        this.currentBackgroundImage = null;
+        this.currentBackgroundAudio = null;
+        this.audioElement = null;
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Page settings button
+        const pageSettingsBtn = document.getElementById('page-settings-btn');
+        if (pageSettingsBtn) {
+            pageSettingsBtn.addEventListener('click', () => this.showPageSettingsModal());
+        }
+
+        // Background image upload
+        const backgroundImageInput = document.getElementById('background-image');
+        if (backgroundImageInput) {
+            backgroundImageInput.addEventListener('change', (e) => this.handleImageUpload(e));
+        }
+
+        // Background audio upload
+        const backgroundAudioInput = document.getElementById('background-audio');
+        if (backgroundAudioInput) {
+            backgroundAudioInput.addEventListener('change', (e) => this.handleAudioUpload(e));
+        }
+
+        // Audio volume control
+        const audioVolumeSlider = document.getElementById('audio-volume');
+        const volumeValue = document.getElementById('volume-value');
+        if (audioVolumeSlider && volumeValue) {
+            audioVolumeSlider.addEventListener('input', (e) => {
+                const volume = e.target.value;
+                volumeValue.textContent = volume + '%';
+                this.updateAudioVolume(volume / 100);
+            });
+        }
+
+        // Audio controls
+        const audioLoop = document.getElementById('audio-loop');
+        const audioAutoplay = document.getElementById('audio-autoplay');
+        if (audioLoop) {
+            audioLoop.addEventListener('change', (e) => this.updateAudioLoop(e.target.checked));
+        }
+        if (audioAutoplay) {
+            audioAutoplay.addEventListener('change', (e) => this.updateAudioAutoplay(e.target.checked));
+        }
+
+        // Background mode selector
+        const backgroundMode = document.getElementById('background-mode');
+        if (backgroundMode) {
+            backgroundMode.addEventListener('change', (e) => this.updateBackgroundMode(e.target.value));
+        }
+
+        // Save settings button
+        const saveSettingsBtn = document.getElementById('save-page-settings');
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', () => this.savePageSettings());
+        }
+    }
+
+    showPageSettingsModal() {
+        const modal = new bootstrap.Modal(document.getElementById('pageSettingsModal'));
+        modal.show();
+    }
+
+    async handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show loading
+            this.showUploadProgress('تصویر در حال آپلود...');
+
+            const response = await fetch('/Upload/BackgroundImage', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.currentBackgroundImage = result.data;
+                this.applyBackgroundImage(result.data.url);
+                this.showPreview('image', result.data.url);
+                this.showToast('تصویر با موفقیت آپلود شد', 'success');
+            } else {
+                this.showToast(result.message || 'خطا در آپلود تصویر', 'error');
+            }
+        } catch (error) {
+            console.error('Error uploading background image:', error);
+            this.showToast('خطا در آپلود تصویر', 'error');
+        } finally {
+            this.hideUploadProgress();
+        }
+    }
+
+    async handleAudioUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show loading
+            this.showUploadProgress('فایل صوتی در حال آپلود...');
+
+            const response = await fetch('/Upload/BackgroundAudio', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.currentBackgroundAudio = result.data;
+                this.setupAudioElement(result.data.url);
+                this.showPreview('audio', result.data.url);
+                this.showToast('فایل صوتی با موفقیت آپلود شد', 'success');
+            } else {
+                this.showToast(result.message || 'خطا در آپلود فایل صوتی', 'error');
+            }
+        } catch (error) {
+            console.error('Error uploading background audio:', error);
+            this.showToast('خطا در آپلود فایل صوتی', 'error');
+        } finally {
+            this.hideUploadProgress();
+        }
+    }
+
+    applyBackgroundImage(imageUrl) {
+        const canvas = document.getElementById('canvas-container');
+        if (canvas) {
+            canvas.style.backgroundImage = `url('${imageUrl}')`;
+            this.updateBackgroundMode(document.getElementById('background-mode')?.value || 'cover');
+        }
+    }
+
+    updateBackgroundMode(mode) {
+        const canvas = document.getElementById('canvas-container');
+        if (!canvas) return;
+
+        switch (mode) {
+            case 'cover':
+                canvas.style.backgroundSize = 'cover';
+                canvas.style.backgroundRepeat = 'no-repeat';
+                canvas.style.backgroundPosition = 'center';
+                break;
+            case 'contain':
+                canvas.style.backgroundSize = 'contain';
+                canvas.style.backgroundRepeat = 'no-repeat';
+                canvas.style.backgroundPosition = 'center';
+                break;
+            case 'stretch':
+                canvas.style.backgroundSize = '100% 100%';
+                canvas.style.backgroundRepeat = 'no-repeat';
+                canvas.style.backgroundPosition = 'center';
+                break;
+            case 'center':
+                canvas.style.backgroundSize = 'auto';
+                canvas.style.backgroundRepeat = 'no-repeat';
+                canvas.style.backgroundPosition = 'center';
+                break;
+            case 'tile':
+                canvas.style.backgroundSize = 'auto';
+                canvas.style.backgroundRepeat = 'repeat';
+                canvas.style.backgroundPosition = 'top left';
+                break;
+        }
+    }
+
+    setupAudioElement(audioUrl) {
+        // Remove existing audio element
+        if (this.audioElement) {
+            this.audioElement.remove();
+        }
+
+        // Create new audio element
+        this.audioElement = document.createElement('audio');
+        this.audioElement.src = audioUrl;
+        this.audioElement.style.display = 'none';
+        document.body.appendChild(this.audioElement);
+
+        // Apply current settings
+        const volumeSlider = document.getElementById('audio-volume');
+        const loopCheckbox = document.getElementById('audio-loop');
+        const autoplayCheckbox = document.getElementById('audio-autoplay');
+
+        if (volumeSlider) {
+            this.audioElement.volume = volumeSlider.value / 100;
+        }
+        if (loopCheckbox) {
+            this.audioElement.loop = loopCheckbox.checked;
+        }
+        if (autoplayCheckbox && autoplayCheckbox.checked) {
+            this.audioElement.autoplay = true;
+            this.audioElement.play().catch(e => {
+                console.warn('Autoplay blocked by browser:', e);
+                this.showToast('پخش خودکار توسط مرورگر مسدود شده', 'warning');
+            });
+        }
+
+        // Update preview
+        const audioPreview = document.getElementById('audio-preview');
+        if (audioPreview) {
+            audioPreview.src = audioUrl;
+            audioPreview.parentElement.style.display = 'block';
+        }
+    }
+
+    updateAudioVolume(volume) {
+        if (this.audioElement) {
+            this.audioElement.volume = volume;
+        }
+    }
+
+    updateAudioLoop(loop) {
+        if (this.audioElement) {
+            this.audioElement.loop = loop;
+        }
+    }
+
+    updateAudioAutoplay(autoplay) {
+        if (this.audioElement) {
+            if (autoplay) {
+                this.audioElement.play().catch(e => {
+                    console.warn('Autoplay blocked by browser:', e);
+                    this.showToast('پخش خودکار توسط مرورگر مسدود شده', 'warning');
+                });
+            } else {
+                this.audioElement.pause();
+            }
+        }
+    }
+
+    showPreview(type, url) {
+        const preview = document.querySelector('.background-preview');
+        if (!preview) return;
+
+        if (type === 'image') {
+            preview.innerHTML = `
+                <div class="preview-item">
+                    <img src="${url}" alt="Background Preview" style="max-width: 100%; height: auto; border-radius: 4px;">
+                    <button class="btn btn-sm btn-outline-danger mt-2" onclick="backgroundManager.removeBackgroundImage()">
+                        <i class="fas fa-trash"></i> حذف تصویر
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    async savePageSettings() {
+        try {
+            const assets = [];
+
+            // Add background image asset
+            if (this.currentBackgroundImage) {
+                assets.push({
+                    url: this.currentBackgroundImage.url,
+                    type: 'image',
+                    altText: 'Background Image',
+                    metadata: {
+                        fileName: this.currentBackgroundImage.fileName,
+                        size: this.currentBackgroundImage.size.toString(),
+                        mode: document.getElementById('background-mode')?.value || 'cover'
+                    }
+                });
+            }
+
+            // Add background audio asset
+            if (this.currentBackgroundAudio) {
+                const volumeSlider = document.getElementById('audio-volume');
+                const loopCheckbox = document.getElementById('audio-loop');
+                const autoplayCheckbox = document.getElementById('audio-autoplay');
+
+                assets.push({
+                    url: this.currentBackgroundAudio.url,
+                    type: 'audio',
+                    altText: 'Background Audio',
+                    metadata: {
+                        fileName: this.currentBackgroundAudio.fileName,
+                        size: this.currentBackgroundAudio.size.toString(),
+                        volume: volumeSlider ? volumeSlider.value : '50',
+                        loop: loopCheckbox ? loopCheckbox.checked.toString() : 'true',
+                        autoplay: autoplayCheckbox ? autoplayCheckbox.checked.toString() : 'false'
+                    }
+                });
+            }
+
+            // Save each asset to the page
+            for (const asset of assets) {
+                await this.saveBackgroundAsset(asset);
+            }
+
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('pageSettingsModal'));
+            if (modal) {
+                modal.hide();
+            }
+
+            this.showToast('تنظیمات صفحه با موفقیت ذخیره شد', 'success');
+        } catch (error) {
+            console.error('Error saving page settings:', error);
+            this.showToast('خطا در ذخیره تنظیمات', 'error');
+        }
+    }
+
+    async saveBackgroundAsset(asset) {
+        const apiBaseUrl = 'http://localhost:7001'; // API Gateway URL
+        const response = await fetch(`${apiBaseUrl}/api/page/${this.editor.pageId}/background-asset`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(asset)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to save ${asset.type} asset`);
+        }
+    }
+
+    async removeBackgroundImage() {
+        try {
+            this.currentBackgroundImage = null;
+            
+            // Remove from UI
+            const canvas = document.getElementById('canvas-container');
+            if (canvas) {
+                canvas.style.backgroundImage = '';
+            }
+
+            const preview = document.querySelector('.background-preview');
+            if (preview) {
+                preview.innerHTML = '';
+            }
+
+            // Clear input
+            const imageInput = document.getElementById('background-image');
+            if (imageInput) {
+                imageInput.value = '';
+            }
+
+            this.showToast('تصویر پس‌زمینه حذف شد', 'success');
+        } catch (error) {
+            console.error('Error removing background image:', error);
+            this.showToast('خطا در حذف تصویر', 'error');
+        }
+    }
+
+    showUploadProgress(message) {
+        // Show a loading indicator
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'flex';
+            const loadingText = loadingOverlay.querySelector('.loading-text');
+            if (loadingText) {
+                loadingText.textContent = message;
+            }
+        }
+    }
+
+    hideUploadProgress() {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+        }
+    }
+
+    showToast(message, type = 'info') {
+        // Simple toast implementation
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} toast-message`;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            animation: slideIn 0.3s ease-out;
+        `;
+        toast.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+            </div>
+        `;
+
+        document.body.appendChild(toast);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+}
+
+// Global background manager instance
+let backgroundManager = null;
 
 // Global instance
 let pageEditor = null;

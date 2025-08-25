@@ -426,65 +426,65 @@ public class PageController : ControllerBase
     /// <summary>
     /// تنظیم background asset صفحه
     /// </summary>
-    [HttpPut("{id}/background-asset")]
-    public async Task<IActionResult> SetBackgroundAsset(Guid id, [FromBody] AssetDTO assetDto)
-    {
-        try
-        {
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Invalid model state for setting page background asset {PageId}", id);
-                return BadRequest(ModelState);
-            }
+    //[HttpPut("{id}/background-asset")]
+    //public async Task<IActionResult> SetBackgroundAsset(Guid id, [FromBody] AssetDTO assetDto)
+    //{
+    //    try
+    //    {
+    //        if (!ModelState.IsValid)
+    //        {
+    //            _logger.LogWarning("Invalid model state for setting page background asset {PageId}", id);
+    //            return BadRequest(ModelState);
+    //        }
 
-            _logger.LogInformation("Setting page {PageId} background asset", id);
+    //        _logger.LogInformation("Setting page {PageId} background asset", id);
 
-            // Pass DTO directly to service layer for domain mapping
-            var result = await _pageService.SetBackgroundAssetAsync(id, assetDto);
+    //        // Pass DTO directly to service layer for domain mapping
+    //        var result = await _pageService.SetBackgroundAssetAsync(id, assetDto);
             
-            if (result.IsFailed)
-            {
-                _logger.LogError("Failed to set page background asset {PageId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Message)));
-                return BadRequest(result.Errors.Select(e => e.Message));
-            }
+    //        if (result.IsFailed)
+    //        {
+    //            _logger.LogError("Failed to set page background asset {PageId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Message)));
+    //            return BadRequest(result.Errors.Select(e => e.Message));
+    //        }
             
-            _logger.LogInformation("Page {PageId} background asset set successfully", id);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while setting page background asset {PageId}", id);
-            return StatusCode(500, "Internal server error");
-        }
-    }
+    //        _logger.LogInformation("Page {PageId} background asset set successfully", id);
+    //        return NoContent();
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        _logger.LogError(ex, "Error occurred while setting page background asset {PageId}", id);
+    //        return StatusCode(500, "Internal server error");
+    //    }
+    //}
 
-    /// <summary>
-    /// حذف background asset صفحه
-    /// </summary>
-    [HttpDelete("{id}/background-asset")]
-    public async Task<IActionResult> RemoveBackgroundAsset(Guid id)
-    {
-        try
-        {
-            _logger.LogInformation("Removing page {PageId} background asset", id);
+    ///// <summary>
+    ///// حذف background asset صفحه
+    ///// </summary>
+    //[HttpDelete("{id}/background-asset")]
+    //public async Task<IActionResult> RemoveBackgroundAsset(Guid id)
+    //{
+    //    try
+    //    {
+    //        _logger.LogInformation("Removing page {PageId} background asset", id);
 
-            var result = await _pageService.RemoveBackgroundAssetAsync(id);
+    //        var result = await _pageService.RemoveBackgroundAssetAsync(id);
             
-            if (result.IsFailed)
-            {
-                _logger.LogError("Failed to remove page background asset {PageId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Message)));
-                return BadRequest(result.Errors.Select(e => e.Message));
-            }
+    //        if (result.IsFailed)
+    //        {
+    //            _logger.LogError("Failed to remove page background asset {PageId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Message)));
+    //            return BadRequest(result.Errors.Select(e => e.Message));
+    //        }
             
-            _logger.LogInformation("Page {PageId} background asset removed successfully", id);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while removing page background asset {PageId}", id);
-            return StatusCode(500, "Internal server error");
-        }
-    }
+    //        _logger.LogInformation("Page {PageId} background asset removed successfully", id);
+    //        return NoContent();
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        _logger.LogError(ex, "Error occurred while removing page background asset {PageId}", id);
+    //        return StatusCode(500, "Internal server error");
+    //    }
+    //}
 
     /// <summary>
     /// اضافه کردن element به صفحه
@@ -911,6 +911,94 @@ public class PageController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred while getting tools");
+            return StatusCode(500, new { 
+                success = false, 
+                message = "Internal server error", 
+                error = ex.Message 
+            });
+        }
+    }
+
+    /// <summary>
+    /// تنظیم background asset صفحه
+    /// </summary>
+    [HttpPut("{id}/background-asset")]
+    public async Task<IActionResult> SetBackgroundAsset(Guid id, [FromBody] AssetDTO assetDto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for setting page background asset {PageId}", id);
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Invalid input data", 
+                    errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)) 
+                });
+            }
+
+            _logger.LogInformation("Setting page {PageId} background asset", id);
+
+            var result = await _pageService.SetBackgroundAssetAsync(id, assetDto);
+            
+            if (result.IsFailed)
+            {
+                _logger.LogError("Failed to set page background asset {PageId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Message)));
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Failed to set background asset", 
+                    errors = result.Errors.Select(e => e.Message) 
+                });
+            }
+            
+            _logger.LogInformation("Page {PageId} background asset set successfully", id);
+            return Ok(new { 
+                success = true, 
+                message = "Background asset set successfully" 
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while setting page background asset {PageId}", id);
+            return StatusCode(500, new { 
+                success = false, 
+                message = "Internal server error", 
+                error = ex.Message 
+            });
+        }
+    }
+
+    /// <summary>
+    /// حذف background asset صفحه
+    /// </summary>
+    [HttpDelete("{id}/background-asset")]
+    public async Task<IActionResult> RemoveBackgroundAsset(Guid id)
+    {
+        try
+        {
+            _logger.LogInformation("Removing page {PageId} background asset", id);
+
+            var result = await _pageService.RemoveBackgroundAssetAsync(id);
+            
+            if (result.IsFailed)
+            {
+                _logger.LogError("Failed to remove page background asset {PageId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Message)));
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Failed to remove background asset", 
+                    errors = result.Errors.Select(e => e.Message) 
+                });
+            }
+            
+            _logger.LogInformation("Page {PageId} background asset removed successfully", id);
+            return Ok(new { 
+                success = true, 
+                message = "Background asset removed successfully" 
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while removing page background asset {PageId}", id);
             return StatusCode(500, new { 
                 success = false, 
                 message = "Internal server error", 

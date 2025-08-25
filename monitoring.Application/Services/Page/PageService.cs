@@ -73,7 +73,9 @@ namespace Monitoring.Application.Services.Page
                     ToolId = element.ToolId,
                     Order = element.Order,
                     TemplateBody = element.TemplateBody != null ? MapTemplateBodyToDto(element.TemplateBody) : null,
-                    Asset = element.Asset != null ? MapAssetToDto(element.Asset) : null
+                    Asset = element.Asset != null ? MapAssetToDto(element.Asset) : null,
+                    ContentConfig = element.ContentConfig ?? new Dictionary<string, object>(),
+                    StyleConfig = element.StyleConfig ?? new Dictionary<string, object>()
                 };
             }
             catch (Exception ex)
@@ -127,8 +129,14 @@ namespace Monitoring.Application.Services.Page
             var templateBody = MapTemplateBodyFromDto(dto.TemplateBody);
             var asset = MapAssetFromDto(dto.Asset);
 
-            // Use the Create method and handle the Result
-            var elementResult = BaseElement.Create(dto.ToolId, dto.Order, templateBody, asset);
+            // Use the Create method with ContentConfig and StyleConfig
+            var elementResult = BaseElement.Create(
+                dto.ToolId, 
+                dto.Order, 
+                templateBody, 
+                asset,
+                dto.ContentConfig, 
+                dto.StyleConfig);
             
             if (elementResult.IsFailed)
             {

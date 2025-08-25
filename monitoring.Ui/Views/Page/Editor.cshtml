@@ -6,6 +6,14 @@
 
 <!-- Main Canvas Area -->
 <div class="editor-workspace" data-page-id="@Model.Id">
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 20px; border-radius: 8px; text-align: center;">
+            <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+            <div class="loading-text">در حال آپلود...</div>
+        </div>
+    </div>
+
     <!-- Canvas Viewport - Fixed container -->
     <div class="canvas-viewport" id="canvas-viewport">
         <!-- Canvas Container - Scalable content -->

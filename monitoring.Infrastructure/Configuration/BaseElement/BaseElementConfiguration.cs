@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Domain.Aggregates.Page.ValueObjects;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Newtonsoft.Json;
 
 namespace Persistence.BaseElemnt
 {
@@ -14,6 +16,30 @@ namespace Persistence.BaseElemnt
 
             builder.Property(b => b.Order)
                 .IsRequired();
+
+            // Configure ContentConfig as JSON
+            var contentConfigConverter = new ValueConverter<Dictionary<string, object>, string>(
+                v => JsonConvert.SerializeObject(v),
+                v => string.IsNullOrEmpty(v) 
+                    ? new Dictionary<string, object>() 
+                    : JsonConvert.DeserializeObject<Dictionary<string, object>>(v) ?? new Dictionary<string, object>()
+            );
+
+            builder.Property(b => b.ContentConfig)
+                .HasConversion(contentConfigConverter)
+                .HasColumnType("nvarchar(max)");
+
+            // Configure StyleConfig as JSON
+            var styleConfigConverter = new ValueConverter<Dictionary<string, object>, string>(
+                v => JsonConvert.SerializeObject(v),
+                v => string.IsNullOrEmpty(v) 
+                    ? new Dictionary<string, object>() 
+                    : JsonConvert.DeserializeObject<Dictionary<string, object>>(v) ?? new Dictionary<string, object>()
+            );
+
+            builder.Property(b => b.StyleConfig)
+                .HasConversion(styleConfigConverter)
+                .HasColumnType("nvarchar(max)");
 
             builder.OwnsOne(b => b.TemplateBody, tb =>
             {

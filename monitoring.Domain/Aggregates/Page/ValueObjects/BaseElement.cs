@@ -15,6 +15,10 @@ namespace Domain.Aggregates.Page.ValueObjects
         public int Order { get; private set; }
         public TemplateBody TemplateBody { get; private set; }
         public Asset Asset { get; private set; } // Single asset associated with the element
+        
+        // Configuration properties for dynamic styling and content management
+        public Dictionary<string, object> ContentConfig { get; private set; }
+        public Dictionary<string, object> StyleConfig { get; private set; }
 
         #endregion
 
@@ -23,18 +27,24 @@ namespace Domain.Aggregates.Page.ValueObjects
         private BaseElement()
         {
             // Required by EF Core
+            ContentConfig = new Dictionary<string, object>();
+            StyleConfig = new Dictionary<string, object>();
         }
 
         private BaseElement(
             Guid toolId,
             int order,
             TemplateBody templateBody,
-            Asset asset)
+            Asset asset,
+            Dictionary<string, object> contentConfig = null,
+            Dictionary<string, object> styleConfig = null)
         {
             ToolId = toolId;
             Order = order;
             TemplateBody = templateBody ?? throw new ArgumentNullException(nameof(templateBody));
             Asset = asset ?? throw new ArgumentNullException(nameof(asset));
+            ContentConfig = contentConfig ?? new Dictionary<string, object>();
+            StyleConfig = styleConfig ?? new Dictionary<string, object>();
         }
 
         #endregion
@@ -45,7 +55,9 @@ namespace Domain.Aggregates.Page.ValueObjects
             Guid toolId,
             int order,
             TemplateBody templateBody,
-            Asset asset)
+            Asset asset,
+            Dictionary<string, object> contentConfig = null,
+            Dictionary<string, object> styleConfig = null)
         {
             var result = new Result<BaseElement>();
 
@@ -82,7 +94,9 @@ namespace Domain.Aggregates.Page.ValueObjects
                 toolId: toolId,
                 order: order,
                 templateBody: templateBody,
-                asset: asset);
+                asset: asset,
+                contentConfig: contentConfig,
+                styleConfig: styleConfig);
 
             result.WithValue(baseElement);
 
@@ -103,6 +117,46 @@ namespace Domain.Aggregates.Page.ValueObjects
         {
             Order = order;
         }
+
+        public void UpdateContentConfig(Dictionary<string, object> contentConfig)
+        {
+            ContentConfig = contentConfig ?? new Dictionary<string, object>();
+        }
+
+        public void UpdateStyleConfig(Dictionary<string, object> styleConfig)
+        {
+            StyleConfig = styleConfig ?? new Dictionary<string, object>();
+        }
+
+        public void UpdateContentProperty(string key, object value)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentException("Key cannot be null or empty", nameof(key));
+            
+            ContentConfig[key] = value;
+        }
+
+        public void UpdateStyleProperty(string key, object value)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentException("Key cannot be null or empty", nameof(key));
+            
+            StyleConfig[key] = value;
+        }
+
+        public T GetContentProperty<T>(string key, T defaultValue = default(T))
+        {
+            if (ContentConfig.TryGetValue(key, out var value) && value is T typedValue)
+                return typedValue;
+            return defaultValue;
+        }
+
+        public T GetStyleProperty<T>(string key, T defaultValue = default(T))
+        {
+            if (StyleConfig.TryGetValue(key, out var value) && value is T typedValue)
+                return typedValue;
+            return defaultValue;
+        }
         
         // New overload for rehydration that preserves an existing Id.
         public static Result<BaseElement> Rehydrate(
@@ -110,9 +164,11 @@ namespace Domain.Aggregates.Page.ValueObjects
             Guid toolId,
             int order,
             TemplateBody templateBody,
-            Asset asset)
+            Asset asset,
+            Dictionary<string, object> contentConfig = null,
+            Dictionary<string, object> styleConfig = null)
         {
-            var result = Create(toolId, order, templateBody, asset);
+            var result = Create(toolId, order, templateBody, asset, contentConfig, styleConfig);
             if (result.IsSuccess)
             {
                 // Use reflection to set the Id on the new domain object.

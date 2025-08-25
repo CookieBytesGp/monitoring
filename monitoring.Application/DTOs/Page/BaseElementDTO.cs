@@ -10,4 +10,8 @@ public class BaseElementDTO
     public int Order { get; set; }
     public TemplateBodyDTO TemplateBody { get; set; } // Assuming TemplateBody can be represented as a string
     public AssetDTO Asset { get; set; } // Assuming Asset can be represented as a string
+    
+    // Configuration properties for dynamic styling and content management
+    public Dictionary<string, object> ContentConfig { get; set; } = new Dictionary<string, object>();
+    public Dictionary<string, object> StyleConfig { get; set; } = new Dictionary<string, object>();
 }

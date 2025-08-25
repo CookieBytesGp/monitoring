@@ -143,6 +143,30 @@ namespace Monitoring.Infrastructure.Configuration.Page
                         .IsRequired();
                 });
 
+                // Configure ContentConfig as JSON
+                var contentConfigConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<Dictionary<string, object>, string>(
+                    v => Newtonsoft.Json.JsonConvert.SerializeObject(v),
+                    v => string.IsNullOrEmpty(v) 
+                        ? new Dictionary<string, object>() 
+                        : Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(v) ?? new Dictionary<string, object>()
+                );
+
+                elementsBuilder.Property(e => e.ContentConfig)
+                    .HasConversion(contentConfigConverter)
+                    .HasColumnType("nvarchar(max)");
+
+                // Configure StyleConfig as JSON
+                var styleConfigConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<Dictionary<string, object>, string>(
+                    v => Newtonsoft.Json.JsonConvert.SerializeObject(v),
+                    v => string.IsNullOrEmpty(v) 
+                        ? new Dictionary<string, object>() 
+                        : Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(v) ?? new Dictionary<string, object>()
+                );
+
+                elementsBuilder.Property(e => e.StyleConfig)
+                    .HasConversion(styleConfigConverter)
+                    .HasColumnType("nvarchar(max)");
+
                 // Configure Asset as an owned entity
                 elementsBuilder.OwnsOne(e => e.Asset, assetBuilder =>
                 {

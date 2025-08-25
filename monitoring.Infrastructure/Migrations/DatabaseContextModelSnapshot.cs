@@ -618,6 +618,10 @@ namespace Monitoring.Infrastructure.Migrations
                             b1.Property<Guid>("Id")
                                 .HasColumnType("uniqueidentifier");
 
+                            b1.Property<string>("ContentConfig")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
                             b1.Property<DateTime>("CreatedAt")
                                 .HasColumnType("datetime2");
 
@@ -634,6 +638,10 @@ namespace Monitoring.Infrastructure.Migrations
                             b1.Property<byte[]>("RowVersion")
                                 .IsRequired()
                                 .HasColumnType("varbinary(max)");
+
+                            b1.Property<string>("StyleConfig")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
 
                             b1.Property<Guid>("ToolId")
                                 .HasColumnType("uniqueidentifier");
